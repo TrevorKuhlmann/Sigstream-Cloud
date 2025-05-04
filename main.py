@@ -43,14 +43,19 @@ def receive_data(request: Request, payload: DeviceDataIn):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
+def dashboard(request: Request, device_id: str = None):
     db = SessionLocal()
-    records = db.query(DeviceData).order_by(DeviceData.timestamp.desc()).limit(100).all()
+    query = db.query(DeviceData)
+    if device_id:
+        query = query.filter(DeviceData.device_id == device_id)
+    records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
     db.close()
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "records": records
+        "records": records,
+        "filter_id": device_id
     })
+
 
 @app.get("/")
 def health_check():
