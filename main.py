@@ -4,6 +4,19 @@ from crud import insert_data
 import time
 import os
 from dotenv import load_dotenv
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi import Request
+from database import SessionLocal
+from models import DeviceData
+
+templates = Jinja2Templates(directory="templates")
+
+
+
+
+
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -28,6 +41,16 @@ def receive_data(request: Request, payload: DeviceDataIn):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    db = SessionLocal()
+    records = db.query(DeviceData).order_by(DeviceData.timestamp.desc()).limit(100).all()
+    db.close()
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "records": records
+    })
 
 @app.get("/")
 def health_check():
