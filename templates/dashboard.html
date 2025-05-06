@@ -10,43 +10,33 @@
   <div class="container mt-5">
     <h2>SigStream Device Dashboard</h2>
 
-    <!-- Filter form -->
-    <form method="get" class="mb-3 d-flex">
-      <input name="device_id" class="form-control me-2" placeholder="Filter by Device ID" value="{{ filter_id or '' }}">
-      <button class="btn btn-primary">Filter</button>
-    </form>
+    <table class="table table-dark table-striped mt-4">
+      <thead>
+        <tr>
+          <th>Device ID</th>
+          <th>Status</th>
+          <th>Last Seen (Unix Timestamp)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for device in statuses %}
+        <tr>
+          <td>{{ device.device_id }}</td>
+          <td>
+            {% if (now - device.last_seen) < 90 %}
+              <span class="badge bg-success">● online</span>
+            {% else %}
+              <span class="badge bg-danger">● offline</span>
+            {% endif %}
+          </td>
+          <td>{{ device.last_seen }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-    {% if records %}
-      <table class="table table-dark table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Device ID</th>
-            <th>Data</th>
-            <th>Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in records %}
-          <tr>
-            <td>{{ row.id }}</td>
-            <td>
-              {{ row.device_id }}
-              {% set last_seen = last_seen_map.get(row.device_id) %}
-              {% if last_seen and (now - last_seen) < 90 %}
-                <span class="badge bg-success">● online</span>
-              {% else %}
-                <span class="badge bg-danger">● offline</span>
-              {% endif %}             
-            </td>
-            <td>{{ row.data }}</td>
-            <td>{{ row.timestamp }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <div class="alert alert-warning">No records to display yet.</div>
+    {% if statuses|length == 0 %}
+      <div class="alert alert-warning">No devices registered yet.</div>
     {% endif %}
   </div>
 </body>
