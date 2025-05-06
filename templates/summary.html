@@ -10,6 +10,21 @@
   <div class="container mt-5">
     <h2>Recent Device Telemetry</h2>
 
+<!-- Filter form -->
+<form method="get" class="mb-3 d-flex">
+  <input name="device_id" class="form-control me-2" placeholder="Filter by Device ID" value="{{ filter_id or '' }}">
+  <button class="btn btn-primary">Filter</button>
+</form>
+
+<!-- Export CSV -->
+<a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}" class="btn btn-success mb-3">
+  Export CSV
+</a>
+
+    <form method="get" class="mb-3 d-flex">
+      <input name="device_id" class="form-control me-2" placeholder="Filter by Device ID" value="{{ filter_id or '' }}">
+      <button class="btn btn-primary">Filter</button>
+    </form>
     <table class="table table-dark table-striped mt-4">
       <thead>
         <tr>

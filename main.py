@@ -8,6 +8,9 @@ from crud import insert_data, update_heartbeat
 from database import SessionLocal
 from fastapi_utils.tasks import repeat_every
 from contextlib import asynccontextmanager
+from fastapi.responses import StreamingResponse
+import csv
+from io import StringIO
 import logging
 import time
 import os
@@ -22,6 +25,12 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.StreamHandler()]
 )
+
+
+
+
+
+
 
 # FastAPI app with modern lifespan handling
 @asynccontextmanager
@@ -97,14 +106,44 @@ def dashboard(request: Request):
 
 ###sumary 
 @app.get("/summary", response_class=HTMLResponse)
-def summary(request: Request):
+def summary(request: Request, device_id: str = None):
     db = SessionLocal()
-    records = db.query(DeviceData).order_by(DeviceData.timestamp.desc()).limit(100).all()
+    query = db.query(DeviceData)
+    if device_id:
+        query = query.filter(DeviceData.device_id == device_id)
+    records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
     db.close()
 
     return templates.TemplateResponse("summary.html", {
         "request": request,
-        "records": records
+        "records": records,
+        "filter_id": device_id
     })
 
 
+@app.get("/export")
+def export_csv(device_id: str = None):
+    db = SessionLocal()
+    query = db.query(DeviceData)
+    if device_id:
+        query = query.filter(DeviceData.device_id == device_id)
+    records = query.order_by(DeviceData.timestamp.desc()).all()
+    db.close()
+
+    def generate():
+        data = StringIO()
+        writer = csv.writer(data)
+        writer.writerow(["ID", "Device ID", "Data", "Timestamp"])
+        yield data.getvalue()
+        data.seek(0)
+        data.truncate(0)
+
+        for row in records:
+            writer.writerow([row.id, row.device_id, row.data, row.timestamp])
+            yield data.getvalue()
+            data.seek(0)
+            data.truncate(0)
+
+    return StreamingResponse(generate(), media_type="text/csv", headers={
+        "Content-Disposition": "attachment; filename=sigstream_export.csv"
+    })
