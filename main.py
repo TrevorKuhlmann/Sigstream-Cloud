@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from models import DeviceDataIn, DeviceData, DeviceStatus
 from crud import insert_data, update_heartbeat
 from database import SessionLocal
+from fastapi_utils.tasks import repeat_every
+import logging
 import time
 import os
 
@@ -16,6 +18,25 @@ API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
+@app.on_event("startup")
+@repeat_every(seconds=30)  # Run every 30 seconds
+def check_for_offline_devices():
+    db = SessionLocal()
+    now = int(time.time())
+    threshold = 90  # seconds offline
+
+    inactive_devices = []
+    for status in db.query(DeviceStatus).all():
+        if now - status.last_seen > threshold:
+            inactive_devices.append((status.device_id, now - status.last_seen))
+
+    db.close()
+
+    if inactive_devices:
+        for device_id, age in inactive_devices:
+            logging.warning(f"⚠️ Device '{device_id}' is offline for {age} seconds.")
+    else:
+        logging.info("✅ All devices are healthy.")
 
 @app.post("/data")
 def receive_data(request: Request, payload: DeviceDataIn):
