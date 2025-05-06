@@ -107,3 +107,4 @@ def summary(request: Request):
         "records": records
     })
 
+
