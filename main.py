@@ -27,7 +27,7 @@ app = FastAPI(lifespan=lifespan)
 
 templates = Jinja2Templates(directory="templates")
 
-##@app.on_event("startup")
+@app.on_event("startup")
 @repeat_every(seconds=30)  # Run every 30 seconds
 def check_for_offline_devices():
     db = SessionLocal()
