@@ -6,6 +6,10 @@ from models import DeviceDataIn, DeviceData, DeviceStatus
 from crud import insert_data, update_heartbeat
 from database import SessionLocal
 from fastapi_utils.tasks import repeat_every
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, HTTPException
+from fastapi_utils.tasks import repeat_every
+import logging
 import logging
 import time
 import os
@@ -15,10 +19,15 @@ load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 
 # FastAPI setup
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
 templates = Jinja2Templates(directory="templates")
 
-@app.on_event("startup")
+##@app.on_event("startup")
 @repeat_every(seconds=30)  # Run every 30 seconds
 def check_for_offline_devices():
     db = SessionLocal()
