@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from datetime import datetime
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
@@ -29,6 +30,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
+# Add a Jinja2 filter to format Unix timestamps
+def format_timestamp(ts):
+    return datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+templates.env.filters['format_ts'] = format_timestamp
+
 
 
 #  Background check for offline devices
@@ -86,3 +93,17 @@ def dashboard(request: Request):
         "statuses": statuses,
         "now": int(time.time())
     })
+
+
+###sumary 
+@app.get("/summary", response_class=HTMLResponse)
+def summary(request: Request):
+    db = SessionLocal()
+    records = db.query(DeviceData).order_by(DeviceData.timestamp.desc()).limit(100).all()
+    db.close()
+
+    return templates.TemplateResponse("summary.html", {
+        "request": request,
+        "records": records
+    })
+
