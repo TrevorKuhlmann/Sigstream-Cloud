@@ -33,11 +33,11 @@
             <td>
               {{ row.device_id }}
               {% set last_seen = last_seen_map.get(row.device_id) %}
-              {% if last_seen and (row.timestamp > (last_seen - 60)) %}
+              {% if last_seen and (now - last_seen) < 90 %}
                 <span class="badge bg-success">● online</span>
               {% else %}
                 <span class="badge bg-danger">● offline</span>
-              {% endif %}
+              {% endif %}             
             </td>
             <td>{{ row.data }}</td>
             <td>{{ row.timestamp }}</td>

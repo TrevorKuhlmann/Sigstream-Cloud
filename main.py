@@ -68,7 +68,6 @@ def receive_data(request: Request, payload: DeviceDataIn):
 def health_check():
     return {"message": "SigStream Cloud API is up!"}
 
-
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, device_id: str = None):
     db = SessionLocal()
@@ -88,5 +87,8 @@ def dashboard(request: Request, device_id: str = None):
         "request": request,
         "records": records,
         "filter_id": device_id,
-        "last_seen_map": last_seen_map
+        "last_seen_map": last_seen_map,
+        "now": int(time.time())  # ✅ REQUIRED FOR STATUS CHECK
     })
+
+
