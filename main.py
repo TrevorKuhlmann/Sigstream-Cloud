@@ -18,7 +18,7 @@ import os
 
 # TEMP: Create tables in the new Postgres DB
 import models
-Base.metadata.create_all(bind=engine)
+###Base.metadata.create_all(bind=engine)
 
 # Load env variables
 load_dotenv()
@@ -89,8 +89,20 @@ def receive_data(request: Request, payload: DeviceDataIn):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@app.get("/db-check")
+def db_check():
+    try:
+        db = SessionLocal()
+        result = db.execute("SELECT 1").scalar()
+        db.close()
+        return {"db_status": "connected", "result": result}
+    except Exception as e:
+        return {"db_status": "error", "detail": str(e)}
+
+
 #  Health check
-@app.get("/")
+@app.get("/health")
 def health_check():
     return {"message": "SigStream Cloud API is up!"}
 
