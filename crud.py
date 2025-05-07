@@ -1,9 +1,9 @@
-from database import SessionLocal, init_db
+from database import SessionLocal
 from models import DeviceData
 from models import DeviceStatus
 from sqlalchemy.exc import NoResultFound
 
-init_db()
+###init_db()
 
 def update_heartbeat(device_id: str, timestamp: int):
     db = SessionLocal()
