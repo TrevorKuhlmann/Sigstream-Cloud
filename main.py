@@ -10,6 +10,7 @@ from fastapi_utils.tasks import repeat_every
 from contextlib import asynccontextmanager
 from fastapi.responses import StreamingResponse
 from database import Base, engine
+from sqlalchemy import text
 import csv
 from io import StringIO
 import logging
@@ -94,7 +95,7 @@ def receive_data(request: Request, payload: DeviceDataIn):
 def db_check():
     try:
         db = SessionLocal()
-        result = db.execute("SELECT 1").scalar()
+        result = db.execute(text("SELECT 1")).scalar()
         db.close()
         return {"db_status": "connected", "result": result}
     except Exception as e:
