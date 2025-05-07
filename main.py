@@ -147,3 +147,6 @@ def export_csv(device_id: str = None):
     return StreamingResponse(generate(), media_type="text/csv", headers={
         "Content-Disposition": "attachment; filename=sigstream_export.csv"
     })
+
+    print("DB ENGINE:", DATABASE_URL.split(":")[0])
+
