@@ -9,11 +9,16 @@ from database import SessionLocal
 from fastapi_utils.tasks import repeat_every
 from contextlib import asynccontextmanager
 from fastapi.responses import StreamingResponse
+from database import Base, engine
 import csv
 from io import StringIO
 import logging
 import time
 import os
+
+# TEMP: Create tables in the new Postgres DB
+import models
+Base.metadata.create_all(bind=engine)
 
 # Load env variables
 load_dotenv()
