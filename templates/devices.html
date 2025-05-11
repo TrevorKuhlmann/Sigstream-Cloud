@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Management - SigStream</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; }
+        h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        form.inline { display: inline; margin-right: 10px; }
+        input[type=text] { padding: 5px; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h2>Welcome, {{ user.customer_name or user.email }}</h2>
+
+    <h3>Your Devices</h3>
+    {% if devices %}
+        <table>
+            <tr>
+                <th>Device ID</th>
+                <th>Label</th>
+                <th>Last Seen</th>
+                <th>Actions</th>
+            </tr>
+            {% for device in devices %}
+            <tr>
+                <td>{{ device.device_id }}</td>
+                <td>{{ device.label or "—" }}</td>
+                <td>{{ device.last_seen | format_ts }}</td>
+                <td>
+                    <form class="inline" method="post" action="/devices/unclaim">
+                        <input type="hidden" name="device_id" value="{{ device.device_id }}">
+                        <button type="submit">Unclaim</button>
+                    </form>
+                    <form class="inline" method="post" action="/devices/label">
+                        <input type="hidden" name="device_id" value="{{ device.device_id }}">
+                        <input type="text" name="new_label" placeholder="New Label">
+                        <button type="submit">Update</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>You have not claimed any devices yet.</p>
+    {% endif %}
+
+    <h3>Claim a New Device</h3>
+    <form method="post" action="/devices/claim">
+        <input type="text" name="device_id" placeholder="Enter Device ID" required>
+        <button type="submit">Claim Device</button>
+    </form>
+</body>
+</html>

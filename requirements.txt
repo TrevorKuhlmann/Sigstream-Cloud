@@ -7,5 +7,5 @@ jinja2
 fastapi-utils
 typing-inspect
 psycopg2-binary
-
-
+python-jose
+python-jose[cryptography] python-multipart

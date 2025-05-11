@@ -1,95 +1,133 @@
-from fastapi import FastAPI, HTTPException, Request
-from datetime import datetime
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Depends, status
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from dotenv import load_dotenv
-from models import DeviceDataIn, DeviceData, DeviceStatus
-from crud import insert_data, update_heartbeat
-from database import SessionLocal
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from fastapi_utils.tasks import repeat_every
 from contextlib import asynccontextmanager
-from fastapi.responses import StreamingResponse
-from database import Base, engine
-from sqlalchemy import text
-import csv
+from datetime import datetime
 from io import StringIO
-import logging
-import time
-import os
+from dotenv import load_dotenv
+import logging, time, os, csv
+from auth import get_current_user
 
-# TEMP: Create tables in the new Postgres DB
-import models
-###Base.metadata.create_all(bind=engine)
+from database import SessionLocal
+from models import DeviceDataIn, DeviceData, DeviceStatus, User
+from schemas import UserCreate, Token
+from crud import insert_data, update_heartbeat
+from auth import hash_password, verify_password, create_access_token, get_current_user
 
-# Load env variables
+from fastapi import Body
+from auth import get_current_user
+from fastapi import Form
+from fastapi.responses import RedirectResponse
+
+# Load .env
 load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 
-# Logging setup
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
-)
-
-
-
-
-
-
-
-# FastAPI app with modern lifespan handling
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
-# Add a Jinja2 filter to format Unix timestamps
-def format_timestamp(ts):
-    return datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+templates.env.filters['format_ts'] = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
-templates.env.filters['format_ts'] = format_timestamp
+logging.basicConfig(level=logging.INFO)
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-
-#  Background check for offline devices
-@repeat_every(seconds=30)
-def check_for_offline_devices():
+def get_db():
     db = SessionLocal()
-    now = int(time.time())
-    threshold = 90  # seconds idle
-    inactive_devices = []
-
-    for status in db.query(DeviceStatus).all():
-        if now - status.last_seen > threshold:
-            inactive_devices.append((status.device_id, now - status.last_seen))
-
-    db.close()
-
-    if inactive_devices:
-        for device_id, age in inactive_devices:
-            logging.warning(f" Device '{device_id}' is offline for {age} seconds.")
-    else:
-        logging.info(" All devices are healthy.")
-
-
-#  Secure data receiver with auth
-@app.post("/data")
-def receive_data(request: Request, payload: DeviceDataIn):
-    auth = request.headers.get("Authorization")
-    if not auth or auth.replace("Bearer ", "") != API_KEY:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-    ts = payload.timestamp or int(time.time())
     try:
-        insert_data(payload.device_id, payload.data, ts)
-        update_heartbeat(payload.device_id, ts)
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        yield db
+    finally:
+        db.close()
+
+@app.post("/register")
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    new_user = User(
+        email=user.email,
+        hashed_password=hash_password(user.password),
+        customer_name=user.customer_name
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": "User registered successfully", "user_id": new_user.id}
+
+@app.post("/token", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    token = create_access_token(data={"sub": user.email})
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/data")
+def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    ts = payload.timestamp or int(time.time())
+    insert_data(payload.device_id, payload.data, ts, db, current_user)
+    update_heartbeat(payload.device_id, ts, db, current_user)
+    return {"status": "success"}
+
+from auth import get_current_user  # ensure this is imported
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    statuses = db.query(DeviceStatus).filter(DeviceStatus.user_id == current_user.id).all()
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "statuses": statuses,
+        "now": int(time.time())
+    })
 
 
+@app.get("/summary", response_class=HTMLResponse)
+def summary(request: Request, device_id: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    query = db.query(DeviceData).join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)\
+        .filter(DeviceStatus.user_id == current_user.id)
+
+    if device_id:
+        query = query.filter(DeviceData.device_id == device_id)
+
+    records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
+
+    return templates.TemplateResponse("summary.html", {
+        "request": request,
+        "records": records,
+        "filter_id": device_id
+    })
+
+@app.get("/export")
+def export_csv(device_id: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    device_ids = [d.device_id for d in db.query(DeviceStatus).filter(DeviceStatus.user_id == current_user.id)]
+    query = db.query(DeviceData).filter(DeviceData.device_id.in_(device_ids))
+    if device_id:
+        query = query.filter(DeviceData.device_id == device_id)
+    records = query.order_by(DeviceData.timestamp.desc()).all()
+
+    def generate():
+        data = StringIO()
+        writer = csv.writer(data)
+        writer.writerow(["ID", "Device ID", "Data", "Timestamp"])
+        yield data.getvalue()
+        data.seek(0); data.truncate(0)
+        for row in records:
+            writer.writerow([row.id, row.device_id, row.data, row.timestamp])
+            yield data.getvalue()
+            data.seek(0); data.truncate(0)
+
+    return StreamingResponse(generate(), media_type="text/csv", headers={
+        "Content-Disposition": "attachment; filename=sigstream_export.csv"
+    })
+
+@app.get("/health")
+def health_check():
+    return {"message": "SigStream Cloud API is up!"}
 
 @app.get("/db-check")
 def db_check():
@@ -101,70 +139,77 @@ def db_check():
     except Exception as e:
         return {"db_status": "error", "detail": str(e)}
 
-
-#  Health check
-@app.get("/health")
-def health_check():
-    return {"message": "SigStream Cloud API is up!"}
-
-
-#  Device heartbeat dashboard
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
+@repeat_every(seconds=30)
+def check_for_offline_devices():
     db = SessionLocal()
-    statuses = db.query(DeviceStatus).all()
+    now = int(time.time())
+    threshold = 90
+    for status in db.query(DeviceStatus).all():
+        if now - status.last_seen > threshold:
+            logging.warning(f"Device '{status.device_id}' is offline for {now - status.last_seen} seconds.")
     db.close()
 
-    return templates.TemplateResponse("dashboard.html", {
+    
+
+@app.post("/claim-device")
+def claim_device(
+    device_id: str = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id).first()
+    
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    if device.user_id is not None:
+        raise HTTPException(status_code=400, detail="Device already claimed")
+
+    device.user_id = current_user.id
+    db.commit()
+    return {"message": f"Device '{device_id}' claimed by user '{current_user.email}'"}
+
+@app.get("/devices", response_class=HTMLResponse)
+def device_management(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    devices = db.query(DeviceStatus).filter(DeviceStatus.user_id == user.id).all()
+    return templates.TemplateResponse("devices.html", {
         "request": request,
-        "statuses": statuses,
-        "now": int(time.time())
+        "devices": devices,
+        "user": user
     })
 
+@app.post("/devices/claim")
+def claim_device(device_id: str = Form(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    if device.user_id is not None:
+        raise HTTPException(status_code=400, detail="Device is already claimed")
 
-###sumary 
-@app.get("/summary", response_class=HTMLResponse)
-def summary(request: Request, device_id: str = None):
-    db = SessionLocal()
-    query = db.query(DeviceData)
-    if device_id:
-        query = query.filter(DeviceData.device_id == device_id)
-    records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
-    db.close()
+    device.user_id = user.id
+    db.commit()
+    return RedirectResponse(url="/devices", status_code=302)
 
-    return templates.TemplateResponse("summary.html", {
-        "request": request,
-        "records": records,
-        "filter_id": device_id
-    })
+@app.post("/devices/unclaim")
+def unclaim_device(device_id: str = Form(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id, DeviceStatus.user_id == user.id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found or not owned by you")
 
+    device.user_id = None
+    db.commit()
+    return RedirectResponse(url="/devices", status_code=302)
+@app.post("/devices/label")
+def update_device_label(
+    device_id: str = Form(...),
+    new_label: str = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id, DeviceStatus.user_id == user.id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found or not owned by you")
 
-@app.get("/export")
-def export_csv(device_id: str = None):
-    db = SessionLocal()
-    query = db.query(DeviceData)
-    if device_id:
-        query = query.filter(DeviceData.device_id == device_id)
-    records = query.order_by(DeviceData.timestamp.desc()).all()
-    db.close()
-
-    def generate():
-        data = StringIO()
-        writer = csv.writer(data)
-        writer.writerow(["ID", "Device ID", "Data", "Timestamp"])
-        yield data.getvalue()
-        data.seek(0)
-        data.truncate(0)
-
-        for row in records:
-            writer.writerow([row.id, row.device_id, row.data, row.timestamp])
-            yield data.getvalue()
-            data.seek(0)
-            data.truncate(0)
-
-    return StreamingResponse(generate(), media_type="text/csv", headers={
-        "Content-Disposition": "attachment; filename=sigstream_export.csv"
-    })
-
-    print("DB ENGINE:", DATABASE_URL.split(":")[0])
+    device.label = new_label
+    db.commit()
+    return RedirectResponse(url="/devices", status_code=302)
 
