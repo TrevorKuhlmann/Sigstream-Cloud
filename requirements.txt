@@ -8,7 +8,8 @@ fastapi-utils
 typing-inspect
 psycopg2-binary
 python-jose
-python-jose[cryptography] python-multipart
+python-jose[cryptography] 
+python-multipart
 pydantic-settings
 passlib[bcrypt]
 
