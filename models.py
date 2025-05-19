@@ -43,6 +43,6 @@ class DeviceStatus(Base):
     device_id = Column(String, index=True)
     last_seen = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"))
-    label = Column(String, nullable=True)  # New field
+    label = Column(String)  # ✅ Make sure this is here
 
     owner = relationship("User", back_populates="devices")

@@ -21,6 +21,9 @@ from fastapi import Body
 from auth import get_current_user
 from fastapi import Form
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+
+
 
 # Load .env
 load_dotenv()
@@ -31,6 +34,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 templates.env.filters['format_ts'] = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -44,6 +48,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -212,4 +218,67 @@ def update_device_label(
     device.label = new_label
     db.commit()
     return RedirectResponse(url="/devices", status_code=302)
+
+@app.get("/", response_class=HTMLResponse)
+def landing_page(request: Request):
+    return templates.TemplateResponse("landing.html", {
+        "request": request,
+        "now": datetime.now()
+    })
+
+
+# Serve register page
+@app.get("/register-form", response_class=HTMLResponse)
+def register_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+# Handle register form POST
+@app.post("/register-form")
+def register_form_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    customer_name: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if db.query(User).filter(User.email == email).first():
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Email already registered"
+        })
+    new_user = User(email=email, hashed_password=hash_password(password), customer_name=customer_name)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return RedirectResponse(url="/login-form", status_code=302)
+
+# Serve login page
+@app.get("/login-form", response_class=HTMLResponse)
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+# Handle login form POST
+@app.post("/login-form")
+def login_form_post(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == username).first()
+    if not user or not verify_password(password, user.hashed_password):
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Invalid credentials"
+        })
+
+    token = create_access_token(data={"sub": user.email})
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(key="access_token", value=token, httponly=True)
+    return response
+
+
+@app.get("/", response_class=HTMLResponse)
+def landing_page(request: Request):
+    return templates.TemplateResponse("landing.html", {"request": request, "now": datetime.utcnow()})
 
