@@ -1,11 +1,16 @@
-fastapi==0.110.1
-uvicorn==0.29.0
-jinja2==3.1.3
-python-dotenv==1.0.1
-sqlalchemy==2.0.30
-psycopg2-binary==2.9.9
-passlib[bcrypt]==1.7.4
-python-jose[cryptography]==3.3.0
-pydantic==2.7.1
-pydantic-settings==2.2.1
-fastapi-utils==0.2.1
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-dotenv
+jinja2
+fastapi-utils
+typing-inspect
+psycopg2-binary
+python-jose
+python-jose[cryptography] python-multipart
+pydantic-settings
+passlib[bcrypt]
+
+
+
