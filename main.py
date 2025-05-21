@@ -282,3 +282,14 @@ def login_form_post(
 def landing_page(request: Request):
     return templates.TemplateResponse("landing.html", {"request": request, "now": datetime.utcnow()})
 
+@app.get("/terms", response_class=HTMLResponse)
+def terms(request: Request):
+    return templates.TemplateResponse("terms.html", {"request": request})
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy(request: Request):
+    return templates.TemplateResponse("privacy.html", {"request": request})
+
+@app.get("/refund", response_class=HTMLResponse)
+def refund(request: Request):
+    return templates.TemplateResponse("refund.html", {"request": request})
