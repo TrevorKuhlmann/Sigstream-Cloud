@@ -11,8 +11,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from io import StringIO
 from dotenv import load_dotenv
-import os, time, csv, logging
 from jose import jwt
+import os, time, csv, logging
 
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
@@ -24,7 +24,8 @@ from auth import (
 )
 from email_utils import send_magic_link_email
 
-# Load environment variables
+# ----------------------------- Config -----------------------------
+
 load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
@@ -38,7 +39,6 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 templates.env.filters['format_ts'] = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-
 logging.basicConfig(level=logging.INFO)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
@@ -49,34 +49,40 @@ def get_db():
     finally:
         db.close()
 
-# ----------------------------- Auth (Magic Link SSO) -----------------------------
+# ----------------------------- Magic Link Auth -----------------------------
 
 @app.post("/magic-login-register")
 async def magic_signup(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
+
     if not user:
         user = User(email=email, hashed_password="", customer_name="New User")
         db.add(user)
         db.commit()
         db.refresh(user)
+
     token = create_access_token(data={"sub": user.email}, expires_minutes=10)
     magic_link = f"{request.base_url}magic-auth?token={token}"
     background_tasks.add_task(send_magic_link_email, email, magic_link)
+
     return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
 
 @app.post("/magic-login-signin")
 async def magic_signin(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
+
     if not user:
         return templates.TemplateResponse("magic_login.html", {
             "request": request,
             "error": "No account found for this email. Please register first."
         })
+
     token = create_access_token(data={"sub": user.email}, expires_minutes=10)
     magic_link = f"{request.base_url}magic-auth?token={token}"
     background_tasks.add_task(send_magic_link_email, email, magic_link)
+
     return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
 
 @app.get("/magic-auth")
@@ -84,11 +90,12 @@ def complete_magic_login(token: str, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-    except:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+
     access_token = create_access_token(data={"sub": user.email})
     response = RedirectResponse(url="/dashboard")
     response.set_cookie("access_token", access_token, httponly=True)
@@ -97,10 +104,6 @@ def complete_magic_login(token: str, db: Session = Depends(get_db)):
 @app.get("/signin", response_class=HTMLResponse)
 def signin(request: Request):
     return templates.TemplateResponse("magic_login_form.html", {"request": request})
-
-@app.get("/magic-login", response_class=HTMLResponse)
-def show_magic_form(request: Request):
-    return templates.TemplateResponse("magic_login.html", {"request": request})
 
 # ----------------------------- Traditional Form Auth -----------------------------
 
@@ -138,7 +141,7 @@ def login_form_post(request: Request, username: str = Form(...), password: str =
     response.set_cookie(key="access_token", value=token, httponly=True)
     return response
 
-# ----------------------------- API + Dashboard -----------------------------
+# ----------------------------- Core API -----------------------------
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -194,6 +197,7 @@ def export_csv(device_id: str = None, db: Session = Depends(get_db), current_use
     if device_id:
         query = query.filter(DeviceData.device_id == device_id)
     records = query.order_by(DeviceData.timestamp.desc()).all()
+
     def generate():
         data = StringIO()
         writer = csv.writer(data)
@@ -202,29 +206,17 @@ def export_csv(device_id: str = None, db: Session = Depends(get_db), current_use
         for row in records:
             writer.writerow([row.id, row.device_id, row.data, row.timestamp])
             yield data.getvalue(); data.seek(0); data.truncate(0)
+
     return StreamingResponse(generate(), media_type="text/csv", headers={
         "Content-Disposition": "attachment; filename=sigstream_export.csv"
     })
 
-# ----------------------------- Device Management -----------------------------
-
-@app.post("/claim-device")
-def claim_device(device_id: str = Body(..., embed=True), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id).first()
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-    if device.user_id:
-        raise HTTPException(status_code=400, detail="Device already claimed")
-    device.user_id = current_user.id
-    db.commit()
-    return {"message": f"Device '{device_id}' claimed by user '{current_user.email}'"}
+# ----------------------------- Devices -----------------------------
 
 @app.get("/devices", response_class=HTMLResponse)
 def device_management(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     devices = db.query(DeviceStatus).filter(DeviceStatus.user_id == user.id).all()
-    return templates.TemplateResponse("devices.html", {
-        "request": request, "devices": devices, "user": user
-    })
+    return templates.TemplateResponse("devices.html", {"request": request, "devices": devices, "user": user})
 
 @app.post("/devices/claim")
 def claim_device_form(device_id: str = Form(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
