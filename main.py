@@ -22,7 +22,8 @@ from auth import (
     get_current_user, hash_password, verify_password,
     create_access_token, create_magic_token
 )
-from email_utils import send_magic_login_link, send_magic_link_email
+from email_utils import send_magic_link_email
+
 
 # Load environment variables
 load_dotenv()
