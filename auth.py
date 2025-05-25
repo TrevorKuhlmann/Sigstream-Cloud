@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import os
 from jose import jwt
 from datetime import datetime, timedelta
+from datetime import timedelta
 
 # Load .env variables
 load_dotenv()
@@ -60,13 +61,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # Utility: Create JWT token
-def create_access_token(data: dict) -> str:
-    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
+
 
 def create_magic_token(email: str, expires_minutes: int = 10):
     expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
