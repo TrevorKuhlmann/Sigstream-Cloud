@@ -24,7 +24,6 @@ from auth import (
 )
 from email_utils import send_magic_link_email
 
-
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
@@ -50,12 +49,96 @@ def get_db():
     finally:
         db.close()
 
-# ---------------------------- User Authentication ----------------------------
+# ----------------------------- Auth (Magic Link SSO) -----------------------------
+
+@app.post("/magic-login-register")
+async def magic_signup(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, hashed_password="", customer_name="New User")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    token = create_access_token(data={"sub": user.email}, expires_minutes=10)
+    magic_link = f"{request.base_url}magic-auth?token={token}"
+    background_tasks.add_task(send_magic_link_email, email, magic_link)
+    return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
+
+@app.post("/magic-login-signin")
+async def magic_signin(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return templates.TemplateResponse("magic_login.html", {
+            "request": request,
+            "error": "No account found for this email. Please register first."
+        })
+    token = create_access_token(data={"sub": user.email}, expires_minutes=10)
+    magic_link = f"{request.base_url}magic-auth?token={token}"
+    background_tasks.add_task(send_magic_link_email, email, magic_link)
+    return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
+
+@app.get("/magic-auth")
+def complete_magic_login(token: str, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+    except:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    access_token = create_access_token(data={"sub": user.email})
+    response = RedirectResponse(url="/dashboard")
+    response.set_cookie("access_token", access_token, httponly=True)
+    return response
+
+@app.get("/signin", response_class=HTMLResponse)
+def signin(request: Request):
+    return templates.TemplateResponse("magic_login_form.html", {"request": request})
+
+@app.get("/magic-login", response_class=HTMLResponse)
+def show_magic_form(request: Request):
+    return templates.TemplateResponse("magic_login.html", {"request": request})
+
+# ----------------------------- Traditional Form Auth -----------------------------
+
 @app.get("/register-form", response_class=HTMLResponse)
 def register_form(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
+@app.post("/register-form")
+def register_form_post(request: Request, email: str = Form(...), password: str = Form(...), customer_name: str = Form(...), db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == email).first():
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Email already registered"
+        })
+    new_user = User(email=email, hashed_password=hash_password(password), customer_name=customer_name)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return RedirectResponse(url="/login-form", status_code=302)
 
+@app.get("/login-form", response_class=HTMLResponse)
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login-form")
+def login_form_post(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == username).first()
+    if not user or not verify_password(password, user.hashed_password):
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Invalid credentials"
+        })
+    token = create_access_token(data={"sub": user.email})
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(key="access_token", value=token, httponly=True)
+    return response
+
+# ----------------------------- API + Dashboard -----------------------------
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -78,8 +161,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     token = create_access_token(data={"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
-
-# ----------------------------- Data Endpoints -----------------------------
 
 @app.post("/data")
 def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -113,18 +194,14 @@ def export_csv(device_id: str = None, db: Session = Depends(get_db), current_use
     if device_id:
         query = query.filter(DeviceData.device_id == device_id)
     records = query.order_by(DeviceData.timestamp.desc()).all()
-
     def generate():
         data = StringIO()
         writer = csv.writer(data)
         writer.writerow(["ID", "Device ID", "Data", "Timestamp"])
-        yield data.getvalue()
-        data.seek(0); data.truncate(0)
+        yield data.getvalue(); data.seek(0); data.truncate(0)
         for row in records:
             writer.writerow([row.id, row.device_id, row.data, row.timestamp])
-            yield data.getvalue()
-            data.seek(0); data.truncate(0)
-
+            yield data.getvalue(); data.seek(0); data.truncate(0)
     return StreamingResponse(generate(), media_type="text/csv", headers={
         "Content-Disposition": "attachment; filename=sigstream_export.csv"
     })
@@ -175,103 +252,6 @@ def update_device_label(device_id: str = Form(...), new_label: str = Form(...), 
     device.label = new_label
     db.commit()
     return RedirectResponse(url="/devices", status_code=302)
-
-# ----------------------------- Magic Link SSO -----------------------------
-
-@app.get("/signin", response_class=HTMLResponse)
-def signin(request: Request):
-    return templates.TemplateResponse("magic_login_form.html", {"request": request})
-
-@app.post("/magic-link")
-def send_magic_link_form(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        user = User(email=email, hashed_password="", customer_name="New User")
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    token = create_access_token(data={"sub": user.email}, expires_minutes=10)
-    send_magic_login_link(email, token)
-    return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
-
-@app.get("/auth/confirm")
-def confirm_login(request: Request, token: str, db: Session = Depends(get_db)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-        user = db.query(User).filter(User.email == email).first()
-    except:
-        return HTMLResponse("Invalid or expired link", status_code=400)
-    response = RedirectResponse(url="/dashboard")
-    response.set_cookie(key="access_token", value=create_access_token({"sub": user.email}), httponly=True)
-    return response
-
-@app.get("/magic-login", response_class=HTMLResponse)
-def show_magic_form(request: Request):
-    return templates.TemplateResponse("magic_login.html", {"request": request})
-
-@app.post("/magic-login")
-async def send_magic_link_alt(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
-    db = SessionLocal()
-    user = db.query(User).filter(User.email == email).first()
-    db.close()
-    if not user:
-        return templates.TemplateResponse("magic_login.html", {"request": request, "error": "Email not found"})
-    token = create_magic_token(user.email)
-    magic_link = f"{request.base_url}magic-auth?token={token}"
-    background_tasks.add_task(send_magic_link_email, email, magic_link)
-    return templates.TemplateResponse("magic_sent.html", {"request": request})
-
-@app.get("/magic-auth")
-def complete_magic_login(token: str, db: Session = Depends(get_db)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-    except:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    access_token = create_access_token(data={"sub": user.email})
-    response = RedirectResponse(url="/dashboard")
-    response.set_cookie("access_token", access_token, httponly=True)
-    return response
-
-# ----------------------------- Form-Based Auth -----------------------------
-
-@app.get("/register-form", response_class=HTMLResponse)
-def register_form(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
-
-@app.post("/register-form")
-def register_form_post(request: Request, email: str = Form(...), password: str = Form(...), customer_name: str = Form(...), db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == email).first():
-        return templates.TemplateResponse("register.html", {
-            "request": request,
-            "error": "Email already registered"
-        })
-    new_user = User(email=email, hashed_password=hash_password(password), customer_name=customer_name)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return RedirectResponse(url="/login-form", status_code=302)
-
-@app.get("/login-form", response_class=HTMLResponse)
-def login_form(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
-@app.post("/login-form")
-def login_form_post(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == username).first()
-    if not user or not verify_password(password, user.hashed_password):
-        return templates.TemplateResponse("login.html", {
-            "request": request,
-            "error": "Invalid credentials"
-        })
-    token = create_access_token(data={"sub": user.email})
-    response = RedirectResponse(url="/dashboard", status_code=302)
-    response.set_cookie(key="access_token", value=token, httponly=True)
-    return response
 
 # ----------------------------- Legal Pages -----------------------------
 
