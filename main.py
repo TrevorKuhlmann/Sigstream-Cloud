@@ -13,7 +13,7 @@ from io import StringIO
 from dotenv import load_dotenv
 from jose import jwt
 import os, time, csv, logging
-
+from datetime import timedelta
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
 from schemas import UserCreate, Token
@@ -62,7 +62,10 @@ async def magic_signup(request: Request, background_tasks: BackgroundTasks, emai
         db.commit()
         db.refresh(user)
 
-    token = create_access_token(data={"sub": user.email}, expires_minutes=10)
+    
+
+    token = create_access_token(data={"sub": user.email}, expires_delta=timedelta(minutes=10))
+
     magic_link = f"{request.base_url}magic-auth?token={token}"
     background_tasks.add_task(send_magic_link_email, email, magic_link)
 
