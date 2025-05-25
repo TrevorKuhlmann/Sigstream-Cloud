@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+
+
+
+
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<script type="text/javascript">
+  Paddle.Initialize({ 
+    token: 'test_e5617c1cea1fb6a192bdd3586cd' // replace with a client-side token
+  });
+  Paddle.Environment.set('sandbox'); // REMOVE this when going live
+</script>
   <!-- SEO & Social Meta Tags -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,8 +38,9 @@
       <span class="text-xl font-bold text-blue-700">SigStream</span>
     </div>
     <div>
-      <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
-      <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
+      <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4 transition duration-300">Log In</a>
+      <a href="/register-form" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 transition duration-300">Get Started</a>
+
     </div>
   </header>
 
@@ -77,29 +90,52 @@
 </section>
 
 
-  <!-- Pricing Section -->
-  <section id="pricing" class="py-24 bg-white">
-    <div class="container mx-auto px-6 text-center">
-      <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-        <div class="border rounded-lg p-6 shadow-sm">
-          <h3 class="text-xl font-semibold mb-2">Free</h3>
-          <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
-          <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
-        </div>
-        <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
-          <h3 class="text-xl font-semibold mb-2">Starter</h3>
-          <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
-          <div class="text-2xl font-bold mb-4">$9<span class="text-base font-medium">/month</span></div>
-        </div>
-        <div class="border rounded-lg p-6 shadow-sm">
-          <h3 class="text-xl font-semibold mb-2">Pro</h3>
-          <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
-          <div class="text-2xl font-bold mb-4">$29<span class="text-base font-medium">/month</span></div>
-        </div>
+ <!-- Pricing Section -->
+<section id="pricing" class="py-24 bg-white">
+  <div class="container mx-auto px-6 text-center">
+    <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+
+      <!-- Free Tier -->
+      <div class="border rounded-lg p-6 shadow-sm">
+        <h3 class="text-xl font-semibold mb-2">Free</h3>
+        <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
+        <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
+        <a href="/register-form" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
+          Start Free
+        </a>
       </div>
+
+      <!-- Starter Tier -->
+      <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
+        <h3 class="text-xl font-semibold mb-2">Starter</h3>
+        <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
+        <div class="text-2xl font-bold mb-4">$9<span class="text-base font-medium">/month</span></div>
+        <button
+          onclick="Paddle.Checkout.open({ product: pri_01jw11qptf3r4eytwbjd7p11r7 });"
+          class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300"
+        >
+          Buy Starter
+        </button>
+      </div>
+
+      <!-- Pro Tier -->
+      <div class="border rounded-lg p-6 shadow-sm">
+        <h3 class="text-xl font-semibold mb-2">Pro</h3>
+        <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
+        <div class="text-2xl font-bold mb-4">$29<span class="text-base font-medium">/month</span></div>
+        <button
+          onclick="Paddle.Checkout.open({ product: pro_01jw11rbwe3ptx5sn4v85knb7a });"
+          class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300"
+        >
+          Buy Pro
+        </button>
+      </div>
+
     </div>
-  </section>
+  </div>
+</section>
+
 
   <!-- Footer -->
   <footer class="bg-gray-800 text-gray-300 py-6 text-center">
