@@ -12,6 +12,8 @@ python-jose[cryptography]
 python-multipart
 pydantic-settings
 passlib[bcrypt]
+aiosmtplib
+
 
 
 

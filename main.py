@@ -1,33 +1,34 @@
-from fastapi import FastAPI, HTTPException, Request, Depends, status
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import (
+    FastAPI, HTTPException, Request, Depends, status, Body, Form, BackgroundTasks
+)
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 from fastapi_utils.tasks import repeat_every
+from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 from datetime import datetime
 from io import StringIO
 from dotenv import load_dotenv
-import logging, time, os, csv
-from auth import get_current_user
+import os, time, csv, logging
+from jose import jwt
 
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
 from schemas import UserCreate, Token
 from crud import insert_data, update_heartbeat
-from auth import hash_password, verify_password, create_access_token, get_current_user
+from auth import (
+    get_current_user, hash_password, verify_password,
+    create_access_token, create_magic_token
+)
+from email_utils import send_magic_login_link, send_magic_link_email
 
-from fastapi import Body
-from auth import get_current_user
-from fastapi import Form
-from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-
-
-
-# Load .env
+# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
+SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
+ALGORITHM = "HS256"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,7 +40,6 @@ templates = Jinja2Templates(directory="templates")
 templates.env.filters['format_ts'] = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
 logging.basicConfig(level=logging.INFO)
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 def get_db():
@@ -49,7 +49,7 @@ def get_db():
     finally:
         db.close()
 
-
+# ---------------------------- User Authentication ----------------------------
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -73,6 +73,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     token = create_access_token(data={"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
 
+# ----------------------------- Data Endpoints -----------------------------
+
 @app.post("/data")
 def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     ts = payload.timestamp or int(time.time())
@@ -80,32 +82,22 @@ def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_u
     update_heartbeat(payload.device_id, ts, db, current_user)
     return {"status": "success"}
 
-from auth import get_current_user  # ensure this is imported
-
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     statuses = db.query(DeviceStatus).filter(DeviceStatus.user_id == current_user.id).all()
     return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "statuses": statuses,
-        "now": int(time.time())
+        "request": request, "statuses": statuses, "now": int(time.time())
     })
-
 
 @app.get("/summary", response_class=HTMLResponse)
 def summary(request: Request, device_id: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     query = db.query(DeviceData).join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)\
         .filter(DeviceStatus.user_id == current_user.id)
-
     if device_id:
         query = query.filter(DeviceData.device_id == device_id)
-
     records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
-
     return templates.TemplateResponse("summary.html", {
-        "request": request,
-        "records": records,
-        "filter_id": device_id
+        "request": request, "records": records, "filter_id": device_id
     })
 
 @app.get("/export")
@@ -131,45 +123,15 @@ def export_csv(device_id: str = None, db: Session = Depends(get_db), current_use
         "Content-Disposition": "attachment; filename=sigstream_export.csv"
     })
 
-@app.get("/health")
-def health_check():
-    return {"message": "SigStream Cloud API is up!"}
-
-@app.get("/db-check")
-def db_check():
-    try:
-        db = SessionLocal()
-        result = db.execute(text("SELECT 1")).scalar()
-        db.close()
-        return {"db_status": "connected", "result": result}
-    except Exception as e:
-        return {"db_status": "error", "detail": str(e)}
-
-@repeat_every(seconds=30)
-def check_for_offline_devices():
-    db = SessionLocal()
-    now = int(time.time())
-    threshold = 90
-    for status in db.query(DeviceStatus).all():
-        if now - status.last_seen > threshold:
-            logging.warning(f"Device '{status.device_id}' is offline for {now - status.last_seen} seconds.")
-    db.close()
-
-    
+# ----------------------------- Device Management -----------------------------
 
 @app.post("/claim-device")
-def claim_device(
-    device_id: str = Body(..., embed=True),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def claim_device(device_id: str = Body(..., embed=True), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id).first()
-    
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    if device.user_id is not None:
+    if device.user_id:
         raise HTTPException(status_code=400, detail="Device already claimed")
-
     device.user_id = current_user.id
     db.commit()
     return {"message": f"Device '{device_id}' claimed by user '{current_user.email}'"}
@@ -178,19 +140,14 @@ def claim_device(
 def device_management(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     devices = db.query(DeviceStatus).filter(DeviceStatus.user_id == user.id).all()
     return templates.TemplateResponse("devices.html", {
-        "request": request,
-        "devices": devices,
-        "user": user
+        "request": request, "devices": devices, "user": user
     })
 
 @app.post("/devices/claim")
-def claim_device(device_id: str = Form(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def claim_device_form(device_id: str = Form(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id).first()
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-    if device.user_id is not None:
-        raise HTTPException(status_code=400, detail="Device is already claimed")
-
+    if not device or device.user_id:
+        raise HTTPException(status_code=404, detail="Device not found or already claimed")
     device.user_id = user.id
     db.commit()
     return RedirectResponse(url="/devices", status_code=302)
@@ -200,47 +157,88 @@ def unclaim_device(device_id: str = Form(...), db: Session = Depends(get_db), us
     device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id, DeviceStatus.user_id == user.id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found or not owned by you")
-
     device.user_id = None
     db.commit()
     return RedirectResponse(url="/devices", status_code=302)
+
 @app.post("/devices/label")
-def update_device_label(
-    device_id: str = Form(...),
-    new_label: str = Form(...),
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user)
-):
+def update_device_label(device_id: str = Form(...), new_label: str = Form(...), db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     device = db.query(DeviceStatus).filter(DeviceStatus.device_id == device_id, DeviceStatus.user_id == user.id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found or not owned by you")
-
     device.label = new_label
     db.commit()
     return RedirectResponse(url="/devices", status_code=302)
 
-@app.get("/", response_class=HTMLResponse)
-def landing_page(request: Request):
-    return templates.TemplateResponse("landing.html", {
-        "request": request,
-        "now": datetime.now()
-    })
+# ----------------------------- Magic Link SSO -----------------------------
 
+@app.get("/signin", response_class=HTMLResponse)
+def signin(request: Request):
+    return templates.TemplateResponse("magic_login_form.html", {"request": request})
 
-# Serve register page
+@app.post("/magic-link")
+def send_magic_link_form(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, hashed_password="", customer_name="New User")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    token = create_access_token(data={"sub": user.email}, expires_minutes=10)
+    send_magic_login_link(email, token)
+    return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
+
+@app.get("/auth/confirm")
+def confirm_login(request: Request, token: str, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        user = db.query(User).filter(User.email == email).first()
+    except:
+        return HTMLResponse("Invalid or expired link", status_code=400)
+    response = RedirectResponse(url="/dashboard")
+    response.set_cookie(key="access_token", value=create_access_token({"sub": user.email}), httponly=True)
+    return response
+
+@app.get("/magic-login", response_class=HTMLResponse)
+def show_magic_form(request: Request):
+    return templates.TemplateResponse("magic_login.html", {"request": request})
+
+@app.post("/magic-login")
+async def send_magic_link_alt(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    db.close()
+    if not user:
+        return templates.TemplateResponse("magic_login.html", {"request": request, "error": "Email not found"})
+    token = create_magic_token(user.email)
+    magic_link = f"{request.base_url}magic-auth?token={token}"
+    background_tasks.add_task(send_magic_link_email, email, magic_link)
+    return templates.TemplateResponse("magic_sent.html", {"request": request})
+
+@app.get("/magic-auth")
+def complete_magic_login(token: str, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+    except:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    access_token = create_access_token(data={"sub": user.email})
+    response = RedirectResponse(url="/dashboard")
+    response.set_cookie("access_token", access_token, httponly=True)
+    return response
+
+# ----------------------------- Form-Based Auth -----------------------------
+
 @app.get("/register-form", response_class=HTMLResponse)
 def register_form(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
-# Handle register form POST
 @app.post("/register-form")
-def register_form_post(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...),
-    customer_name: str = Form(...),
-    db: Session = Depends(get_db)
-):
+def register_form_post(request: Request, email: str = Form(...), password: str = Form(...), customer_name: str = Form(...), db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == email).first():
         return templates.TemplateResponse("register.html", {
             "request": request,
@@ -252,35 +250,24 @@ def register_form_post(
     db.refresh(new_user)
     return RedirectResponse(url="/login-form", status_code=302)
 
-# Serve login page
 @app.get("/login-form", response_class=HTMLResponse)
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-# Handle login form POST
 @app.post("/login-form")
-def login_form_post(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
+def login_form_post(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == username).first()
     if not user or not verify_password(password, user.hashed_password):
         return templates.TemplateResponse("login.html", {
             "request": request,
             "error": "Invalid credentials"
         })
-
     token = create_access_token(data={"sub": user.email})
     response = RedirectResponse(url="/dashboard", status_code=302)
     response.set_cookie(key="access_token", value=token, httponly=True)
     return response
 
-
-@app.get("/", response_class=HTMLResponse)
-def landing_page(request: Request):
-    return templates.TemplateResponse("landing.html", {"request": request, "now": datetime.utcnow()})
+# ----------------------------- Legal Pages -----------------------------
 
 @app.get("/terms", response_class=HTMLResponse)
 def terms(request: Request):
@@ -293,3 +280,9 @@ def privacy(request: Request):
 @app.get("/refund", response_class=HTMLResponse)
 def refund(request: Request):
     return templates.TemplateResponse("refund.html", {"request": request})
+
+# ----------------------------- Landing -----------------------------
+
+@app.get("/", response_class=HTMLResponse)
+def landing_page(request: Request):
+    return templates.TemplateResponse("landing.html", {"request": request, "now": datetime.utcnow()})

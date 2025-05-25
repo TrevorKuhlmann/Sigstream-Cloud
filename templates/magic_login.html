@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Magic Login</title>
+</head>
+<body>
+  <h1>Magic Link Login</h1>
+  {% if error %}<p style="color: red">{{ error }}</p>{% endif %}
+  <form action="/magic-login" method="post">
+    <input type="email" name="email" placeholder="Enter your email" required />
+    <button type="submit">Send Magic Link</button>
+  </form>
+</body>
+</html>
