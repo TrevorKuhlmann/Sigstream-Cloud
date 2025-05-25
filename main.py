@@ -51,6 +51,11 @@ def get_db():
         db.close()
 
 # ---------------------------- User Authentication ----------------------------
+@app.get("/register-form", response_class=HTMLResponse)
+def register_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
