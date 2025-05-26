@@ -17,6 +17,7 @@ from datetime import timedelta
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
 from schemas import UserCreate, Token
+from fastapi.responses import HTMLResponse
 
 from fastapi import Request, BackgroundTasks, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse
@@ -117,25 +118,27 @@ async def magic_signin(request: Request, background_tasks: BackgroundTasks, emai
 
     return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
 
-@app.get("/magic-auth")
-def complete_magic_login(token: str, db: Session = Depends(get_db)):
+@app.get("/magic-auth", response_class=HTMLResponse)
+def complete_magic_login(request: Request, token: str, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        if email is None:
+            raise HTTPException(status_code=400, detail="Invalid token")
+    except JWTError:
+        return HTMLResponse("Invalid or expired link", status_code=400)
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return HTMLResponse("User not found", status_code=404)
 
     access_token = create_access_token(data={"sub": user.email})
-    response = RedirectResponse(url="/dashboard")
+    response = templates.TemplateResponse("plan_selection.html", {
+        "request": request,
+        "user_email": user.email
+    })
     response.set_cookie("access_token", access_token, httponly=True)
     return response
-
-@app.get("/signin", response_class=HTMLResponse)
-def signin(request: Request):
-    return templates.TemplateResponse("magic_login_form.html", {"request": request})
 
 # ----------------------------- Traditional Form Auth -----------------------------
 
