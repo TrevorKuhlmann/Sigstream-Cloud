@@ -32,17 +32,21 @@
 <body>
 
   <!-- Header -->
-  <header class="flex items-center justify-between px-8 py-4 bg-white shadow">
-    <div class="flex items-center">
-      <img src="/static/img/sigstream-logo.png" alt="SigStream Logo" class="h-12 w-12 mr-2 rounded" />
-      <span class="text-xl font-bold text-blue-700">SigStream</span>
-    </div>
-    <div>
-      <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4 transition duration-300">Log In</a>
-      <a href="/register-form" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 transition duration-300">Get Started</a>
-
-    </div>
-  </header>
+<header class="flex items-center justify-between px-8 py-4 bg-white shadow">
+  <div class="flex items-center">
+    <img src="/static/img/sigstream-logo.png" alt="SigStream Logo" class="h-12 w-12 mr-2 rounded" />
+    <span class="text-xl font-bold text-blue-700">SigStream</span>
+  </div>
+  <div>
+    {% if request.cookies.get('access_token') %}
+      <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
+      <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+    {% else %}
+      <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
+      <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
+    {% endif %}
+  </div>
+</header>
 
   <!-- Hero Section -->
   <section class="bg-blue-50 py-20">
