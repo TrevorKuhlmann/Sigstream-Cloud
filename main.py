@@ -17,6 +17,18 @@ from datetime import timedelta
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
 from schemas import UserCreate, Token
+
+from fastapi import Request, BackgroundTasks, Form, Depends, HTTPException
+from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+
+from auth import create_access_token, get_db
+from email_utils import send_magic_link_email
+from models import User
+
+
 from crud import insert_data, update_heartbeat
 from auth import (
     get_current_user, hash_password, verify_password,
@@ -51,25 +63,42 @@ def get_db():
 
 # ----------------------------- Magic Link Auth -----------------------------
 
-@app.post("/magic-login-register")
-async def magic_signup(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
-    db = SessionLocal()
+
+@app.post("/magic-login-register", response_class=HTMLResponse)
+async def magic_login_register(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
     user = db.query(User).filter(User.email == email).first()
 
-    if not user:
-        user = User(email=email, hashed_password="", customer_name="New User")
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    if user:
+        # User already exists - do NOT register again, just inform
+        return templates.TemplateResponse("magic_login.html", {
+            "request": request,
+            "error": "You're already registered. Please sign in instead."
+        })
 
-    
+    # Register new user
+    user = User(email=email, hashed_password="", customer_name="New User")
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
-    token = create_access_token(data={"sub": user.email}, expires_delta=timedelta(minutes=10))
-
+    # Create token valid for 10 minutes
+    expire = datetime.utcnow() + timedelta(minutes=10)
+    token = create_access_token(data={"sub": email}, expires_delta=timedelta(minutes=10))
     magic_link = f"{request.base_url}magic-auth?token={token}"
+
+    # Send email
     background_tasks.add_task(send_magic_link_email, email, magic_link)
 
-    return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
+    return templates.TemplateResponse("check_email.html", {
+        "request": request,
+        "email": email,
+        "message": "Check your inbox and click the magic link to log in."
+    })
 
 @app.post("/magic-login-signin")
 async def magic_signin(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
