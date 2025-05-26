@@ -18,7 +18,7 @@ from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
 from schemas import UserCreate, Token
 from fastapi.responses import HTMLResponse
-
+from fastapi import Cookie  # at the top if not already imported
 from fastapi import Request, BackgroundTasks, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -291,29 +291,19 @@ def refund(request: Request):
 
 # ----------------------------- Landing -----------------------------
 
-from fastapi import Cookie  # at the top if not already imported
 
 @app.get("/", response_class=HTMLResponse)
-def landing_page(
-    request: Request,
-    token: str = Cookie(default=None),
-    db: Session = Depends(get_db)
-):
+def landing_page(request: Request, db: Session = Depends(get_db)):
     user_email = None
-
-    if token:
-        try:
+    try:
+        token = request.cookies.get("access_token")
+        if token:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            email = payload.get("sub")
-            user = db.query(User).filter(User.email == email).first()
-            if user:
-                user_email = user.email
-        except Exception as e:
-            logging.warning(f"JWT decode failed: {e}")
-            user_email = None  # Explicitly keep it clean
-
+            user_email = payload.get("sub")
+    except Exception as e:
+        logging.warning(f"Failed to decode token: {e}")
+    
     return templates.TemplateResponse("landing.html", {
         "request": request,
-        "now": datetime.utcnow(),
         "user_email": user_email
     })
