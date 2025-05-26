@@ -118,25 +118,20 @@ async def magic_signin(request: Request, background_tasks: BackgroundTasks, emai
 
     return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
 
-@app.get("/magic-auth", response_class=HTMLResponse)
-def complete_magic_login(request: Request, token: str, db: Session = Depends(get_db)):
+@app.get("/magic-auth")
+def complete_magic_login(token: str, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=400, detail="Invalid token")
-    except JWTError:
-        return HTMLResponse("Invalid or expired link", status_code=400)
+    except:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        return HTMLResponse("User not found", status_code=404)
+        raise HTTPException(status_code=404, detail="User not found")
 
     access_token = create_access_token(data={"sub": user.email})
-    response = templates.TemplateResponse("plan_selection.html", {
-        "request": request,
-        "user_email": user.email
-    })
+    response = RedirectResponse(url="/")  # ✅ Redirect to landing page
     response.set_cookie("access_token", access_token, httponly=True)
     return response
 
