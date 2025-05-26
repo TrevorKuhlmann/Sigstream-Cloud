@@ -299,7 +299,11 @@ def refund(request: Request):
 from fastapi import Cookie  # at the top if not already imported
 
 @app.get("/", response_class=HTMLResponse)
-def landing_page(request: Request, token: str = Cookie(default=None), db: Session = Depends(get_db)):
+def landing_page(
+    request: Request,
+    token: str = Cookie(default=None),
+    db: Session = Depends(get_db)
+):
     user_email = None
 
     if token:
@@ -311,7 +315,7 @@ def landing_page(request: Request, token: str = Cookie(default=None), db: Sessio
                 user_email = user.email
         except Exception as e:
             logging.warning(f"JWT decode failed: {e}")
-            pass
+            user_email = None  # Explicitly keep it clean
 
     return templates.TemplateResponse("landing.html", {
         "request": request,

@@ -38,14 +38,15 @@
     <span class="text-xl font-bold text-blue-700">SigStream</span>
   </div>
   <div>
-    {% if request.cookies.get('access_token') %}
-      <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
-      <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
-    {% else %}
-      <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
-      <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
-    {% endif %}
-  </div>
+  {% if user_email %}
+    <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
+    <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+  {% else %}
+    <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
+    <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
+  {% endif %}
+</div>
+
 </header>
 
   <!-- Hero Section -->
