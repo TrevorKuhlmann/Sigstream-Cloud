@@ -307,3 +307,9 @@ def landing_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "user_email": user_email
     })
+
+@app.get("/logout")
+def logout(request: Request):
+    response = RedirectResponse(url="/")
+    response.delete_cookie("access_token")
+    return response
