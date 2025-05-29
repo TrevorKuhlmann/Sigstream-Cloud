@@ -178,13 +178,13 @@ def register_form_post(request: Request, email: str = Form(...), password: str =
 
 @app.get("/login-form", response_class=HTMLResponse)
 def login_form(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("magic_login_form.html", {"request": request})
 
 @app.post("/login-form")
 def login_form_post(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == username).first()
     if not user or not verify_password(password, user.hashed_password):
-        return templates.TemplateResponse("login.html", {
+        return templates.TemplateResponse("magic_login_form.html", {
             "request": request,
             "error": "Invalid credentials"
         })
