@@ -136,7 +136,10 @@ async def magic_signin(
 
     # User exists — generate token and send email
     token = create_magic_token(email)
-    magic_link = request.url_for("complete_magic_login") + f"?token={token}"
+    magic_link = str(request.url_for("complete_magic_login")) + f"?token={token}"
+
+
+
 
     background_tasks.add_task(send_magic_link_email, to_email=email, link_url=magic_link)
 
