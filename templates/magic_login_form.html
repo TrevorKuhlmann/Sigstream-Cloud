@@ -6,16 +6,17 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-  <div class="max-w-md mx-auto mt-20 p-8 bg-white shadow rounded">
-    <h2 class="text-2xl font-bold mb-4 text-center">Sign in to SigStream</h2>
-    <form method="post" action="/magic-link">
-      <input type="email" name="email" placeholder="Enter your email"
-        class="w-full px-4 py-2 border rounded mb-4" required />
-      <button type="submit"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
-        Send Magic Link
-      </button>
-    </form>
-  </div>
+    <div class="max-w-md mx-auto mt-20 p-8 bg-white shadow rounded">
+        <h2 class="text-2xl font-bold mb-4 text-center">Sign in to SigStream</h2>
+        <form method="post" action="/magic-login-signin">
+            <input type="email" name="email" placeholder="Enter your email"
+                   class="w-full px-4 py-2 border rounded mb-4" required />
+            <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
+                Send Magic Link
+            </button>
+        </form>
+
+    </div>
 </body>
 </html>

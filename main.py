@@ -37,6 +37,21 @@ from auth import (
 )
 from email_utils import send_magic_link_email
 
+
+
+from fastapi import Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
+from auth import create_magic_token
+from models import User
+from database import get_db
+from email_utils import send_magic_link_email
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
 # ----------------------------- Config -----------------------------
 
 load_dotenv()
@@ -101,22 +116,29 @@ async def magic_login_register(
         "message": "Check your inbox and click the magic link to log in."
     })
 
-@app.post("/magic-login-signin")
-async def magic_signin(request: Request, background_tasks: BackgroundTasks, email: str = Form(...)):
-    db = SessionLocal()
+@router.post("/magic-login-signin", response_class=HTMLResponse)
+async def magic_signin(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
 
     if not user:
-        return templates.TemplateResponse("magic_login.html", {
+        # User not found — show friendly message
+        return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "No account found for this email. Please register first."
+            "error": "This email is not registered. Please sign up first."
         })
 
-    token = create_access_token(data={"sub": user.email}, expires_minutes=10)
-    magic_link = f"{request.base_url}magic-auth?token={token}"
-    background_tasks.add_task(send_magic_link_email, email, magic_link)
+    # Generate login token
+    token = create_magic_token(email)
+    magic_link = request.url_for("magic_verify") + f"?token={token}"
 
-    return templates.TemplateResponse("check_email.html", {"request": request, "email": email})
+    # Send login email
+    await send_magic_link_email(to_email=email, link_url=magic_link)
+
+    return templates.TemplateResponse("register.html", {
+        "request": request,
+        "message": "Magic link sent! Please check your email to log in."
+    })
+
 
 @app.get("/magic-auth")
 def complete_magic_login(token: str, db: Session = Depends(get_db)):
@@ -313,3 +335,5 @@ def logout(request: Request):
     response = RedirectResponse(url="/")
     response.delete_cookie("access_token")
     return response
+
+
