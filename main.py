@@ -116,28 +116,36 @@ async def magic_login_register(
         "message": "Check your inbox and click the magic link to log in."
     })
 
-@router.post("/magic-login-signin", response_class=HTMLResponse)
-async def magic_signin(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+@app.post("/magic-login-signin", response_class=HTMLResponse)
+async def magic_signin(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
     user = db.query(User).filter(User.email == email).first()
 
     if not user:
         # User not found — show friendly message
-        return templates.TemplateResponse("register.html", {
+        return templates.TemplateResponse("magic_login_form.html", {
             "request": request,
-            "error": "This email is not registered. Please sign up first."
+            "error": "No account found with this email. Please sign up first.",
+            "suggestion": "Go to Sign Up",
+            "signup_link": "/register-form"
         })
 
-    # Generate login token
+    # User exists — generate token and send email
     token = create_magic_token(email)
-    magic_link = request.url_for("magic_verify") + f"?token={token}"
+    magic_link = request.url_for("complete_magic_login") + f"?token={token}"
 
-    # Send login email
-    await send_magic_link_email(to_email=email, link_url=magic_link)
+    background_tasks.add_task(send_magic_link_email, to_email=email, link_url=magic_link)
 
-    return templates.TemplateResponse("register.html", {
+    return templates.TemplateResponse("check_email.html", {
         "request": request,
-        "message": "Magic link sent! Please check your email to log in."
+        "email": email,
+        "message": "Check your email and click the magic link to sign in."
     })
+
 
 
 @app.get("/magic-auth")
