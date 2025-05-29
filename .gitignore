@@ -2,4 +2,5 @@
 __pycache__/
 *.pyc
 data.db
-delete_db_users.py
+db_user_delete.py
+/.vs
