@@ -6,28 +6,44 @@
 
 
 
-<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-<script type="text/javascript">
-  Paddle.Initialize({ 
-    token: 'test_e5617c1cea1fb6a192bdd3586cd' // replace with a client-side token
-  });
-  Paddle.Environment.set('sandbox'); // REMOVE this when going live
-</script>
-  <!-- SEO & Social Meta Tags -->
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SigStream - Remote Device Monitoring</title>
-  <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS.">
-  <meta property="og:title" content="SigStream">
-  <meta property="og:description" content="Track uptime, alerts, and performance from anywhere.">
-  <meta property="og:image" content="/static/img/sigstream-logo.png">
-  <meta name="theme-color" content="#1e40af">
 
-  <!-- Favicon -->
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+    <script type="text/javascript">
+        Paddle.Initialize({
+            token: 'test_e5617c1cea1fb6a192bdd3586cd' // replace with a client-side token
+        });
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+        function openCheckout(priceId) {
+            Paddle.Checkout.open({
+                items: [
+                    {
+                        priceId: priceId,
+                        quantity: 1
+                    }
+                ],
+                customer: {
+                    email: "{{ user_email | default('') }}"
+                }
+            });
+        }
+    </script>
+
+
+    <!-- SEO & Social Meta Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SigStream - Remote Device Monitoring</title>
+    <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS.">
+    <meta property="og:title" content="SigStream">
+    <meta property="og:description" content="Track uptime, alerts, and performance from anywhere.">
+    <meta property="og:image" content="/static/img/sigstream-logo.png">
+    <meta name="theme-color" content="#1e40af">
+
+    <!-- Favicon -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 
@@ -113,28 +129,29 @@
 
       <!-- Starter Tier -->
       <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
-        <h3 class="text-xl font-semibold mb-2">Starter</h3>
-        <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
-        <div class="text-2xl font-bold mb-4">$9<span class="text-base font-medium">/month</span></div>
-        <button
-          onclick="Paddle.Checkout.open({ product: pri_01jw11qptf3r4eytwbjd7p11r7 });"
-          class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300"
-        >
-          Buy Starter
-        </button>
+          <h3 class="text-xl font-semibold mb-2">Starter</h3>
+          <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
+          <div class="text-2xl font-bold mb-4">$9<span class="text-base font-medium">/month</span></div>
+          <button onclick="openCheckout('pri_01jw11qptf3r4eytwbjd7p11r7')"
+                  class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">
+              Buy Starter
+          </button>
+          <button onclick="Paddle.Checkout.open({ product: pri_01jw11qptf3r4eytwbjd7p11r7 });"
+                  class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">
+              Buy Starter
+          </button>
       </div>
 
       <!-- Pro Tier -->
       <div class="border rounded-lg p-6 shadow-sm">
-        <h3 class="text-xl font-semibold mb-2">Pro</h3>
-        <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
-        <div class="text-2xl font-bold mb-4">$29<span class="text-base font-medium">/month</span></div>
-        <button
-          onclick="Paddle.Checkout.open({ product: pro_01jw11rbwe3ptx5sn4v85knb7a });"
-          class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300"
-        >
-          Buy Pro
-        </button>
+          <h3 class="text-xl font-semibold mb-2">Pro</h3>
+          <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
+          <div class="text-2xl font-bold mb-4">$29<span class="text-base font-medium">/month</span></div>
+          <button onclick="openCheckout('pri_01jw11rbwe3ptx5sn4v85knb7a')"
+                  class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300">
+              Buy Pro
+          </button>
+
       </div>
 
     </div>

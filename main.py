@@ -25,6 +25,9 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import logging
 from auth import create_access_token, get_db
 from email_utils import send_magic_link_email
 from models import User
@@ -357,5 +360,35 @@ def logout(request: Request):
     response = RedirectResponse(url="/")
     response.delete_cookie("access_token")
     return response
+
+
+
+
+#----------------------------- Paddle Webhook -----------------------------
+
+
+@app.post("/paddle-webhook")
+async def paddle_webhook(request: Request):
+    payload = await request.json()
+    event_type = payload.get("event_type")
+
+    # Log full webhook payload
+    logging.info(f"Received Paddle webhook: {payload}")
+
+    if event_type == "subscription_created":
+        # Handle new subscription
+        logging.info("✅ Subscription created.")
+        # Example: mark user as paid in DB
+    elif event_type == "invoice_payment_succeeded":
+        logging.info("💰 Payment succeeded.")
+    elif event_type == "invoice_payment_failed":
+        logging.warning("⚠️ Payment failed.")
+    elif event_type == "subscription_cancelled":
+        logging.info("❌ Subscription cancelled.")
+    else:
+        logging.info(f"Unhandled event type: {event_type}")
+
+    return JSONResponse({"success": True})
+
 
 
