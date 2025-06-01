@@ -28,6 +28,7 @@ from datetime import datetime, timedelta
 from auth import create_access_token, get_db
 from email_utils import send_magic_link_email
 from models import User
+from fastapi import Request 
 
 
 from crud import insert_data, update_heartbeat
@@ -152,19 +153,29 @@ async def magic_signin(
 
 
 @app.get("/magic-auth")
-def complete_magic_login(token: str, db: Session = Depends(get_db)):
+
+
+def complete_magic_login(token: str, request: Request, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-    except:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    except jwt.ExpiredSignatureError:
+        return templates.TemplateResponse("expired_token.html", {
+            "request": request,
+            "error": "Your magic link has expired. Please try logging in again."
+        })
+    except jwt.JWTError:
+        return templates.TemplateResponse("expired_token.html", {
+            "request": request,
+            "error": "Invalid token. Please try again."
+        })
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     access_token = create_access_token(data={"sub": user.email})
-    response = RedirectResponse(url="/")  # ✅ Redirect to landing page
+    response = RedirectResponse(url="/")  # ✅ Go back to main page
     response.set_cookie("access_token", access_token, httponly=True)
     return response
 
