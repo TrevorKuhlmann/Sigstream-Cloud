@@ -13,6 +13,7 @@ from io import StringIO
 from dotenv import load_dotenv
 from jose import jwt
 import os, time, csv, logging
+
 from datetime import timedelta
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
@@ -62,6 +63,10 @@ load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 ALGORITHM = "HS256"
+
+PADDLE_API_KEY = os.getenv("PADDLE_API_KEY")
+PADDLE_ENV = os.getenv("PADDLE_ENV", "sandbox")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
