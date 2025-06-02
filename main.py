@@ -64,8 +64,10 @@ API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 ALGORITHM = "HS256"
 
-PADDLE_API_KEY = os.getenv("PADDLE_API_KEY")
+
 PADDLE_ENV = os.getenv("PADDLE_ENV", "sandbox")
+
+PADDLE_CLIENT_TOKEN = os.getenv("PADDLE_CLIENT_TOKEN")
 
 
 @asynccontextmanager
@@ -357,7 +359,8 @@ def landing_page(request: Request, db: Session = Depends(get_db)):
     
     return templates.TemplateResponse("landing.html", {
         "request": request,
-        "user_email": user_email
+        "user_email": user_email,
+        "paddle_token": PADDLE_CLIENT_TOKEN
     })
 
 @app.get("/logout")

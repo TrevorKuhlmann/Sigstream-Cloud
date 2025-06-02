@@ -1,45 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-
-
-
-
-
-    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-
-    <script type="text/javascript">
-
-        Paddle.Initialize({ token: 'test_5852ced8925dae79f0c0bac4614' });
-
-
-  function openCheckout(priceId) {
-    Paddle.Checkout.open({
-      settings: {
-        displayMode: "overlay",
-        theme: "light",
-        locale: "en",
-        allowLogout: true
-      },
-      items: [
-        {
-          priceId: priceId,
-          quantity: 1
-        }
-      ],
-      customer: {
-        email: "{{ user_email | default('') }}"
-      }
-    });
-  }
-    </script>
-
-
-    
-
-
-    <!-- SEO & Social Meta Tags -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SigStream - Remote Device Monitoring</title>
@@ -48,136 +9,191 @@
     <meta property="og:description" content="Track uptime, alerts, and performance from anywhere.">
     <meta property="og:image" content="/static/img/sigstream-logo.png">
     <meta name="theme-color" content="#1e40af">
-
-    <!-- Favicon -->
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+
+    <script type="text/javascript">
+    const CONFIG = {
+      clientToken: "test_5852ced8925dae79f0c0bac4614",
+      prices: {
+        starter: {
+          month: "pri_01jwqg6dfj4qnww97nv52p3m1m",
+          year: "pri_01jwqgc2kfrk65k3vny97qvzjs"
+        },
+        pro: {
+          month: "pri_01jwqfc5c86tn0cffspqqw35yt",
+          year: "pri_01jwqfdcczrqng8re8pey45c22"
+        }
+      }
+    };
+
+    let currentBillingCycle = "month";
+    let currentCountry = "US";
+    let paddleInitialized = false;
+
+    function initializePaddle() {
+      Paddle.Environment.set("sandbox");
+      Paddle.Initialize({
+        token: CONFIG.clientToken,
+        eventCallback: function (event) {
+          console.log("Paddle event:", event);
+        }
+      });
+      paddleInitialized = true;
+      updatePrices();
+    }
+
+    function updateBillingCycle(cycle) {
+      currentBillingCycle = cycle;
+      document.getElementById("monthlyBtn").classList.toggle("bg-white", cycle === "month");
+      document.getElementById("yearlyBtn").classList.toggle("bg-white", cycle === "year");
+      updatePrices();
+    }
+
+    async function updatePrices() {
+      if (!paddleInitialized) return;
+      const request = {
+        items: [
+          { quantity: 1, priceId: CONFIG.prices.starter[currentBillingCycle] },
+          { quantity: 1, priceId: CONFIG.prices.pro[currentBillingCycle] }
+        ],
+        address: { countryCode: currentCountry }
+      };
+      const result = await Paddle.PricePreview(request);
+      result.data.details.lineItems.forEach((item) => {
+        const price = item.formattedTotals.subtotal;
+        if (item.price.id === CONFIG.prices.starter[currentBillingCycle]) {
+          document.getElementById("starter-price").textContent = price;
+        } else if (item.price.id === CONFIG.prices.pro[currentBillingCycle]) {
+          document.getElementById("pro-price").textContent = price;
+        }
+      });
+    }
+
+    function openCheckout(plan) {
+      if (!paddleInitialized) return;
+      Paddle.Checkout.open({
+        items: [{
+          priceId: CONFIG.prices[plan][currentBillingCycle],
+          quantity: 1
+        }],
+        settings: {
+          theme: "light",
+          displayMode: "overlay",
+          variant: "one-page"
+        },
+        customer: {
+          email: "{{ user_email | default('') }}"
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", initializePaddle);
+    document.getElementById("countrySelect")?.addEventListener("change", (e) => {
+      currentCountry = e.target.value;
+      updatePrices();
+    });
+    </script>
 </head>
 <body>
-
-  <!-- Header -->
-<header class="flex items-center justify-between px-8 py-4 bg-white shadow">
-  <div class="flex items-center">
-    <img src="/static/img/sigstream-logo.png" alt="SigStream Logo" class="h-12 w-12 mr-2 rounded" />
-    <span class="text-xl font-bold text-blue-700">SigStream</span>
-  </div>
-  <div>
-  {% if user_email %}
-    <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
-    <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
-  {% else %}
-    <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
-    <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
-  {% endif %}
-</div>
-
-</header>
-
-  <!-- Hero Section -->
-  <section class="bg-blue-50 py-20">
-    <div class="container mx-auto text-center px-6">
-      <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Monitor Your Devices in Real-Time</h1>
-      <p class="mt-4 text-lg text-gray-700">Track telemetry, uptime, and performance across remote IoT systems with ease.</p>
-      <div class="mt-6">
-        <a href="#pricing" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-300">Start Free</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features -->
-  <section class="py-16 bg-white">
-    <div class="container mx-auto px-6 text-center">
-      <h2 class="text-3xl font-bold mb-8">Why Choose SigStream?</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-        <div>
-          <h3 class="text-xl font-semibold mb-2">Device Telemetry</h3>
-          <p class="text-gray-600">Stream data securely from sensors, COM ports, and remote systems.</p>
+    <header class="flex items-center justify-between px-8 py-4 bg-white shadow">
+        <div class="flex items-center">
+            <img src="/static/img/sigstream-logo.png" alt="SigStream Logo" class="h-12 w-12 mr-2 rounded" />
+            <span class="text-xl font-bold text-blue-700">SigStream</span>
         </div>
         <div>
-          <h3 class="text-xl font-semibold mb-2">Alerts & Uptime</h3>
-          <p class="text-gray-600">Know instantly when devices go offline or report abnormal data.</p>
+            {% if user_email %}
+            <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
+            <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+            {% else %}
+            <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
+            <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
+            {% endif %}
         </div>
-        <div>
-          <h3 class="text-xl font-semibold mb-2">Unified Dashboard</h3>
-          <p class="text-gray-600">See all your devices and telemetry in one sleek, modern dashboard.</p>
+    </header>
+
+    <section class="bg-blue-50 py-20">
+        <div class="container mx-auto text-center px-6">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Monitor Your Devices in Real-Time</h1>
+            <p class="mt-4 text-lg text-gray-700">Track telemetry, uptime, and performance across remote IoT systems with ease.</p>
+            <div class="mt-6">
+                <a href="#pricing" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-300">Start Free</a>
+            </div>
         </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Animated CTA Banner -->
-<section class="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white py-6 animate-pulse">
-  <div class="container mx-auto px-6 text-center">
-    <h2 class="text-2xl md:text-3xl font-semibold">Start monitoring your devices in minutes.</h2>
-    <p class="mt-2 text-sm md:text-base">No hardware changes. No credit card required.</p>
-    <div class="mt-4">
-      <a href="/register-form" class="inline-block bg-white text-blue-700 font-bold px-6 py-3 rounded shadow hover:bg-gray-100 transition">
-        Get Started Free
-      </a>
-    </div>
-  </div>
-</section>
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-8">Why Choose SigStream?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div><h3 class="text-xl font-semibold mb-2">Device Telemetry</h3><p class="text-gray-600">Stream data securely from sensors, COM ports, and remote systems.</p></div>
+                <div><h3 class="text-xl font-semibold mb-2">Alerts & Uptime</h3><p class="text-gray-600">Know instantly when devices go offline or report abnormal data.</p></div>
+                <div><h3 class="text-xl font-semibold mb-2">Unified Dashboard</h3><p class="text-gray-600">See all your devices and telemetry in one sleek, modern dashboard.</p></div>
+            </div>
+        </div>
+    </section>
 
+    <section class="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white py-6 animate-pulse">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-2xl md:text-3xl font-semibold">Start monitoring your devices in minutes.</h2>
+            <p class="mt-2 text-sm md:text-base">No hardware changes. No credit card required.</p>
+            <div class="mt-4">
+                <a href="/register-form" class="inline-block bg-white text-blue-700 font-bold px-6 py-3 rounded shadow hover:bg-gray-100 transition">Get Started Free</a>
+            </div>
+        </div>
+    </section>
 
- <!-- Pricing Section -->
-<section id="pricing" class="py-24 bg-white">
-  <div class="container mx-auto px-6 text-center">
-    <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+    <section id="pricing" class="py-24 bg-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
+            <div class="inline-flex items-center bg-gray-100 rounded-lg p-1 mb-8">
+                <button id="monthlyBtn" class="px-4 py-2 rounded-md text-sm bg-white" onclick="updateBillingCycle('month')">Monthly</button>
+                <button id="yearlyBtn" class="px-4 py-2 rounded-md text-sm" onclick="updateBillingCycle('year')">Yearly (Save 20%)</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <div class="border rounded-lg p-6 shadow-sm">
+                    <h3 class="text-xl font-semibold mb-2">Free</h3>
+                    <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
+                    <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
+                    <a href="/register-form" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Start Free</a>
+                </div>
+                <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
+                    <h3 class="text-xl font-semibold mb-2">Starter</h3>
+                    <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
+                    <div class="text-2xl font-bold mb-4"><span id="starter-price">$9</span><span class="text-base font-medium">/month</span></div>
+                    <button onclick="openCheckout('starter')" class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">Buy Starter</button>
+                </div>
+                <div class="border rounded-lg p-6 shadow-sm">
+                    <h3 class="text-xl font-semibold mb-2">Pro</h3>
+                    <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
+                    <div class="text-2xl font-bold mb-4"><span id="pro-price">$29</span><span class="text-base font-medium">/month</span></div>
+                    <button onclick="openCheckout('pro')" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300">Buy Pro</button>
+                </div>
+            </div>
 
-      <!-- Free Tier -->
-      <div class="border rounded-lg p-6 shadow-sm">
-        <h3 class="text-xl font-semibold mb-2">Free</h3>
-        <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
-        <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
-        <a href="/register-form" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
-          Start Free
-        </a>
-      </div>
+            <div class="mt-12">
+                <label for="countrySelect" class="text-sm font-medium text-gray-600">Test localization</label>
+                <select id="countrySelect" class="ml-2 px-4 py-2 rounded-lg border border-gray-300">
+                    <option value="US">🇺🇸 United States</option>
+                    <option value="GB">🇬🇧 United Kingdom</option>
+                    <option value="DE">🇩🇪 Germany</option>
+                    <option value="FR">🇫🇷 France</option>
+                    <option value="ZA">🇿🇦 South Africa</option>
+                </select>
+            </div>
+        </div>
+    </section>
 
-      <!-- Starter Tier ---->
-      <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
-          <h3 class="text-xl font-semibold mb-2">Starter</h3>
-          <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
-          <div class="text-2xl font-bold mb-4">$9<span class="text-base font-medium">/month</span></div>
-          <button onclick="openCheckout('pri_01jwqg6dfj4qnww97nv52p3m1m')"
-                  class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">
-              Buy Starter
-          </button>
-         
-      </div>
-
-      <!-- Pro Tier -->
-      <div class="border rounded-lg p-6 shadow-sm">
-          <h3 class="text-xl font-semibold mb-2">Pro</h3>
-          <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
-          <div class="text-2xl font-bold mb-4">$29<span class="text-base font-medium">/month</span></div>
-          <button onclick="openCheckout('pri_01jwqfc5c86tn0cffspqqw35yt')"
-                  class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300">
-              Buy Pro
-          </button>
-
-      </div>
-
-    </div>
-  </div>
-</section>
-
-
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-gray-300 py-6 text-center">
-    <p>© 2025 SigStream. All rights reserved.</p>
-    <p class="text-sm">Built with ❤️ from South Africa</p>
-    <p class="text-sm mt-2">Questions? <a href="mailto:admin@sigstreamcloud.com" class="text-blue-400 underline">Contact Support</a></p>
-    <div class="mt-4 text-sm">
-  <a href="/terms" class="text-gray-400 hover:underline mr-4">Terms</a>
-  <a href="/privacy" class="text-gray-400 hover:underline mr-4">Privacy</a>
-  <a href="/refund" class="text-gray-400 hover:underline">Refunds</a>
-</div>
-
-  </footer>
-
+    <footer class="bg-gray-800 text-gray-300 py-6 text-center">
+        <p>© 2025 SigStream. All rights reserved.</p>
+       
+        <p class="text-sm mt-2">Questions? <a href="mailto:admin@sigstreamcloud.com" class="text-blue-400 underline">Contact Support</a></p>
+        <div class="mt-4 text-sm">
+            <a href="/terms" class="text-gray-400 hover:underline mr-4">Terms</a>
+            <a href="/privacy" class="text-gray-400 hover:underline mr-4">Privacy</a>
+            <a href="/refund" class="text-gray-400 hover:underline">Refunds</a>
+        </div>
+    </footer>
 </body>
 </html>
