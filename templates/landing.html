@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SigStream - Remote Device Monitoring</title>
-    <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS.">
-    <meta property="og:title" content="SigStream">
-    <meta property="og:description" content="Track uptime, alerts, and performance from anywhere.">
-    <meta property="og:image" content="/static/img/sigstream-logo.png">
-    <meta name="theme-color" content="#1e40af">
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS." />
+    <meta property="og:title" content="SigStream" />
+    <meta property="og:description" content="Track uptime, alerts, and performance from anywhere." />
+    <meta property="og:image" content="/static/img/sigstream-logo.png" />
+    <meta name="theme-color" content="#1e40af" />
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
@@ -96,7 +97,9 @@
     });
     </script>
 </head>
+
 <body>
+    <!-- Header -->
     <header class="flex items-center justify-between px-8 py-4 bg-white shadow">
         <div class="flex items-center">
             <img src="/static/img/sigstream-logo.png" alt="SigStream Logo" class="h-12 w-12 mr-2 rounded" />
@@ -113,81 +116,76 @@
         </div>
     </header>
 
-    <section class="bg-blue-50 py-20">
-        <div class="container mx-auto text-center px-6">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Monitor Your Devices in Real-Time</h1>
-            <p class="mt-4 text-lg text-gray-700">Track telemetry, uptime, and performance across remote IoT systems with ease.</p>
-            <div class="mt-6">
-                <a href="#pricing" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-300">Start Free</a>
-            </div>
+    <!-- Hero -->
+    <section class="bg-blue-50 py-20 text-center px-6">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Monitor Your Devices in Real-Time</h1>
+        <p class="mt-4 text-lg text-gray-700">Track telemetry, uptime, and performance across remote IoT systems with ease.</p>
+        <div class="mt-6">
+            <a href="#pricing" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-300">Start Free</a>
         </div>
     </section>
 
-    <section class="py-16 bg-white">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="text-3xl font-bold mb-8">Why Choose SigStream?</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-                <div><h3 class="text-xl font-semibold mb-2">Device Telemetry</h3><p class="text-gray-600">Stream data securely from sensors, COM ports, and remote systems.</p></div>
-                <div><h3 class="text-xl font-semibold mb-2">Alerts & Uptime</h3><p class="text-gray-600">Know instantly when devices go offline or report abnormal data.</p></div>
-                <div><h3 class="text-xl font-semibold mb-2">Unified Dashboard</h3><p class="text-gray-600">See all your devices and telemetry in one sleek, modern dashboard.</p></div>
+    <!-- Pricing -->
+    <section id="pricing" class="py-24 bg-white text-center">
+        <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
+        <div class="inline-flex items-center bg-gray-100 rounded-lg p-1 mb-8">
+            <button id="monthlyBtn" class="px-4 py-2 rounded-md text-sm bg-white" onclick="updateBillingCycle('month')">Monthly</button>
+            <button id="yearlyBtn" class="px-4 py-2 rounded-md text-sm" onclick="updateBillingCycle('year')">Yearly (Save 20%)</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <!-- Free -->
+            <div class="border rounded-lg p-6 shadow-sm">
+                <h3 class="text-xl font-semibold mb-2">Free</h3>
+                <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
+                <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
+                {% if user_email %}
+                <a href="/dashboard" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Start Free</a>
+                {% else %}
+                <a href="/register-form" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Start Free</a>
+                {% endif %}
             </div>
+
+            <!-- Starter -->
+            <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
+                <h3 class="text-xl font-semibold mb-2">Starter</h3>
+                <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
+                <div class="text-2xl font-bold mb-4"><span id="starter-price">$9</span><span class="text-base font-medium">/month</span></div>
+                {% if user_email %}
+                <button onclick="openCheckout('starter')" class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">Buy Starter</button>
+                {% else %}
+                <button disabled class="mt-4 px-6 py-2 bg-white text-gray-400 border border-gray-300 rounded font-semibold cursor-not-allowed">Login to Buy</button>
+                {% endif %}
+            </div>
+
+            <!-- Pro -->
+            <div class="border rounded-lg p-6 shadow-sm">
+                <h3 class="text-xl font-semibold mb-2">Pro</h3>
+                <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
+                <div class="text-2xl font-bold mb-4"><span id="pro-price">$29</span><span class="text-base font-medium">/month</span></div>
+                {% if user_email %}
+                <button onclick="openCheckout('pro')" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300">Buy Pro</button>
+                {% else %}
+                <button disabled class="mt-4 px-6 py-2 bg-blue-300 text-white rounded font-semibold cursor-not-allowed">Login to Buy</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-12">
+            <label for="countrySelect" class="text-sm font-medium text-gray-600">Test localization</label>
+            <select id="countrySelect" class="ml-2 px-4 py-2 rounded-lg border border-gray-300">
+                <option value="US">🇺🇸 United States</option>
+                <option value="GB">🇬🇧 United Kingdom</option>
+                <option value="DE">🇩🇪 Germany</option>
+                <option value="FR">🇫🇷 France</option>
+                <option value="ZA">🇿🇦 South Africa</option>
+            </select>
         </div>
     </section>
 
-    <section class="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white py-6 animate-pulse">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="text-2xl md:text-3xl font-semibold">Start monitoring your devices in minutes.</h2>
-            <p class="mt-2 text-sm md:text-base">No hardware changes. No credit card required.</p>
-            <div class="mt-4">
-                <a href="/register-form" class="inline-block bg-white text-blue-700 font-bold px-6 py-3 rounded shadow hover:bg-gray-100 transition">Get Started Free</a>
-            </div>
-        </div>
-    </section>
-
-    <section id="pricing" class="py-24 bg-white">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
-            <div class="inline-flex items-center bg-gray-100 rounded-lg p-1 mb-8">
-                <button id="monthlyBtn" class="px-4 py-2 rounded-md text-sm bg-white" onclick="updateBillingCycle('month')">Monthly</button>
-                <button id="yearlyBtn" class="px-4 py-2 rounded-md text-sm" onclick="updateBillingCycle('year')">Yearly (Save 20%)</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                <div class="border rounded-lg p-6 shadow-sm">
-                    <h3 class="text-xl font-semibold mb-2">Free</h3>
-                    <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
-                    <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
-                    <a href="/register-form" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Start Free</a>
-                </div>
-                <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
-                    <h3 class="text-xl font-semibold mb-2">Starter</h3>
-                    <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
-                    <div class="text-2xl font-bold mb-4"><span id="starter-price">$9</span><span class="text-base font-medium">/month</span></div>
-                    <button onclick="openCheckout('starter')" class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">Buy Starter</button>
-                </div>
-                <div class="border rounded-lg p-6 shadow-sm">
-                    <h3 class="text-xl font-semibold mb-2">Pro</h3>
-                    <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
-                    <div class="text-2xl font-bold mb-4"><span id="pro-price">$29</span><span class="text-base font-medium">/month</span></div>
-                    <button onclick="openCheckout('pro')" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300">Buy Pro</button>
-                </div>
-            </div>
-
-            <div class="mt-12">
-                <label for="countrySelect" class="text-sm font-medium text-gray-600">Test localization</label>
-                <select id="countrySelect" class="ml-2 px-4 py-2 rounded-lg border border-gray-300">
-                    <option value="US">🇺🇸 United States</option>
-                    <option value="GB">🇬🇧 United Kingdom</option>
-                    <option value="DE">🇩🇪 Germany</option>
-                    <option value="FR">🇫🇷 France</option>
-                    <option value="ZA">🇿🇦 South Africa</option>
-                </select>
-            </div>
-        </div>
-    </section>
-
+    <!-- Footer -->
     <footer class="bg-gray-800 text-gray-300 py-6 text-center">
         <p>© 2025 SigStream. All rights reserved.</p>
-       
         <p class="text-sm mt-2">Questions? <a href="mailto:admin@sigstreamcloud.com" class="text-blue-400 underline">Contact Support</a></p>
         <div class="mt-4 text-sm">
             <a href="/terms" class="text-gray-400 hover:underline mr-4">Terms</a>
