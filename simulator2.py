@@ -10,7 +10,7 @@ load_dotenv()
 
 API_URL = os.getenv("SIGSTREAM_API_URL", "https://sigstreamcloud.com/data")
 DEVICE_ID = os.getenv("SIM_DEVICE_ID", "dev-001")
-TOKEN = os.getenv("SIGSTREAM_API_TOKEN", None)
+TOKEN = os.getenv("SIGSTREAM_API_TOKEN", "mysecretapikey123")
 
 HEADERS = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
 

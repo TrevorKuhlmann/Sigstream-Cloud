@@ -25,7 +25,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-
+from fastapi import Header
 from fastapi import Request
 from fastapi.responses import JSONResponse
 import logging
@@ -346,10 +346,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
 @app.post("/data")
-def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def receive_data(
+    payload: DeviceDataIn,
+    db: Session = Depends(get_db),
+    x_api_key: str = Header(None)
+):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
     ts = payload.timestamp or int(time.time())
-    insert_data(payload.device_id, payload.data, ts, db, current_user)
-    update_heartbeat(payload.device_id, ts, db, current_user)
+    insert_data(payload.device_id, payload.data, ts, db)
+    update_heartbeat(payload.device_id, ts, db)
     return {"status": "success"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
