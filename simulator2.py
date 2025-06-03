@@ -1,35 +1,42 @@
+
 import requests
 import time
 import random
+import os
+from dotenv import load_dotenv
 
-# Your Render endpoint (adjust if needed)
-url = "https://sigstreamcloud.com/data"
+# Load .env file if available
+load_dotenv()
 
-# Replace this with the token you generated
-token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+API_URL = os.getenv("SIGSTREAM_API_URL", "https://sigstreamcloud.com/data")
+DEVICE_ID = os.getenv("SIM_DEVICE_ID", "dev-001")
+TOKEN = os.getenv("SIGSTREAM_API_TOKEN", None)
 
-headers = {
-    "Authorization": f"Bearer {token}"
-}
+HEADERS = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
 
-# Simulate sending device data
-def send_data():
-    payload = {
-        "device_id": "dev-001",  # Must be a claimed device
+def generate_fake_data():
+    return {
+        "device_id": DEVICE_ID,
         "data": {
-            "voltage": round(random.uniform(210.0, 240.0), 2),
-            "temperature": round(random.uniform(18.0, 30.0), 2)
+            "temperature": round(random.uniform(20.0, 30.0), 2),
+            "voltage": round(random.uniform(220.0, 240.0), 1),
+            "signal_strength": random.randint(60, 100)
         },
         "timestamp": int(time.time())
     }
 
-    response = requests.post(url, json=payload, headers=headers)
-    print(f"Status: {response.status_code}, Response: {response.text}")
+def send_data():
+    payload = generate_fake_data()
+    try:
+        response = requests.post(API_URL, json=payload, headers=HEADERS)
+        if response.status_code == 200:
+            print("✅ Data sent successfully:", payload)
+        else:
+            print(f"❌ Failed to send data. Status: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        print("🚨 Error sending data:", e)
 
-# Run once
-send_data()
-
-# Or simulate sending continuously:
-# while True:
-#     send_data()
-#     time.sleep(5)
+if __name__ == "__main__":
+    while True:
+        send_data()
+        time.sleep(10)
