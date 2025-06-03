@@ -332,11 +332,25 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": token, "token_type": "bearer"}
 
 @app.post("/data")
-def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db)):
+    # TEMPORARY: simulate a known user ID (replace with your real test user)
+    test_user = db.query(User).filter(User.email == "trevorkuhlmannk@gmail.com").first()
+    if not test_user:
+        raise HTTPException(status_code=404, detail="Test user not found")
+
     ts = payload.timestamp or int(time.time())
-    insert_data(payload.device_id, payload.data, ts, db, current_user)
-    update_heartbeat(payload.device_id, ts, db, current_user)
+    insert_data(payload.device_id, payload.data, ts, db, test_user)
+    update_heartbeat(payload.device_id, ts, db, test_user)
     return {"status": "success"}
+
+
+
+# @app.post("/data")
+# def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+#     ts = payload.timestamp or int(time.time())
+#     insert_data(payload.device_id, payload.data, ts, db, current_user)
+#     update_heartbeat(payload.device_id, ts, db, current_user)
+#     return {"status": "success"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -537,6 +551,13 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
         logging.info(f"Unhandled event type: {event_type}")
 
     return JSONResponse({"success": True})
+
+
+@app.get("/dev-token")
+def get_dev_token():
+    token = create_access_token(data={"sub": "your@email.com"})
+    return {"token": token}
+
 
 
 
