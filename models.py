@@ -34,6 +34,11 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     customer_name = Column(String)
 
+    subscription_id = Column(String, nullable=True)
+    plan_type = Column(String, nullable=True)
+    subscription_status = Column(String, nullable=True)
+
+
     devices = relationship("DeviceStatus", back_populates="owner")
 
 class DeviceStatus(Base):

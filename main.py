@@ -54,10 +54,25 @@ from models import User
 from database import get_db
 from email_utils import send_magic_link_email
 
+from fastapi import Request, Depends
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from database import get_db
+from models import User
+import logging
+
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 # ----------------------------- Config -----------------------------
+
+
+async def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
+    try:
+        return await get_current_user(request, db)
+    except Exception:
+        return None
+
 
 load_dotenv()
 API_KEY = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
@@ -89,6 +104,12 @@ def get_db():
         db.close()
 
 # ----------------------------- Magic Link Auth -----------------------------
+
+@app.get("/login-redirect", response_class=RedirectResponse)
+async def login_redirect(request: Request, user: User = Depends(get_current_user)):
+    if user.subscription_status in ("active", "trialing"):
+        return RedirectResponse("/dashboard", status_code=302)
+    return RedirectResponse("/choose-plan", status_code=302)
 
 
 @app.post("/magic-login-register", response_class=HTMLResponse)
@@ -346,20 +367,34 @@ def refund(request: Request):
 # ----------------------------- Landing -----------------------------
 
 
-@app.get("/", response_class=HTMLResponse)
-def landing_page(request: Request, db: Session = Depends(get_db)):
-    user_email = None
-    try:
-        token = request.cookies.get("access_token")
-        if token:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_email = payload.get("sub")
-    except Exception as e:
-        logging.warning(f"Failed to decode token: {e}")
+# @app.get("/", response_class=HTMLResponse)
+# def landing_page(request: Request, db: Session = Depends(get_db)):
+#     user_email = None
+#     try:
+#         token = request.cookies.get("access_token")
+#         if token:
+#             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#             user_email = payload.get("sub")
+#     except Exception as e:
+#         logging.warning(f"Failed to decode token: {e}")
     
+#     return templates.TemplateResponse("landing.html", {
+#         "request": request,
+#         "user_email": user_email,
+#         "paddle_token": PADDLE_CLIENT_TOKEN
+#     })
+
+
+app.get("/", response_class=HTMLResponse)
+async def landing_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_optional)
+):
     return templates.TemplateResponse("landing.html", {
         "request": request,
-        "user_email": user_email,
+        "user_email": current_user.email if current_user else None,
+        "user_subscription_status": current_user.subscription_status if current_user else None,
         "paddle_token": PADDLE_CLIENT_TOKEN
     })
 
@@ -376,23 +411,52 @@ def logout(request: Request):
 
 
 @app.post("/paddle-webhook")
-async def paddle_webhook(request: Request):
+async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
     event_type = payload.get("event_type")
 
-    # Log full webhook payload
+    # Log the payload
     logging.info(f"Received Paddle webhook: {payload}")
 
+    # Extract email safely (varies by event type)
+    email = (
+        payload.get("data", {}).get("customer", {}).get("email")
+        or payload.get("data", {}).get("email")
+    )
+
+    if not email:
+        logging.warning("No email found in webhook payload.")
+        return JSONResponse({"success": False, "error": "Missing email"}, status_code=400)
+
+    # Fetch user from DB
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        logging.warning(f"No user found for webhook email: {email}")
+        return JSONResponse({"success": False, "error": "User not found"}, status_code=404)
+
+    # Handle events
     if event_type == "subscription_created":
-        # Handle new subscription
-        logging.info("✅ Subscription created.")
-        # Example: mark user as paid in DB
+        sub_id = payload["data"]["id"]
+        plan_id = payload["data"]["items"][0]["price"]["product_id"]
+        status = payload["data"]["status"]
+
+        user.subscription_id = sub_id
+        user.plan_type = plan_id
+        user.subscription_status = status
+        db.commit()
+        logging.info(f"✅ Subscription created and saved for {email}.")
+
     elif event_type == "invoice_payment_succeeded":
         logging.info("💰 Payment succeeded.")
+
     elif event_type == "invoice_payment_failed":
         logging.warning("⚠️ Payment failed.")
+
     elif event_type == "subscription_cancelled":
-        logging.info("❌ Subscription cancelled.")
+        user.subscription_status = "cancelled"
+        db.commit()
+        logging.info(f"❌ Subscription cancelled for {email}.")
+
     else:
         logging.info(f"Unhandled event type: {event_type}")
 
