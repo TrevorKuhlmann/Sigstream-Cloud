@@ -109,7 +109,9 @@ def get_db():
 async def login_redirect(request: Request, user: User = Depends(get_current_user)):
     if user.subscription_status in ("active", "trialing"):
         return RedirectResponse("/dashboard", status_code=302)
-    return RedirectResponse("/choose-plan", status_code=302)
+    # ⬇️ Changed from /choose-plan to /
+    return RedirectResponse("/", status_code=302)
+
 
 
 @app.post("/magic-login-register", response_class=HTMLResponse)
