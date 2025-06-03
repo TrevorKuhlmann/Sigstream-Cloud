@@ -183,7 +183,7 @@ async def magic_signin(
 
 
 
-@app.get("/magic-auth")
+@app.get("/magic-auth", response_class=HTMLResponse)
 
 
 def complete_magic_login(token: str, request: Request, db: Session = Depends(get_db)):
@@ -206,7 +206,10 @@ def complete_magic_login(token: str, request: Request, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="User not found")
 
     access_token = create_access_token(data={"sub": user.email})
-    response = RedirectResponse(url="/")  # ✅ Go back to main page
+    # response = RedirectResponse(url="/")  # ✅ Go back to main page
+    # response.set_cookie("access_token", access_token, httponly=True)
+    # return response
+    response = RedirectResponse(url="/login-redirect")
     response.set_cookie("access_token", access_token, httponly=True)
     return response
 
