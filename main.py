@@ -345,7 +345,8 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
         return templates.TemplateResponse("dashboard.html", {
             "request": request,
             "statuses": statuses,
-            "now": int(time.time())
+            "now": int(time.time()),
+            "user": current_user 
         })
     except Exception as e:
         logging.error(f"Error rendering dashboard: {e}")
