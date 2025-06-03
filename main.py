@@ -206,12 +206,14 @@ def complete_magic_login(token: str, request: Request, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="User not found")
 
     access_token = create_access_token(data={"sub": user.email})
-
-    # ✅ Use RedirectResponse to allow browser to send cookie on next request
-    response = RedirectResponse(url="/login-redirect", status_code=302)
+    
+    # Show spinner page that auto-redirects after 2 seconds
+    response = templates.TemplateResponse("magic_redirect.html", {
+        "request": request,
+        "message": "Logging you in..."
+    })
     response.set_cookie("access_token", access_token, httponly=True)
     return response
-
 
 # @app.get("/magic-auth", response_class=HTMLResponse)
 # def complete_magic_login(token: str, request: Request, db: Session = Depends(get_db)):
