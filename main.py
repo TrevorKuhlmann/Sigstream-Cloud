@@ -67,11 +67,12 @@ templates = Jinja2Templates(directory="templates")
 # ----------------------------- Config -----------------------------
 
 
-async def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
+def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
     try:
-        return await get_current_user(request, db)
+        return get_current_user(request, db)
     except Exception:
         return None
+
 
 
 load_dotenv()
