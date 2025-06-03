@@ -385,7 +385,7 @@ def refund(request: Request):
 #     })
 
 
-app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 async def landing_page(
     request: Request,
     db: Session = Depends(get_db),
