@@ -340,10 +340,24 @@ def receive_data(payload: DeviceDataIn, db: Session = Depends(get_db), current_u
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    statuses = db.query(DeviceStatus).filter(DeviceStatus.user_id == current_user.id).all()
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, "statuses": statuses, "now": int(time.time())
-    })
+    try:
+        statuses = db.query(DeviceStatus).filter(DeviceStatus.user_id == current_user.id).all()
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "statuses": statuses,
+            "now": int(time.time())
+        })
+    except Exception as e:
+        logging.error(f"Error rendering dashboard: {e}")
+        return HTMLResponse(content=f"Dashboard Error: {e}", status_code=500)
+
+
+# @app.get("/dashboard", response_class=HTMLResponse)
+# def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+#     statuses = db.query(DeviceStatus).filter(DeviceStatus.user_id == current_user.id).all()
+#     return templates.TemplateResponse("dashboard.html", {
+#         "request": request, "statuses": statuses, "now": int(time.time())
+#     })
 
 @app.get("/summary", response_class=HTMLResponse)
 def summary(request: Request, device_id: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
