@@ -30,35 +30,77 @@ def get_db():
     finally:
         db.close()
 
-# Authenticate user from JWT token in either header or cookie
+
+
+        from fastapi import Request
+
+# Modified get_current_user that reads token from cookie
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    token = None
-
-    # Try Authorization header
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.split("Bearer ")[1]
-
-    # Fallback to cookie
+    token = request.cookies.get("access_token")
     if not token:
-        token = request.cookies.get("access_token")
-
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
+            raise HTTPException(status_code=401, detail="Invalid token")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
-
     return user
+
+# Optional version that returns None instead of error
+async def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if not email:
+            return None
+        user = db.query(User).filter(User.email == email).first()
+        return user
+    except JWTError:
+        return None
+
+
+# Authenticate user from JWT token in either header or cookie
+# def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+#     token = None
+
+#     # Try Authorization header
+#     auth_header = request.headers.get("Authorization")
+#     if auth_header and auth_header.startswith("Bearer "):
+#         token = auth_header.split("Bearer ")[1]
+
+#     # Fallback to cookie
+#     if not token:
+#         token = request.cookies.get("access_token")
+
+#     if not token:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         email: str = payload.get("sub")
+#         if email is None:
+#             raise HTTPException(status_code=401, detail="Invalid token payload")
+#     except JWTError:
+#         raise HTTPException(status_code=401, detail="Invalid token")
+
+#     user = db.query(User).filter(User.email == email).first()
+#     if user is None:
+#         raise HTTPException(status_code=401, detail="User not found")
+
+#     return user
 
 # Utility: Hash password
 def hash_password(password: str) -> str:
