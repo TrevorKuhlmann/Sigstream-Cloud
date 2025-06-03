@@ -183,6 +183,7 @@ async def magic_signin(
         "message": "Check your email and click the magic link to sign in."
     })
 
+
 @app.get("/magic-auth", response_class=HTMLResponse)
 def complete_magic_login(token: str, request: Request, db: Session = Depends(get_db)):
     try:
@@ -204,9 +205,37 @@ def complete_magic_login(token: str, request: Request, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="User not found")
 
     access_token = create_access_token(data={"sub": user.email})
-    response = templates.TemplateResponse("magic_redirect.html", {"request": request})
+
+    # ✅ Use RedirectResponse to allow browser to send cookie on next request
+    response = RedirectResponse(url="/login-redirect", status_code=302)
     response.set_cookie("access_token", access_token, httponly=True)
     return response
+
+
+# @app.get("/magic-auth", response_class=HTMLResponse)
+# def complete_magic_login(token: str, request: Request, db: Session = Depends(get_db)):
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         email = payload.get("sub")
+#     except jwt.ExpiredSignatureError:
+#         return templates.TemplateResponse("expired_token.html", {
+#             "request": request,
+#             "error": "Your magic link has expired. Please try logging in again."
+#         })
+#     except jwt.JWTError:
+#         return templates.TemplateResponse("expired_token.html", {
+#             "request": request,
+#             "error": "Invalid token. Please try again."
+#         })
+
+#     user = db.query(User).filter(User.email == email).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+
+#     access_token = create_access_token(data={"sub": user.email})
+#     response = templates.TemplateResponse("magic_redirect.html", {"request": request})
+#     response.set_cookie("access_token", access_token, httponly=True)
+#     return response
 
 
 # @app.get("/magic-auth", response_class=HTMLResponse)
