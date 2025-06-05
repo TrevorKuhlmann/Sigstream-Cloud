@@ -415,6 +415,27 @@ def export_csv(device_id: str = None, db: Session = Depends(get_db), current_use
 
 # ----------------------------- Devices -----------------------------
 
+
+
+from fastapi import Header
+
+@app.post("/device-data")
+def device_data(
+    payload: DeviceDataIn,
+    db: Session = Depends(get_db),
+    api_key: str = Header(None)
+):
+    expected_key = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
+    if api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    # Optional: check if device is registered, save data
+    ts = payload.timestamp or int(time.time())
+    insert_data(payload.device_id, payload.data, ts, db, None)
+    update_heartbeat(payload.device_id, ts, db, None)
+    return {"status": "success"}
+
+
 @app.get("/devices", response_class=HTMLResponse)
 def device_management(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     devices = db.query(DeviceStatus).filter(DeviceStatus.user_id == user.id).all()

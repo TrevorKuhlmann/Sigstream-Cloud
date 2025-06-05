@@ -1,27 +1,32 @@
-
 import requests
 import time
 import random
 import os
+import json
 from dotenv import load_dotenv
 
 # Load .env file if available
 load_dotenv()
 
-API_URL = os.getenv("SIGSTREAM_API_URL", "https://sigstreamcloud.com/data")
+
 DEVICE_ID = os.getenv("SIM_DEVICE_ID", "dev-001")
-TOKEN = os.getenv("SIGSTREAM_API_TOKEN", "mysecretapikey123")
 
-HEADERS = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
 
+
+API_URL = "https://sigstreamcloud.com/device-data"
+HEADERS = {"X-API-Key": "mysecretapikey123"}  # Custom header
+# If you have a token, you can uncomment the next line and comment the above HEADERS line
+
+# HEADERS = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
+HEADERS = {"Authorization": "Bearer mysecretapikey123"}
 def generate_fake_data():
     return {
         "device_id": DEVICE_ID,
-        "data": {
-            "temperature": round(random.uniform(20.0, 30.0), 2),
-            "voltage": round(random.uniform(220.0, 240.0), 1),
-            "signal_strength": random.randint(60, 100)
-        },
+        "data": json.dumps({
+            "temperature": 25.0,
+            "voltage": 227.8,
+            "signal_strength": 61
+        }),
         "timestamp": int(time.time())
     }
 
