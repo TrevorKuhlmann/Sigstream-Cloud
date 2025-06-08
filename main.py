@@ -532,51 +532,59 @@ def logout(request: Request):
 async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
     event_type = payload.get("event_type")
+    logging.info(f"📦 Paddle Webhook received: {event_type} | Payload: {payload}")
 
-    # Log the payload
-    logging.info(f"Received Paddle webhook: {payload}")
-
-    # Extract email safely (varies by event type)
+    # Extract email (varies depending on event)
     email = (
         payload.get("data", {}).get("customer", {}).get("email")
         or payload.get("data", {}).get("email")
     )
-
     if not email:
-        logging.warning("No email found in webhook payload.")
+        logging.warning("❌ No email found in webhook payload.")
         return JSONResponse({"success": False, "error": "Missing email"}, status_code=400)
 
-    # Fetch user from DB
     user = db.query(User).filter(User.email == email).first()
+
     if not user:
-        logging.warning(f"No user found for webhook email: {email}")
-        return JSONResponse({"success": False, "error": "User not found"}, status_code=404)
-
-    # Handle events
-    if event_type == "subscription_created":
-        sub_id = payload["data"]["id"]
-        plan_id = payload["data"]["items"][0]["price"]["product_id"]
-        status = payload["data"]["status"]
-
-        user.subscription_id = sub_id
-        user.plan_type = plan_id
-        user.subscription_status = status
+        # Create new user record for fresh checkouts
+        user = User(
+            email=email,
+            hashed_password="",
+            customer_name="From Paddle",
+            subscription_status="active",
+            plan_type="unknown",
+            subscription_id="pending"
+        )
+        db.add(user)
         db.commit()
-        logging.info(f"✅ Subscription created and saved for {email}.")
+        logging.info(f"✅ New user created from webhook: {email}")
 
-    elif event_type == "invoice_payment_succeeded":
-        logging.info("💰 Payment succeeded.")
+    # Update existing user based on event
+    if event_type == "subscription_created":
+        data = payload.get("data", {})
+        user.subscription_id = str(data.get("id"))
+        user.plan_type = str(data.get("items", [{}])[0].get("price", {}).get("product_id", ""))
+        user.subscription_status = data.get("status", "active")
+        db.commit()
+        logging.info(f"🔄 Updated user {email} with subscription_created")
+
+    elif event_type == "checkout_completed":
+        user.subscription_status = "active"
+        db.commit()
+        logging.info(f"✅ Checkout completed for user: {email}")
 
     elif event_type == "invoice_payment_failed":
-        logging.warning("⚠️ Payment failed.")
+        user.subscription_status = "past_due"
+        db.commit()
+        logging.warning(f"⚠️ Payment failed for {email}")
 
     elif event_type == "subscription_cancelled":
         user.subscription_status = "cancelled"
         db.commit()
-        logging.info(f"❌ Subscription cancelled for {email}.")
+        logging.info(f"❌ Subscription cancelled for {email}")
 
     else:
-        logging.info(f"Unhandled event type: {event_type}")
+        logging.info(f"Unhandled Paddle event type: {event_type}")
 
     return JSONResponse({"success": True})
 
