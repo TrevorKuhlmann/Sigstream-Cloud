@@ -505,7 +505,8 @@ def logout(request: Request):
     return response
 
 
-app.add_api_route("/webhook/paddle", paddle_webhook, methods=["POST"])
+app.add_api_route("/paddle-webhook", paddle_webhook, methods=["POST"])
+
 
 
 
