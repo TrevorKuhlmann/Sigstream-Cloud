@@ -24,29 +24,29 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
 
     return JSONResponse(content={"success": True}, status_code=200)
 
-# Handlers
+#Handlers
 
-# async def handle_customer_created(payload: dict, db: Session):
-#     data = payload["data"]
-#     customer = db.query(models.Customer).get(data["id"])
-#     if not customer:
-#         customer = models.Customer(
-#             id=data["id"],
-#             email=data["email"],
-#             name=data.get("name"),
-#             locale=data.get("locale"),
-#             status=data.get("status"),
-#             created_at=parse_datetime(data.get("created_at")),
-#             updated_at=parse_datetime(data.get("updated_at"))
-#         )
-#         db.add(customer)
-#     else:
-#         customer.email = data["email"]
-#         customer.name = data.get("name")
-#         customer.locale = data.get("locale")
-#         customer.status = data.get("status")
-#         customer.updated_at = parse_datetime(data.get("updated_at"))
-#     db.commit()
+async def handle_customer_created(payload: dict, db: Session):
+    data = payload["data"]
+    customer = db.query(models.Customer).get(data["id"])
+    if not customer:
+        customer = models.Customer(
+            id=data["id"],
+            email=data["email"],
+            name=data.get("name"),
+            locale=data.get("locale"),
+            status=data.get("status"),
+            created_at=parse_datetime(data.get("created_at")),
+            updated_at=parse_datetime(data.get("updated_at"))
+        )
+        db.add(customer)
+    else:
+        customer.email = data["email"]
+        customer.name = data.get("name")
+        customer.locale = data.get("locale")
+        customer.status = data.get("status")
+        customer.updated_at = parse_datetime(data.get("updated_at"))
+    db.commit()
 
 async def handle_transaction_created(payload: dict, db: Session):
     data = payload["data"]
@@ -92,19 +92,19 @@ async def handle_address_created(payload: dict, db: Session):
     db.add(address)
     db.commit()
 
-async def handle_transaction_created(payload: dict, db: Session):
-    data = payload["data"]
-    txn = models.Transaction(
-        id=data["id"],
-        status=data.get("status"),
-        customer_id=data.get("customer_id"),
-        amount=data["details"]["totals"]["total"],
-        currency=data.get("currency_code"),
-        created_at=parse_datetime(data.get("created_at")),
-        updated_at=parse_datetime(data.get("updated_at"))
-    )
-    db.add(txn)
-    db.commit()
+# async def handle_transaction_created(payload: dict, db: Session):
+#     data = payload["data"]
+#     txn = models.Transaction(
+#         id=data["id"],
+#         status=data.get("status"),
+#         customer_id=data.get("customer_id"),
+#         amount=data["details"]["totals"]["total"],
+#         currency=data.get("currency_code"),
+#         created_at=parse_datetime(data.get("created_at")),
+#         updated_at=parse_datetime(data.get("updated_at"))
+#     )
+#     db.add(txn)
+#     db.commit()
 
 async def handle_transaction_updated(payload: dict, db: Session):
     await handle_transaction_created(payload, db)
