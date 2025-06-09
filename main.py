@@ -13,6 +13,7 @@ from io import StringIO
 from dotenv import load_dotenv
 from jose import jwt
 import os, time, csv, logging
+from paddle_webhook import paddle_webhook  # ✅ IMPORTED HERE
 
 from datetime import timedelta
 from database import SessionLocal
@@ -482,25 +483,6 @@ def privacy(request: Request):
 def refund(request: Request):
     return templates.TemplateResponse("refund.html", {"request": request})
 
-# ----------------------------- Landing -----------------------------
-
-
-# @app.get("/", response_class=HTMLResponse)
-# def landing_page(request: Request, db: Session = Depends(get_db)):
-#     user_email = None
-#     try:
-#         token = request.cookies.get("access_token")
-#         if token:
-#             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#             user_email = payload.get("sub")
-#     except Exception as e:
-#         logging.warning(f"Failed to decode token: {e}")
-    
-#     return templates.TemplateResponse("landing.html", {
-#         "request": request,
-#         "user_email": user_email,
-#         "paddle_token": PADDLE_CLIENT_TOKEN
-#     })
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -523,70 +505,10 @@ def logout(request: Request):
     return response
 
 
+app.add_api_route("/webhook/paddle", paddle_webhook, methods=["POST"])
 
 
-#----------------------------- Paddle Webhook -----------------------------
 
-
-@app.post("/paddle-webhook")
-async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
-    payload = await request.json()
-    event_type = payload.get("event_type")
-    logging.info(f"📦 Paddle Webhook received: {event_type} | Payload: {payload}")
-
-    # Extract email (varies depending on event)
-    email = (
-        payload.get("data", {}).get("customer", {}).get("email")
-        or payload.get("data", {}).get("email")
-    )
-    if not email:
-        logging.warning("❌ No email found in webhook payload.")
-        return JSONResponse({"success": False, "error": "Missing email"}, status_code=400)
-
-    user = db.query(User).filter(User.email == email).first()
-
-    if not user:
-        # Create new user record for fresh checkouts
-        user = User(
-            email=email,
-            hashed_password="",
-            customer_name="From Paddle",
-            subscription_status="active",
-            plan_type="unknown",
-            subscription_id="pending"
-        )
-        db.add(user)
-        db.commit()
-        logging.info(f"✅ New user created from webhook: {email}")
-
-    # Update existing user based on event
-    if event_type == "subscription_created":
-        data = payload.get("data", {})
-        user.subscription_id = str(data.get("id"))
-        user.plan_type = str(data.get("items", [{}])[0].get("price", {}).get("product_id", ""))
-        user.subscription_status = data.get("status", "active")
-        db.commit()
-        logging.info(f"🔄 Updated user {email} with subscription_created")
-
-    elif event_type == "checkout_completed":
-        user.subscription_status = "active"
-        db.commit()
-        logging.info(f"✅ Checkout completed for user: {email}")
-
-    elif event_type == "invoice_payment_failed":
-        user.subscription_status = "past_due"
-        db.commit()
-        logging.warning(f"⚠️ Payment failed for {email}")
-
-    elif event_type == "subscription_cancelled":
-        user.subscription_status = "cancelled"
-        db.commit()
-        logging.info(f"❌ Subscription cancelled for {email}")
-
-    else:
-        logging.info(f"Unhandled Paddle event type: {event_type}")
-
-    return JSONResponse({"success": True})
 
 
 @app.get("/dev-token")

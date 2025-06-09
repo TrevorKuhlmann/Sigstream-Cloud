@@ -1,16 +1,11 @@
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String
-from database import Base
-from sqlalchemy import Column, Integer, String, UniqueConstraint
-
-
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import (
+    Column, Integer, String, ForeignKey, Float, DateTime
+)
 from sqlalchemy.orm import relationship
 from database import Base
 
-
-
-
+# -------------------- Existing Models --------------------
 
 class DeviceDataIn(BaseModel):
     device_id: str
@@ -24,8 +19,6 @@ class DeviceData(Base):
     data = Column(String)
     timestamp = Column(Integer)
 
-
-
 class User(Base):
     __tablename__ = 'users'
 
@@ -38,7 +31,6 @@ class User(Base):
     plan_type = Column(String, nullable=True)
     subscription_status = Column(String, nullable=True)
 
-
     devices = relationship("DeviceStatus", back_populates="owner")
 
 class DeviceStatus(Base):
@@ -48,6 +40,64 @@ class DeviceStatus(Base):
     device_id = Column(String, index=True)
     last_seen = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"))
-    label = Column(String)  # ✅ Make sure this is here
+    label = Column(String)
 
     owner = relationship("User", back_populates="devices")
+
+# -------------------- Paddle Webhook Models --------------------
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id = Column(String, primary_key=True)
+    email = Column(String, nullable=False)
+    name = Column(String)
+    locale = Column(String)
+    status = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    id = Column(String, primary_key=True)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    country_code = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(String, primary_key=True)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    status = Column(String)
+    amount = Column(Float)
+    currency = Column(String)
+    invoice_id = Column(String)
+    invoice_number = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    paid_at = Column(DateTime)
+
+class PaymentMethod(Base):
+    __tablename__ = "payment_methods"
+
+    id = Column(String, primary_key=True)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    type = Column(String)
+    address_id = Column(String, ForeignKey("addresses.id"))
+    updated_at = Column(DateTime)
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(String, primary_key=True)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    status = Column(String)
+    started_at = Column(DateTime)
+    next_billed_at = Column(DateTime)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    collection_mode = Column(String)
+    currency_code = Column(String)
