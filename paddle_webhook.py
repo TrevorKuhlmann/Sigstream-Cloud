@@ -53,19 +53,35 @@ async def handle_transaction_created(payload: dict, db: Session):
     customer_id = data.get("customer_id")
 
     # 💡 Ensure the customer exists
+    # if customer_id:
+    #     existing_customer = db.query(models.Customer).get(customer_id)
+    #     if not existing_customer:
+    #         logging.warning(f"Customer {customer_id} not found. Creating placeholder.")
+    #         placeholder = models.Customer(
+    #             id=customer_id,
+    #             email=None,
+    #             name=None,
+    #             locale=None,
+    #             status="unknown"
+    #         )
+    #         db.add(placeholder)
+    #         db.commit()
+
     if customer_id:
-        existing_customer = db.query(models.Customer).get(customer_id)
-        if not existing_customer:
-            logging.warning(f"Customer {customer_id} not found. Creating placeholder.")
-            placeholder = models.Customer(
-                id=customer_id,
-                email=None,
-                name=None,
-                locale=None,
-                status="unknown"
-            )
-            db.add(placeholder)
-            db.commit()
+     existing_customer = db.query(models.Customer).get(customer_id)
+    if not existing_customer:
+        logging.warning(f"Customer {customer_id} not found. Creating placeholder.")
+        placeholder = models.Customer(
+            id=customer_id,
+            email="unknown@placeholder.com",  # or generate one based on ID
+            name="Unknown",
+            locale="en",
+            status="unknown",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(placeholder)
+        db.commit()
 
     txn = models.Transaction(
         id=data["id"],
