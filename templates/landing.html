@@ -72,23 +72,29 @@
       });
     }
 
-    function openCheckout(plan) {
-      if (!paddleInitialized) return;
-      Paddle.Checkout.open({
-        items: [{
-          priceId: CONFIG.prices[plan][currentBillingCycle],
-          quantity: 1
-        }],
-        settings: {
-          theme: "light",
-          displayMode: "overlay",
-          variant: "one-page"
-        },
-        customer: {
-          email: "{{ user_email | default('') }}"
+        function openCheckout(plan) {
+            if (!paddleInitialized) return;
+
+            const email = "{{ user_email }}";  // your server-side variable
+
+            Paddle.Checkout.open({
+                items: [{
+                    priceId: CONFIG.prices[plan][currentBillingCycle],
+                    quantity: 1
+                }],
+                settings: {
+                    theme: "light",
+                    displayMode: "overlay",
+                    variant: "one-page"
+                },
+                // pre-fill the email in the UI
+                customer: {
+                    email: email
+                },
+                // also embed it in custom_data so it'll appear in your webhook payload
+                custom_data: JSON.stringify({ email: email })
+            });
         }
-      });
-    }
 
     document.addEventListener("DOMContentLoaded", initializePaddle);
     document.getElementById("countrySelect")?.addEventListener("change", (e) => {

@@ -40,26 +40,33 @@ async def handle_customer_created(payload: dict, db: Session):
         db.commit()
 
 async def handle_subscription_created(payload: dict, db: Session):
-    data = payload["data"]
-    cust_id = data["customer_id"]
+    data   = payload["data"]
+    cust_id= data["customer_id"]
 
-    # Extract email
-    email = (data.get("customer") or {}).get("email") or payload.get("email") or data.get("email")
+    # Extract email from custom_data
+    raw_cd = data.get("custom_data")
+    email  = None
+    if raw_cd:
+        try:
+            cd = json.loads(raw_cd)
+            email = cd.get("email")
+        except:
+            logging.warning("Invalid custom_data JSON")
 
-    # Ensure customer stub
+    # Ensure customer stub with real email
     if not db.get(Customer, cust_id):
         stub = Customer(id=cust_id, email=email or f"{cust_id}@placeholder.local")
         db.add(stub)
 
-    # Upsert subscription
+    # Upsert subscription...
     sub = db.get(Subscription, data["id"])
     if not sub:
         sub = Subscription(
             id=data["id"],
             customer_id=cust_id,
             status=data["status"],
-            started_at=parse_datetime(data.get("created_at")),
             next_billed_at=parse_datetime(data.get("next_billed_at")),
+            started_at=parse_datetime(data.get("created_at"))
         )
         db.add(sub)
     else:
@@ -67,7 +74,8 @@ async def handle_subscription_created(payload: dict, db: Session):
         sub.next_billed_at = parse_datetime(data.get("next_billed_at"))
 
     db.commit()
-    logging.info(f"Subscription {sub.id} set to {sub.status} for {cust_id}")
+    logging.info(f"Subscription {sub.id} -> {sub.status} for {cust_id}")
+
 
 async def handle_subscription_activated(payload: dict, db: Session):
     await handle_subscription_created(payload, db)
