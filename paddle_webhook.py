@@ -1,4 +1,4 @@
-from fastapi import Request, Depends, HTTPException, APIRouter
+﻿from fastapi import Request, Depends, HTTPException, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -17,6 +17,7 @@ def parse_datetime(dt: str | None) -> datetime | None:
 @router.post("/paddle-webhook")
 async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
+    logging.info("🔍 Full Paddle payload: %s", payload)  
     event = payload.get("event_type")
     if not event:
         raise HTTPException(400, "Missing event_type")
