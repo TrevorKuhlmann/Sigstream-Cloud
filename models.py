@@ -117,10 +117,12 @@ class Customer(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(String, primary_key=True)  # Paddle subscription ID
+    id = Column(String, primary_key=True)
     customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
-    status = Column(String, nullable=False)  # active, canceled, etc.
-    plan = Column(String, nullable=False)
+    status = Column(String, nullable=False)              # e.g. 'active', 'canceled', 'expired'
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
     next_billed_at = Column(DateTime, nullable=True)
-    
+    updated_at = Column(DateTime, nullable=True)
+
     customer = relationship("Customer", back_populates="subscriptions")
