@@ -5,6 +5,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from database import Base
 
+from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+from database import Base
+
 # -------------------- Existing Models --------------------
 
 class DeviceDataIn(BaseModel):
@@ -46,58 +50,77 @@ class DeviceStatus(Base):
 
 # -------------------- Paddle Webhook Models --------------------
 
+# class Customer(Base):
+#     __tablename__ = "customers"
+
+#     id = Column(String, primary_key=True)
+#     email = Column(String, nullable=False)
+#     name = Column(String)
+#     locale = Column(String)
+#     status = Column(String)
+#     created_at = Column(DateTime)
+#     updated_at = Column(DateTime)
+
+# class Address(Base):
+#     __tablename__ = "addresses"
+
+#     id = Column(String, primary_key=True)
+#     customer_id = Column(String, ForeignKey("customers.id"))
+#     country_code = Column(String)
+#     created_at = Column(DateTime)
+#     updated_at = Column(DateTime)
+
+# class Transaction(Base):
+#     __tablename__ = "transactions"
+
+#     id = Column(String, primary_key=True)
+#     customer_id = Column(String, ForeignKey("customers.id"))
+#     status = Column(String)
+#     amount = Column(Float)
+#     currency = Column(String)
+#     invoice_id = Column(String)
+#     invoice_number = Column(String)
+#     created_at = Column(DateTime)
+#     updated_at = Column(DateTime)
+#     paid_at = Column(DateTime)
+
+# class PaymentMethod(Base):
+#     __tablename__ = "payment_methods"
+
+#     id = Column(String, primary_key=True)
+#     customer_id = Column(String, ForeignKey("customers.id"))
+#     type = Column(String)
+#     address_id = Column(String, ForeignKey("addresses.id"))
+#     updated_at = Column(DateTime)
+
+# class Subscription(Base):
+#     __tablename__ = "subscriptions"
+
+#     id = Column(String, primary_key=True)
+#     customer_id = Column(String, ForeignKey("customers.id"))
+#     status = Column(String)
+#     started_at = Column(DateTime)
+#     next_billed_at = Column(DateTime)
+#     created_at = Column(DateTime)
+#     updated_at = Column(DateTime)
+#     collection_mode = Column(String)
+#     currency_code = Column(String)
+
+
 class Customer(Base):
     __tablename__ = "customers"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True)  # Paddle customer ID
     email = Column(String, nullable=False)
-    name = Column(String)
-    locale = Column(String)
-    status = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-
-class Address(Base):
-    __tablename__ = "addresses"
-
-    id = Column(String, primary_key=True)
-    customer_id = Column(String, ForeignKey("customers.id"))
-    country_code = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-
-class Transaction(Base):
-    __tablename__ = "transactions"
-
-    id = Column(String, primary_key=True)
-    customer_id = Column(String, ForeignKey("customers.id"))
-    status = Column(String)
-    amount = Column(Float)
-    currency = Column(String)
-    invoice_id = Column(String)
-    invoice_number = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    paid_at = Column(DateTime)
-
-class PaymentMethod(Base):
-    __tablename__ = "payment_methods"
-
-    id = Column(String, primary_key=True)
-    customer_id = Column(String, ForeignKey("customers.id"))
-    type = Column(String)
-    address_id = Column(String, ForeignKey("addresses.id"))
-    updated_at = Column(DateTime)
+    subscriptions = relationship("Subscription", back_populates="customer")
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(String, primary_key=True)
-    customer_id = Column(String, ForeignKey("customers.id"))
-    status = Column(String)
-    started_at = Column(DateTime)
-    next_billed_at = Column(DateTime)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    collection_mode = Column(String)
-    currency_code = Column(String)
+    id = Column(String, primary_key=True)  # Paddle subscription ID
+    customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
+    status = Column(String, nullable=False)  # active, canceled, etc.
+    plan = Column(String, nullable=False)
+    next_billed_at = Column(DateTime, nullable=True)
+    
+    customer = relationship("Customer", back_populates="subscriptions")

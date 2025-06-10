@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from io import StringIO
 from dotenv import load_dotenv
+from paddle_webhook import router as paddle_router
 from jose import jwt
 import os, time, csv, logging
 from paddle_webhook import paddle_webhook  # ✅ IMPORTED HERE
@@ -505,7 +506,10 @@ def logout(request: Request):
     return response
 
 
-app.add_api_route("/paddle-webhook", paddle_webhook, methods=["POST"])
+
+# ----------------------------- Paddle Webhook -----------------------------
+
+app.include_router(paddle_router)
 
 
 
