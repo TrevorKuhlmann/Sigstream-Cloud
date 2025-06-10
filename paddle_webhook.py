@@ -104,9 +104,36 @@ async def handle_subscription_expired(payload: dict, db: Session):
         sub.status = "expired"
         db.commit()
 
+
+
+async def handle_subscription_updated(payload: dict, db: Session):
+     data = payload["data"]
+     sub = db.get(Subscription, data["id"])
+     if sub:
+        sub.status = data.get("status", sub.status)
+        sub.next_billed_at = parse_datetime(data.get("next_billed_at"))
+        if data.get("canceled_at"):
+            sub.canceled_at = parse_datetime(data["canceled_at"])
+        db.commit()
+        logging.info(f"🔁 Subscription updated: {sub.id} -> {sub.status}")
+
+
+async def handle_subscription_canceled(payload: dict, db: Session):
+    data = payload["data"]
+    sub = db.get(Subscription, data["id"])
+    if sub:
+        sub.status = "canceled"
+        if data.get("canceled_at"):
+            sub.canceled_at = parse_datetime(data["canceled_at"])
+        db.commit()
+        logging.info(f"❌ Subscription canceled: {sub.id}")
+
+
 # -- Routing --
 
 event_handlers = {
+    "subscription.updated":    handle_subscription_updated,
+    "subscription.cancelled":  handle_subscription_canceled,
     "customer.created":       handle_customer_created,
     "subscription.created":   handle_subscription_created,
     "subscription.activated": handle_subscription_activated,
