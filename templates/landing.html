@@ -92,7 +92,7 @@
                     email: email
                 },
                 // also embed it in custom_data so it'll appear in your webhook payload
-                custom_data: JSON.stringify({ email: email })
+                passthrough: JSON.stringify({ email: email })   // THIS gets echoed in webhooks
             });
         }
 
