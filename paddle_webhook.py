@@ -99,9 +99,35 @@ async def handle_subscription_expired(payload: dict, db: Session):
         sub.status = "expired"
         db.commit()
 
+
+        # paddle_webhook.py (excerpt)
+
+# ... existing imports and router setup ...
+
+async def handle_checkout_completed(payload: dict, db: Session):
+    data = payload["data"]
+    cust = data.get("customer", {})
+    cust_id = cust.get("id")
+    email   = cust.get("email")
+
+    if not cust_id:
+        logging.warning("checkout.completed without customer.id")
+        return
+
+    customer = db.get(Customer, cust_id)
+    if not customer:
+        customer = Customer(id=cust_id, email=email)
+        db.add(customer)
+    else:
+        customer.email = email or customer.email
+
+    db.commit()
+    logging.info(f"🛒 Checkout completed for {cust_id} ({email})")
+
 # -- Routing --
 
 event_handlers = {
+    "checkout.completed":   handle_checkout_completed,
     "customer.created":     handle_customer_created,
     "subscription.created": handle_subscription_created,
     "subscription.activated": handle_subscription_activated,
