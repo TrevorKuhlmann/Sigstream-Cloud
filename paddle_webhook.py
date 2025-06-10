@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 
 from database import get_db
-from . import models
+import models
 
 router = APIRouter()
 
