@@ -6,8 +6,12 @@ from models import Customer, Subscription
 from datetime import datetime
 import json
 
-def parse_datetime(dt: str | None) -> datetime | None:
-    return datetime.fromisoformat(dt.replace("Z", "+00:00")) if dt else None
+def parse_datetime(dt) -> datetime | None:
+    if not dt:
+        return None
+    if isinstance(dt, str):
+        return datetime.fromisoformat(dt.replace("Z", "+00:00"))
+    return dt  # Already a datetime
 
 # Individual event handlers
 async def handle_customer_created(event: NotificationEvent, db: Session):
