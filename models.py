@@ -124,6 +124,5 @@ class Subscription(Base):
     ended_at = Column(DateTime, nullable=True)
     next_billed_at = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, nullable=True)
-    canceled_at = Column(DateTime, nullable=True)
 
     customer = relationship("Customer", back_populates="subscriptions")
