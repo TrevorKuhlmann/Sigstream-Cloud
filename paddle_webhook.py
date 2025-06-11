@@ -1,58 +1,46 @@
 ﻿from fastapi import Request, Depends, HTTPException, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from paddle_billing.Notifications import Verifier, Secret
+import logging
+import os
+
+from paddle_billing.HttpAdapters.FastAPI import FastAPIRequestAdapter
+from paddle_billing.Notifications import Secret, Verifier
 from paddle_billing.Entities.Notifications import NotificationEvent
 
-
-import os
-import logging
-
 from database import get_db
-from handlers import dispatch_event
+from handlers import dispatch_event  # your event dispatcher
 
 router = APIRouter()
 
-# Load secret
+# Load Paddle webhook secret
 PADDLE_WEBHOOK_SECRET = os.getenv("PADDLE_WEBHOOK_SECRET")
 if not PADDLE_WEBHOOK_SECRET:
     raise RuntimeError("PADDLE_WEBHOOK_SECRET is not set")
 
-verifier = Verifier()
 secret = Secret(PADDLE_WEBHOOK_SECRET)
+verifier = Verifier()
 
 @router.post("/paddle-webhook")
 async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
     try:
-        # 1. Grab raw body and signature
+        # Wrap FastAPI request in Paddle's expected format
         raw_body = await request.body()
-        signature = request.headers.get("Paddle-Signature")
+        adapter = FastAPIRequestAdapter(request, raw_body=raw_body)
 
-        if not signature:
-            raise HTTPException(status_code=400, detail="Missing Paddle-Signature header")
+        # Verify webhook signature
+        if not verifier.verify(adapter, secret):
+            raise HTTPException(status_code=400, detail="Invalid Paddle signature")
 
-        # 2. Build verification payload
-        request_like = {
-            "body": raw_body,
-            "headers": {
-                "Paddle-Signature": signature
-            }
-        }
+        # Deserialize event
+        notification = NotificationEvent.from_request(adapter)
+        logging.info(f"🔐 Verified event: {notification.event_type}")
 
-        if not verifier.verify(request_like, secret):
-            raise HTTPException(status_code=400, detail="Invalid webhook signature")
-
-        # 3. Parse the notification event
-        notification = NotificationEvent.from_dict(
-            body=raw_body,
-            headers=request_like["headers"]
-        )
-
-        logging.info(f"🔐 Verified Paddle webhook: {notification.event_type}")
+        # Dispatch to internal event handler
         await dispatch_event(notification, db)
 
         return JSONResponse({"success": True})
 
     except Exception as e:
-        logging.exception("Webhook processing failed")
+        logging.exception("Webhook verification failed")
         raise HTTPException(status_code=400, detail=f"Webhook failed: {str(e)}")
