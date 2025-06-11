@@ -1,8 +1,9 @@
 ﻿from fastapi import Request, Depends, HTTPException, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from paddle_billing import Verifier, Secret
+from paddle_billing.Notifications import Verifier, Secret
 from paddle_billing.Entities.Notifications import NotificationEvent
+
 
 import os
 import logging
