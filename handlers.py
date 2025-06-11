@@ -112,9 +112,11 @@ event_router = {
 }
 
 # Dispatcher
+# Dispatcher
 async def dispatch_event(event: NotificationEvent, db: Session):
-    handler = event_router.get(event.event_type)
+    event_key = str(event.event_type)  # 🔑 Ensure it's a string key
+    handler = event_router.get(event_key)
     if handler:
         await handler(event, db)
     else:
-        logging.info(f"⚠️ No handler for event: {event.event_type}")
+        logging.info(f"⚠️ No handler for event: {event_key}")
