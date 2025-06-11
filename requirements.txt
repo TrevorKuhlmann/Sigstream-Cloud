@@ -13,7 +13,7 @@ python-multipart
 pydantic-settings
 passlib[bcrypt]
 aiosmtplib
-paddle-python-sdk
+paddle-billing-sdk
 
 
 
