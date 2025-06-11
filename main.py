@@ -11,10 +11,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from io import StringIO
 from dotenv import load_dotenv
-from paddle_webhook import router as paddle_router
+from paddle_webhook_v1 import router as paddle_router
 from jose import jwt
 import os, time, csv, logging
-from paddle_webhook import paddle_webhook  # ✅ IMPORTED HERE
+from paddle_webhook_v1 import paddle_webhook_v1  # ✅ IMPORTED HERE
 
 from datetime import timedelta
 from database import SessionLocal
