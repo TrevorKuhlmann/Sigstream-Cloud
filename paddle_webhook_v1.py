@@ -11,7 +11,7 @@ from database import get_db
 from handlers import dispatch_event
 
 router = APIRouter()
-#new changes #
+
 # Load secret
 PADDLE_WEBHOOK_SECRET = os.getenv("PADDLE_WEBHOOK_SECRET")
 if not PADDLE_WEBHOOK_SECRET:
