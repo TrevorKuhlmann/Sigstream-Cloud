@@ -1,142 +1,53 @@
 ﻿from fastapi import Request, Depends, HTTPException, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from datetime import datetime
 import logging
-import json
+import os
+
+from paddle_billing.Notifications import Secret, Verifier
+from paddle_billing.Entities.Notifications import NotificationEvent
 
 from database import get_db
-from models import Customer, Subscription
+from handlers import dispatch_event  # Import the central dispatcher
 
 router = APIRouter()
 
-def parse_datetime(dt: str | None) -> datetime | None:
-    return datetime.fromisoformat(dt.replace("Z", "+00:00")) if dt else None
+# Paddle webhook secret (e.g., from .env or Render environment)
+PADDLE_WEBHOOK_SECRET = os.getenv("PADDLE_WEBHOOK_SECRET")
+if not PADDLE_WEBHOOK_SECRET:
+    raise RuntimeError("PADDLE_WEBHOOK_SECRET is not set")
+
+verifier = Verifier()
+secret = Secret(PADDLE_WEBHOOK_SECRET)
 
 @router.post("/paddle-webhook")
 async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
-    payload = await request.json()
-    logging.info("🔍 Full Paddle payload: %s", payload)
-    event = payload.get("event_type")
-    if not event:
-        raise HTTPException(400, "Missing event_type")
+    # 1. Get raw body and headers
+    body = await request.body()
+    headers = request.headers
 
-    handler = event_handlers.get(event)
-    if handler:
-        await handler(payload, db)
-    else:
-        logging.info(f"No handler for event {event}")
+    # 2. Reconstruct into Paddle-style request
+    signature = headers.get("Paddle-Signature")
+    if not signature:
+        raise HTTPException(status_code=400, detail="Missing Paddle-Signature")
 
-    return JSONResponse({"success": True})
+    # 3. Use SDK to verify
+    try:
+        # Construct pseudo-Request object like the SDK expects
+        from paddle_billing.HttpAdapters.FastAPI import FastAPIRequestAdapter
+        wrapped = FastAPIRequestAdapter(request, raw_body=body)
 
-# -- Handlers --
+        if not verifier.verify(wrapped, secret):
+            raise HTTPException(status_code=400, detail="Invalid signature")
 
-async def handle_customer_created(payload: dict, db: Session):
-    data = payload["data"]
-    customer = db.get(Customer, data["id"])
-    if not customer:
-        customer = Customer(id=data["id"], email=data.get("email"))
-        db.add(customer)
-        db.commit()
+        notification = NotificationEvent.from_request(wrapped)
+        logging.info("🔐 Verified Paddle event: %s", notification.event_type)
 
-async def handle_subscription_created(payload: dict, db: Session):
-    data = payload["data"]
-    cust_id = data["customer_id"]
+        # 4. Dispatch to proper handler
+        await dispatch_event(notification, db)
 
-    # Extract email from passthrough (must be set in checkout)
-    raw_pt = data.get("passthrough")
-    email = None
-    if raw_pt:
-        try:
-            pt = json.loads(raw_pt)
-            email = pt.get("email")
-        except json.JSONDecodeError:
-            logging.warning("Invalid passthrough JSON")
+        return JSONResponse({"success": True})
 
-    # Ensure customer exists with real email
-    customer = db.get(Customer, cust_id)
-    if not customer:
-        customer = Customer(id=cust_id, email=email or f"{cust_id}@placeholder.local")
-        db.add(customer)
-    else:
-        if email and customer.email.endswith("@placeholder.local"):
-            customer.email = email
-
-    # Upsert subscription
-    sub = db.get(Subscription, data["id"])
-    if not sub:
-        sub = Subscription(
-            id=data["id"],
-            customer_id=cust_id,
-            status=data["status"],
-            started_at=parse_datetime(data.get("created_at")),
-            next_billed_at=parse_datetime(data.get("next_billed_at"))
-        )
-        db.add(sub)
-    else:
-        sub.status = data["status"]
-        sub.next_billed_at = parse_datetime(data.get("next_billed_at"))
-
-    db.commit()
-    logging.info(f"Subscription {sub.id} -> {sub.status} for {cust_id}")
-
-async def handle_subscription_activated(payload: dict, db: Session):
-    await handle_subscription_created(payload, db)
-
-async def handle_subscription_cancelled(payload: dict, db: Session):
-    data = payload["data"]
-    cust_id = data.get("customer_id")
-    if cust_id and not db.get(Customer, cust_id):
-        db.add(Customer(id=cust_id, email=None))
-    sub = db.get(Subscription, data["id"])
-    if sub:
-        sub.status = "canceled"
-        db.commit()
-
-async def handle_subscription_expired(payload: dict, db: Session):
-    data = payload["data"]
-    cust_id = data.get("customer_id")
-    if cust_id and not db.get(Customer, cust_id):
-        db.add(Customer(id=cust_id, email=None))
-    sub = db.get(Subscription, data["id"])
-    if sub:
-        sub.status = "expired"
-        db.commit()
-
-
-
-async def handle_subscription_updated(payload: dict, db: Session):
-     data = payload["data"]
-     sub = db.get(Subscription, data["id"])
-     if sub:
-        sub.status = data.get("status", sub.status)
-        sub.next_billed_at = parse_datetime(data.get("next_billed_at"))
-        if data.get("canceled_at"):
-            sub.canceled_at = parse_datetime(data["canceled_at"])
-        db.commit()
-        logging.info(f"🔁 Subscription updated: {sub.id} -> {sub.status}")
-
-
-async def handle_subscription_canceled(payload: dict, db: Session):
-    data = payload["data"]
-    sub = db.get(Subscription, data["id"])
-    if sub:
-        sub.status = "canceled"
-        if data.get("canceled_at"):
-            sub.canceled_at = parse_datetime(data["canceled_at"])
-        db.commit()
-        logging.info(f"❌ Subscription canceled: {sub.id}")
-
-
-# -- Routing --
-
-event_handlers = {
-    "subscription.updated":    handle_subscription_updated,
-    "subscription.cancelled":  handle_subscription_canceled,
-    "customer.created":       handle_customer_created,
-    "subscription.created":   handle_subscription_created,
-    "subscription.activated": handle_subscription_activated,
-    "subscription.cancelled": handle_subscription_cancelled,
-    "subscription.expired":   handle_subscription_expired,
-}
+    except Exception as e:
+        logging.exception("Webhook verification failed")
+        raise HTTPException(status_code=400, detail=f"Webhook failed: {str(e)}")
