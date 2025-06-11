@@ -47,8 +47,7 @@ async def handle_subscription_created(event: NotificationEvent, db: Session):
         sub = Subscription(
             id=data.id,
             customer_id=data.customer_id,
-            ##status=data.status,
-            status=data.status.value,
+            status=data.status.value if hasattr(data.status, "value") else data.status,
             started_at=parse_datetime(data.created_at),
             next_billed_at=parse_datetime(data.next_billed_at),
         )
