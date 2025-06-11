@@ -21,8 +21,8 @@ async def handle_subscription_created(event: NotificationEvent, db: Session):
     data = event.data
     email = None
 
-    # Extract email from passthrough if available
-    raw_pt = data.passthrough
+    # Safe passthrough extraction
+    raw_pt = getattr(data, "passthrough", None)
     if raw_pt:
         try:
             pt = json.loads(raw_pt)
