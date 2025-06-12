@@ -35,7 +35,7 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
 async def handle_customer_created(payload: dict, db: Session):
     data = payload["data"]
     customer = db.get(Customer, data["id"])
-    if not customer:
+    if not customer: ####if customer does not exist 
         customer = Customer(id=data["id"], email=data.get("email"))
         db.add(customer)
         db.commit()
