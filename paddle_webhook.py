@@ -25,7 +25,7 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
         body = await request.body()
         headers = dict(request.headers)
 
-        # 🔧 Test mode toggleff
+        # 🔧 Test mode togglefff
         if os.getenv("TEST_MODE") == "1":
             logging.warning("⚠️ Bypassing signature verification (TEST MODE)")
             notification = NotificationEvent.from_json(body.decode("utf-8"))
