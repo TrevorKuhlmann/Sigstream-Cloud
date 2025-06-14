@@ -1,115 +1,62 @@
-import logging, json
-from datetime import datetime
+# handlers.py (SDK-free version)
+import logging
 from sqlalchemy.orm import Session
-from paddle_billing.Notifications import NotificationEvent
-from models import Customer, Subscription
+from models import Customer, Subscription, Transaction
+from datetime import datetime
 
-def parse_datetime(dt):
-    return datetime.fromisoformat(dt.replace("Z","+00:00")) if dt else None
+logger = logging.getLogger(__name__)
 
-async def handle_customer_created(event, db: Session):
-    data = event.data
-    if not db.get(Customer, data.id):
-        db.add(Customer(id=data.id, email=data.email))
-        db.commit()
+def parse_datetime(dt_str):
+    return datetime.fromisoformat(dt_str.replace("Z", "+00:00")) if dt_str else None
 
-async def handle_subscription_created(event: NotificationEvent, db: Session):
-    data = event.data
-    email = None
+def safe_get(d, *keys):
+    for key in keys:
+        d = d.get(key, {})
+    return d if d else None
 
-    # Extract email from passthrough if available
-    raw_pt = data.passthrough
-    if raw_pt:
-        try:
-            pt = json.loads(raw_pt)
-            email = pt.get("email")
-        except json.JSONDecodeError:
-            logging.warning("Invalid passthrough JSON in subscription.created")
+async def dispatch_event(event_type: str, payload: dict, db: Session):
+    match event_type:
+        case "customer.created":
+            await handle_customer_created(payload, db)
+        case "subscription.created":
+            await handle_subscription_created(payload, db)
+        case "transaction.paid":
+            await handle_transaction_paid(payload, db)
+        case _:
+            logger.warning(f"\u26a0\ufe0f No handler for event: {event_type}")
 
-    customer = db.get(Customer, data.customer_id)
-    if not customer:
-        customer = Customer(id=data.customer_id, email=email or f"{data.customer_id}@placeholder.local")
-        db.add(customer)
-    else:
-        if email and customer.email.endswith("@placeholder.local"):
-            customer.email = email
-
-    sub = db.get(Subscription, data.id)
-    if not sub:
-        sub = Subscription(
-            id=data.id,
-            customer_id=data.customer_id,
-            status=data.status.value if hasattr(data.status, "value") else str(data.status),
-            started_at=parse_datetime(data.created_at),
-            next_billed_at=parse_datetime(data.next_billed_at),
-        )
-        db.add(sub)
-    else:
-        sub.status = data.status.value if hasattr(data.status, "value") else str(data.status)
-        sub.next_billed_at = parse_datetime(data.next_billed_at)
-
+async def handle_customer_created(data: dict, db: Session):
+    obj = Customer(
+        id=data["data"]["id"],
+        email=data["data"].get("email"),
+        name=data["data"].get("name"),
+        country_code=safe_get(data, "data", "address", "country_code"),
+        postcode=safe_get(data, "data", "address", "postal_code"),
+    )
+    db.merge(obj)
     db.commit()
-    logging.info(f"📦 Subscription created: {data.id} -> {sub.status}")
 
-async def handle_subscription_updated(event: NotificationEvent, db: Session):
-    data = event.data
-    sub = db.get(Subscription, data.id)
-    if sub:
-        sub.status = data.status.value if hasattr(data.status, "value") else str(data.status)
-        sub.next_billed_at = parse_datetime(data.next_billed_at)
-        if data.canceled_at:
-            sub.canceled_at = parse_datetime(data.canceled_at)
-        db.commit()
-        logging.info(f"🔁 Subscription updated: {sub.id} -> {sub.status}")
-
-async def handle_subscription_canceled(event: NotificationEvent, db: Session):
-    data = event.data
-    sub = db.get(Subscription, data.id)
-    if sub:
-        sub.status = "canceled"
-        if data.canceled_at:
-            sub.canceled_at = parse_datetime(data.canceled_at)
-        db.commit()
-        logging.info(f"❌ Subscription canceled: {sub.id}")
-
-async def handle_subscription_expired(event: NotificationEvent, db: Session):
-    data = event.data
-    sub = db.get(Subscription, data.id)
-    if sub:
-        sub.status = "expired"
-        db.commit()
-        logging.info(f"⌛ Subscription expired: {sub.id}")
-
-async def handle_checkout_completed(event: NotificationEvent, db: Session):
-    data = event.data
-    cust = data.customer
-    cust_id = cust.id
-    email = cust.email
-
-    if not db.get(Customer, cust_id):
-        db.add(Customer(id=cust_id, email=email))
-    else:
-        customer = db.get(Customer, cust_id)
-        if email and customer.email.endswith("@placeholder.local"):
-            customer.email = email
-
+async def handle_subscription_created(data: dict, db: Session):
+    sub = Subscription(
+        id=data["data"]["id"],
+        customer_id=data["data"]["customer_id"],
+        status=data["data"].get("status"),
+        started_at=parse_datetime(data["data"].get("created_at")),
+        next_billed_at=parse_datetime(data["data"].get("next_billed_at")),
+    )
+    db.merge(sub)
     db.commit()
-    logging.info(f"🛒 Checkout completed: {cust_id} ({email})")
 
-# Routing map
-event_router = {
-    "customer.created": handle_customer_created,
-    "subscription.created": handle_subscription_created,
-    "subscription.updated": handle_subscription_updated,
-    "subscription.canceled": handle_subscription_canceled,
-    "subscription.expired": handle_subscription_expired,
-    "checkout.completed": handle_checkout_completed,
-}
-
-# Dispatcher
-async def dispatch_event(event: NotificationEvent, db: Session):
-    handler = event_router.get(event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type))
-    if handler:
-        await handler(event, db)
-    else:
-        logging.info(f"⚠️ No handler for event: {event.event_type}")
+async def handle_transaction_paid(data: dict, db: Session):
+    tx = Transaction(
+        id=data["data"]["id"],
+        customer_id=data["data"].get("customer_id"),
+        subscription_id=data["data"].get("subscription_id"),
+        status=data["data"].get("status"),
+        amount=data["data"].get("amount"),
+        currency=data["data"].get("currency_code"),
+        tax_rate=data["data"].get("tax_rate"),
+        paid_at=parse_datetime(data["data"].get("paid_at")),
+    )
+    db.merge(tx)
+    db.commit()
