@@ -27,90 +27,118 @@ async def dispatch_event(event_type: str, payload: dict, db: Session):
 
 # -------------------- HANDLERS --------------------
 
-async def handle_customer_created(payload, db: Session):
-    customer_id = payload.get("id")
+async def handle_customer_created(payload: dict, db):
+    data = payload.get("data", {})
+    customer_id = data.get("id")
+
     if not customer_id:
-        logger.warning("⚠️ Skipping customer creation: no customer ID in payload")
+        logging.warning("⚠️ Skipping customer creation: no customer ID in payload")
         return
 
     existing = db.query(Customer).filter_by(id=customer_id).first()
     if existing:
-        logger.info(f"✅ Customer already exists: {customer_id}")
+        logging.info(f"✅ Customer {customer_id} already exists, skipping.")
         return
 
-    obj = Customer(
+    customer = Customer(
         id=customer_id,
-        email=payload.get("email") or "unknown@example.com",
-        name=payload.get("name"),
-        created_at=parse_datetime(payload.get("created_at")),
-        updated_at=parse_datetime(payload.get("updated_at")),
-        locale=payload.get("locale"),
-        marketing_consent=payload.get("marketing_consent"),
-        status=payload.get("status"),
-        country_code=payload.get("country_code"),
+        email=data.get("email", "unknown@example.com"),
+        name=data.get("name"),
+        locale=data.get("locale"),
+        status=data.get("status"),
+        marketing_consent=str(data.get("marketing_consent")) if data.get("marketing_consent") is not None else None,
+        created_at=parse_datetime(data.get("created_at")),
+        updated_at=parse_datetime(data.get("updated_at")),
     )
-    db.add(obj)
-    db.commit()
-    logger.info(f"✅ Created customer: {customer_id}")
 
-async def handle_subscription_created(payload, db: Session):
-    sub_id = payload.get("id")
-    customer_id = payload.get("customer_id")
+    db.add(customer)
+    db.commit()
+    logging.info(f"✅ Created customer {customer_id}")
+
+
+async def handle_subscription_created(payload: dict, db):
+    data = payload.get("data", {})
+    sub_id = data.get("id")
+    customer_id = data.get("customer_id")
+
+    if not sub_id:
+        logging.warning("⚠️ Skipping subscription: no ID in payload")
+        return
+    if not customer_id:
+        logging.warning("⚠️ Skipping subscription: unknown customer ID None")
+        return
 
     existing = db.query(Subscription).filter_by(id=sub_id).first()
     if existing:
-        logger.info(f"✅ Subscription already exists: {sub_id}")
+        logging.info(f"✅ Subscription {sub_id} already exists, skipping.")
         return
 
+    # ensure customer exists
     customer = db.query(Customer).filter_by(id=customer_id).first()
     if not customer:
-        logger.warning(f"⚠️ Skipping subscription: unknown customer ID {customer_id}")
+        logging.warning(f"⚠️ Skipping subscription: customer {customer_id} not found")
         return
 
-    sub = Subscription(
+    subscription = Subscription(
         id=sub_id,
         customer_id=customer_id,
-        status=payload.get("status"),
-        started_at=parse_datetime(payload.get("started_at")),
-        ended_at=parse_datetime(payload.get("ended_at")),
-        next_billed_at=parse_datetime(payload.get("next_billed_at")),
-        updated_at=parse_datetime(payload.get("updated_at")),
-        canceled_at=parse_datetime(payload.get("canceled_at")),
+        status=data.get("status", "unknown"),
+        started_at=parse_datetime(data.get("started_at")),
+        ended_at=parse_datetime(data.get("canceled_at")),  # may be None
+        next_billed_at=parse_datetime(data.get("next_billed_at")),
+        updated_at=parse_datetime(data.get("updated_at")),
+        canceled_at=parse_datetime(data.get("canceled_at")),
     )
-    db.add(sub)
+
+    db.add(subscription)
     db.commit()
-    logger.info(f"✅ Created subscription: {sub_id}")
+    logging.info(f"✅ Created subscription {sub_id} for customer {customer_id}")
 
-async def handle_transaction_paid(payload, db: Session):
-    tx_id = payload.get("id")
-    customer_id = payload.get("customer_id")
 
-    if not tx_id:
-        logger.warning("⚠️ Skipping transaction: no ID in payload")
+async def handle_transaction_paid(payload: dict, db):
+    data = payload.get("data", {})
+    txn_id = data.get("id")
+    customer_id = data.get("customer_id")
+
+    if not txn_id:
+        logging.warning("⚠️ Skipping transaction: no ID in payload")
+        return
+    if not customer_id:
+        logging.warning("⚠️ Skipping transaction: unknown customer ID")
         return
 
-    existing = db.query(Transaction).filter_by(id=tx_id).first()
+    existing = db.query(Transaction).filter_by(id=txn_id).first()
     if existing:
-        logger.info(f"✅ Transaction already exists: {tx_id}")
+        logging.info(f"✅ Transaction {txn_id} already exists, skipping.")
         return
 
-    tx = Transaction(
-        id=tx_id,
+    # Ensure customer exists
+    customer = db.query(Customer).filter_by(id=customer_id).first()
+    if not customer:
+        logging.warning(f"⚠️ Skipping transaction: customer {customer_id} not found")
+        return
+
+    totals = data.get("details", {}).get("totals", {})
+    amount = float(totals.get("total", 0)) / 100  # Convert cents to dollars
+
+    transaction = Transaction(
+        id=txn_id,
         customer_id=customer_id,
-        status=payload.get("status"),
-        amount=payload.get("amount"),
-        currency=payload.get("currency_code"),
-        invoice_id=payload.get("invoice_id"),
-        invoice_number=payload.get("invoice_number"),
-        created_at=parse_datetime(payload.get("created_at")),
-        updated_at=parse_datetime(payload.get("updated_at")),
-        paid_at=parse_datetime(payload.get("paid_at")),
-        subscription_id=payload.get("subscription_id"),
-        # tax_rate is ignored unless you add it to the model
+        status=data.get("status"),
+        amount=amount,
+        currency=totals.get("currency_code"),
+        invoice_id=data.get("invoice_id"),
+        invoice_number=data.get("invoice_number"),
+        created_at=parse_datetime(data.get("created_at")),
+        updated_at=parse_datetime(data.get("updated_at")),
+        paid_at=parse_datetime(data["payments"][0]["captured_at"]) if data.get("payments") else None,
+        subscription_id=data.get("subscription_id"),
     )
-    db.add(tx)
+
+    db.add(transaction)
     db.commit()
-    logger.info(f"✅ Recorded transaction: {tx_id}")
+    logging.info(f"✅ Saved transaction {txn_id} for customer {customer_id}")
+
 
 # -------------------- STUBS --------------------
 
