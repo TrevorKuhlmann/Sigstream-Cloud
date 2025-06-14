@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+﻿from pydantic import BaseModel
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, ForeignKey
 )
@@ -57,6 +57,7 @@ class Customer(Base):
     locale = Column(String, nullable=True)
     marketing_consent = Column(String, nullable=True)
     status = Column(String, nullable=True)
+    country_code = Column(String, nullable=True)  # ← Add this if used in handler
 
     subscriptions = relationship("Subscription", back_populates="customer")
     transactions = relationship("Transaction", back_populates="customer")
@@ -89,7 +90,7 @@ class Transaction(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     paid_at = Column(DateTime)
-
+    subscription_id = Column(String, ForeignKey("subscriptions.id"), nullable=True)  # ← Add this
     customer = relationship("Customer", back_populates="transactions")
 
 class PaymentMethod(Base):

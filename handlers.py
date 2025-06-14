@@ -36,16 +36,31 @@ async def handle_customer_created(data: dict, db: Session):
     db.merge(obj)
     db.commit()
 
-async def handle_subscription_created(data: dict, db: Session):
+async def handle_subscription_created(payload: dict, db: Session):
+    customer_id = payload.get("customer_id")
+    subscription_id = payload.get("id")
+
+    # Ensure customer exists
+    customer = db.query(Customer).filter_by(id=customer_id).first()
+    if not customer:
+        email = payload.get("customer_email", "unknown@example.com")
+        customer = Customer(id=customer_id, email=email)
+        db.add(customer)
+        db.commit()
+
     sub = Subscription(
-        id=data["data"]["id"],
-        customer_id=data["data"]["customer_id"],
-        status=data["data"].get("status"),
-        started_at=parse_datetime(data["data"].get("created_at")),
-        next_billed_at=parse_datetime(data["data"].get("next_billed_at")),
+        id=subscription_id,
+        customer_id=customer_id,
+        status=payload.get("status"),
+        started_at=parse_datetime(payload.get("start_time")),
+        ended_at=parse_datetime(payload.get("end_time")),
+        next_billed_at=parse_datetime(payload.get("next_billed_time")),
+        updated_at=parse_datetime(payload.get("updated_at")),
+        canceled_at=parse_datetime(payload.get("canceled_at")),
     )
-    db.merge(sub)
+    db.add(sub)
     db.commit()
+    logger.info(f"✅ Subscription created: {subscription_id}")
 
 async def handle_transaction_paid(data: dict, db: Session):
     tx = Transaction(
