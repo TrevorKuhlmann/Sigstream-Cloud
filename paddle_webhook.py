@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import logging
 import os
+from paddle_billing import parse
 
 from paddle_billing.Entities.Notifications import NotificationEvent
 from paddle_billing.Notifications import Verifier, Secret
@@ -28,7 +29,7 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
         # 🔧 Test mode togglefff
         if os.getenv("TEST_MODE") == "1":
             logging.warning("⚠️ Bypassing signature verification (TEST MODE)")
-            notification = NotificationEvent.from_json(body.decode("utf-8"))
+            notification = parse(body.decode("utf-8"))
         else:
             signature = headers.get("Paddle-Signature")
             if not signature:
@@ -37,7 +38,7 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
             if not verifier.verify_raw(body, signature, secret):
                 raise HTTPException(status_code=400, detail="Invalid signature")
 
-            notification = NotificationEvent.from_json(body.decode("utf-8"))
+            notification = parse(body.decode("utf-8"))
 
         logging.info(f"🔔 Received event: {notification.event_type}")
         await dispatch_event(notification, db)
