@@ -5,6 +5,17 @@ from utils import parse_datetime
 
 logger = logging.getLogger(__name__)
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update, select
+from utils import parse_datetime
+from models import Subscription
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+# -------------------- DISPATCHER --------------------
+
 async def dispatch_event(event_type: str, payload: dict, db: Session):
     handler_map = {
         "customer.created": handle_customer_created,
@@ -17,6 +28,7 @@ async def dispatch_event(event_type: str, payload: dict, db: Session):
         "transaction.completed": handle_transaction_completed,
         "payment_method.saved": handle_payment_method_saved,
         "address.created": handle_address_created,
+        "subscription.canceled" : handle_subscription_canceled
     }
 
     handler = handler_map.get(event_type)
@@ -26,6 +38,35 @@ async def dispatch_event(event_type: str, payload: dict, db: Session):
         logger.warning(f"⚠️ No handler for event: {event_type}")
 
 # -------------------- HANDLERS --------------------
+
+
+
+async def handle_subscription_canceled(payload: dict, db):
+    data = payload.get("data", {})
+    sub_id = data.get("id")
+    canceled_at = data.get("canceled_at")
+
+    if not sub_id:
+        logging.warning("⚠️ Skipping subscription cancellation: no ID in payload")
+        return
+
+    subscription = db.query(Subscription).filter_by(id=sub_id).first()
+    if not subscription:
+        logging.warning(f"⚠️ Subscription {sub_id} not found, cannot cancel")
+        return
+
+    subscription.status = "canceled"
+    subscription.canceled_at = parse_datetime(canceled_at)
+    subscription.updated_at = parse_datetime(data.get("updated_at"))
+
+    db.commit()
+    logging.info(f"✅ Subscription {sub_id} marked as canceled")
+
+
+
+
+
+
 
 async def handle_customer_created(payload: dict, db):
     data = payload.get("data", {})
@@ -138,6 +179,11 @@ async def handle_transaction_paid(payload: dict, db):
     db.add(transaction)
     db.commit()
     logging.info(f"✅ Saved transaction {txn_id} for customer {customer_id}")
+
+
+
+
+
 
 
 # -------------------- STUBS --------------------
