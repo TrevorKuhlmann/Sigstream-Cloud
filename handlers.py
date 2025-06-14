@@ -1,7 +1,6 @@
 import logging
 from sqlalchemy.orm import Session
-from paddle_billing.Entities.Notifications import NotificationEvent
-
+from paddle_billing.entities.notifications import NotificationEvent
 from models import Customer, Subscription
 from datetime import datetime
 import json
@@ -22,7 +21,7 @@ async def handle_subscription_created(event: NotificationEvent, db: Session):
     email = None
 
     # Extract email from passthrough if available
-    raw_pt = getattr(data, "custom_data", None)
+    raw_pt = data.passthrough
     if raw_pt:
         try:
             pt = json.loads(raw_pt)
@@ -43,13 +42,13 @@ async def handle_subscription_created(event: NotificationEvent, db: Session):
         sub = Subscription(
             id=data.id,
             customer_id=data.customer_id,
-            status=data.status.value if hasattr(data.status, "value") else data.status,
+            status=data.status.value if hasattr(data.status, "value") else str(data.status),
             started_at=parse_datetime(data.created_at),
             next_billed_at=parse_datetime(data.next_billed_at),
         )
         db.add(sub)
     else:
-        sub.status = data.status.value if hasattr(data.status, "value") else data.status
+        sub.status = data.status.value if hasattr(data.status, "value") else str(data.status)
         sub.next_billed_at = parse_datetime(data.next_billed_at)
 
     db.commit()
@@ -59,7 +58,7 @@ async def handle_subscription_updated(event: NotificationEvent, db: Session):
     data = event.data
     sub = db.get(Subscription, data.id)
     if sub:
-        sub.status = data.status.value if hasattr(data.status, "value") else data.status
+        sub.status = data.status.value if hasattr(data.status, "value") else str(data.status)
         sub.next_billed_at = parse_datetime(data.next_billed_at)
         if data.canceled_at:
             sub.canceled_at = parse_datetime(data.canceled_at)
@@ -112,7 +111,7 @@ event_router = {
 
 # Dispatcher
 async def dispatch_event(event: NotificationEvent, db: Session):
-    handler = event_router.get(event.event_type)
+    handler = event_router.get(event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type))
     if handler:
         await handler(event, db)
     else:
