@@ -14,7 +14,7 @@ pydantic-settings
 passlib[bcrypt]
 aiosmtplib
 paddle-python-sdk
-TEST_MODE = 1 # Set to 1 for test mode, 0 for production mode
+
 
 
 
