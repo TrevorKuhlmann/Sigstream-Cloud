@@ -1,20 +1,17 @@
-import logging
-from sqlalchemy.orm import Session
-from paddle_billing.entities.notifications import NotificationEvent
-from models import Customer, Subscription
+import logging, json
 from datetime import datetime
-import json
+from sqlalchemy.orm import Session
+from paddle_billing.Notifications import NotificationEvent
+from models import Customer, Subscription
 
-def parse_datetime(dt: str | None) -> datetime | None:
-    return datetime.fromisoformat(dt.replace("Z", "+00:00")) if dt else None
+def parse_datetime(dt):
+    return datetime.fromisoformat(dt.replace("Z","+00:00")) if dt else None
 
-# Individual event handlers
-async def handle_customer_created(event: NotificationEvent, db: Session):
+async def handle_customer_created(event, db: Session):
     data = event.data
     if not db.get(Customer, data.id):
         db.add(Customer(id=data.id, email=data.email))
         db.commit()
-        logging.info(f"👤 Customer created: {data.id} ({data.email})")
 
 async def handle_subscription_created(event: NotificationEvent, db: Session):
     data = event.data
