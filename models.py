@@ -1,15 +1,11 @@
 from pydantic import BaseModel
 from sqlalchemy import (
-    Column, Integer, String, ForeignKey, Float, DateTime
+    Column, Integer, String, Float, DateTime, ForeignKey
 )
 from sqlalchemy.orm import relationship
 from database import Base
 
-from sqlalchemy import Column, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from database import Base
-
-# -------------------- Existing Models --------------------
+# -------------------- Device and User Models --------------------
 
 class DeviceDataIn(BaseModel):
     device_id: str
@@ -50,79 +46,73 @@ class DeviceStatus(Base):
 
 # -------------------- Paddle Webhook Models --------------------
 
-# class Customer(Base):
-#     __tablename__ = "customers"
-
-#     id = Column(String, primary_key=True)
-#     email = Column(String, nullable=False)
-#     name = Column(String)
-#     locale = Column(String)
-#     status = Column(String)
-#     created_at = Column(DateTime)
-#     updated_at = Column(DateTime)
-
-# class Address(Base):
-#     __tablename__ = "addresses"
-
-#     id = Column(String, primary_key=True)
-#     customer_id = Column(String, ForeignKey("customers.id"))
-#     country_code = Column(String)
-#     created_at = Column(DateTime)
-#     updated_at = Column(DateTime)
-
-# class Transaction(Base):
-#     __tablename__ = "transactions"
-
-#     id = Column(String, primary_key=True)
-#     customer_id = Column(String, ForeignKey("customers.id"))
-#     status = Column(String)
-#     amount = Column(Float)
-#     currency = Column(String)
-#     invoice_id = Column(String)
-#     invoice_number = Column(String)
-#     created_at = Column(DateTime)
-#     updated_at = Column(DateTime)
-#     paid_at = Column(DateTime)
-
-# class PaymentMethod(Base):
-#     __tablename__ = "payment_methods"
-
-#     id = Column(String, primary_key=True)
-#     customer_id = Column(String, ForeignKey("customers.id"))
-#     type = Column(String)
-#     address_id = Column(String, ForeignKey("addresses.id"))
-#     updated_at = Column(DateTime)
-
-# class Subscription(Base):
-#     __tablename__ = "subscriptions"
-
-#     id = Column(String, primary_key=True)
-#     customer_id = Column(String, ForeignKey("customers.id"))
-#     status = Column(String)
-#     started_at = Column(DateTime)
-#     next_billed_at = Column(DateTime)
-#     created_at = Column(DateTime)
-#     updated_at = Column(DateTime)
-#     collection_mode = Column(String)
-#     currency_code = Column(String)
-
-
 class Customer(Base):
     __tablename__ = "customers"
 
-    id = Column(String, primary_key=True)  # Paddle customer ID
+    id = Column(String, primary_key=True)  # Paddle Customer ID
     email = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    locale = Column(String, nullable=True)
+    marketing_consent = Column(String, nullable=True)
+    status = Column(String, nullable=True)
+
     subscriptions = relationship("Subscription", back_populates="customer")
+    transactions = relationship("Transaction", back_populates="customer")
+    payment_methods = relationship("PaymentMethod", back_populates="customer")
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True)  # Paddle Subscription ID
     customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
-    status = Column(String, nullable=False)              # e.g. 'active', 'canceled', 'expired'
+    status = Column(String, nullable=False)              # 'active', 'canceled', etc.
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
     next_billed_at = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, nullable=True)
+    canceled_at = Column(DateTime, nullable=True)
 
     customer = relationship("Customer", back_populates="subscriptions")
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(String, primary_key=True)  # Paddle Transaction ID
+    customer_id = Column(String, ForeignKey("customers.id"))
+    status = Column(String)
+    amount = Column(Float)
+    currency = Column(String)
+    invoice_id = Column(String)
+    invoice_number = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    paid_at = Column(DateTime)
+
+    customer = relationship("Customer", back_populates="transactions")
+
+class PaymentMethod(Base):
+    __tablename__ = "payment_methods"
+
+    id = Column(String, primary_key=True)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    type = Column(String)
+    brand = Column(String)
+    last4 = Column(String)
+    exp_month = Column(Integer)
+    exp_year = Column(Integer)
+    updated_at = Column(DateTime)
+
+    customer = relationship("Customer", back_populates="payment_methods")
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    id = Column(String, primary_key=True)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    country_code = Column(String)
+    region = Column(String, nullable=True)
+    postal_code = Column(String, nullable=True)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
