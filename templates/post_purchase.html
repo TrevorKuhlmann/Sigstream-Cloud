@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verifying Your Subscription</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #0e1a2b;
+            color: white;
+            text-align: center;
+            padding-top: 80px;
+        }
+
+        .loader {
+            margin: 40px auto;
+            border: 8px solid #ccc;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to SigStream, {{ user.customer_name or user.email }}</h1>
+    <p>We’re verifying your subscription...</p>
+    <div class="loader"></div>
+    <div class="status" id="status">Checking status...</div>
+
+    <script>
+        async function pollForActivation() {
+            const res = await fetch("/check-subscription");
+            const data = await res.json();
+
+            if (data.active) {
+                document.getElementById("status").textContent = "Subscription confirmed. Redirecting...";
+                setTimeout(() => {
+                    window.location.href = "/dashboard";
+                }, 1000);
+            } else {
+                setTimeout(pollForActivation, 3000); // Check again in 3s
+            }
+        }
+
+        pollForActivation();
+    </script>
+</body>
+</html>

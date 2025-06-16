@@ -109,6 +109,12 @@ def get_db():
 
 # ----------------------------- Magic Link Auth -----------------------------
 
+#- This route is used to display the post-purchase page after a successful purchase
+
+@app.get("/post-purchase", response_class=HTMLResponse)
+async def post_purchase(request: Request, user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("post_purchase.html", {"request": request, "user": user})
+
 @app.get("/login-redirect", response_class=RedirectResponse)
 async def login_redirect(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     query = text("SELECT has_active_subscription(:email)")
@@ -120,7 +126,15 @@ async def login_redirect(request: Request, user: User = Depends(get_current_user
     return RedirectResponse("/", status_code=302)
 
 
+#- This route is used to display the magic login form
+@app.get("/check-subscription")
+async def check_subscription(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    query = text("SELECT has_active_subscription(:email)")
+    result = db.execute(query, {"email": user.email}).scalar()
+    return {"active": result == 'Y'}
 
+
+#- This route is used to display the magic login form
 @app.post("/magic-login-register", response_class=HTMLResponse)
 async def magic_login_register(
     request: Request,
@@ -157,6 +171,7 @@ async def magic_login_register(
         "message": "Check your inbox and click the magic link to log in."
     })
 
+#- This route is used to handle the magic link login process
 @app.post("/magic-login-signin", response_class=HTMLResponse)
 async def magic_signin(
     request: Request,

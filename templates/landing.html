@@ -75,7 +75,7 @@
         function openCheckout(plan) {
             if (!paddleInitialized) return;
 
-            const email = "{{ user_email }}";  // your server-side variable
+            const email = "{{ user_email }}";  // Jinja2 rendering the logged-in user's email
 
             Paddle.Checkout.open({
                 items: [{
@@ -85,16 +85,39 @@
                 settings: {
                     theme: "light",
                     displayMode: "overlay",
-                    variant: "one-page"
+                    variant: "one-page",
+                    successUrl: "https://sigstreamcloud.com/post-purchase"
                 },
-                // pre-fill the email in the UI
                 customer: {
                     email: email
                 },
-                // also embed it in custom_data so it'll appear in your webhook payload
-                passthrough: JSON.stringify({ email: email })   // THIS gets echoed in webhooks
+                passthrough: JSON.stringify({ email: email })
             });
         }
+
+        //function openCheckout(plan) {
+        //    if (!paddleInitialized) return;
+
+        //    const email = "{{ user_email }}";  // your server-side variable
+
+        //    Paddle.Checkout.open({
+        //        items: [{
+        //            priceId: CONFIG.prices[plan][currentBillingCycle],
+        //            quantity: 1
+        //        }],
+        //        settings: {
+        //            theme: "light",
+        //            displayMode: "overlay",
+        //            variant: "one-page"
+        //        },
+        //        // pre-fill the email in the UI
+        //        customer: {
+        //            email: email
+        //        },
+        //        // also embed it in custom_data so it'll appear in your webhook payload
+        //        passthrough: JSON.stringify({ email: email })   // THIS gets echoed in webhooks
+        //    });
+        //}
 
     document.addEventListener("DOMContentLoaded", initializePaddle);
     document.getElementById("countrySelect")?.addEventListener("change", (e) => {
