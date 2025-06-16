@@ -14,10 +14,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
-    <!-- Prevent back button from showing landing page to subscribed users -->
+    <!-- ✅ Back nav fix using replaceState -->
     <script>
-        if (sessionStorage.getItem("hasActiveSubscription") === "true") {
-            window.location.replace("/dashboard");
+        const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
+        if (isSubscribed) {
+            window.history.replaceState(null, "", "/dashboard");
+            window.location.href = "/dashboard";
         }
     </script>
 
@@ -80,26 +82,24 @@
     }
 
     function openCheckout(plan) {
-        if (!paddleInitialized) return;
-
-        const email = "{{ user_email }}";
-
-        Paddle.Checkout.open({
-            items: [{
-                priceId: CONFIG.prices[plan][currentBillingCycle],
-                quantity: 1
-            }],
-            settings: {
-                theme: "light",
-                displayMode: "overlay",
-                variant: "one-page",
-                successUrl: "https://sigstreamcloud.com/post-purchase"
-            },
-            customer: {
-                email: email
-            },
-            passthrough: JSON.stringify({ email: email })
-        });
+      if (!paddleInitialized) return;
+      const email = "{{ user_email }}";
+      Paddle.Checkout.open({
+        items: [{
+          priceId: CONFIG.prices[plan][currentBillingCycle],
+          quantity: 1
+        }],
+        settings: {
+          theme: "light",
+          displayMode: "overlay",
+          variant: "one-page",
+          successUrl: "https://sigstreamcloud.com/post-purchase"
+        },
+        customer: {
+          email: email
+        },
+        passthrough: JSON.stringify({ email: email })
+      });
     }
 
     document.addEventListener("DOMContentLoaded", initializePaddle);
@@ -111,11 +111,11 @@
 </head>
 
 <body>
-
     {% if user_email and user_subscription_status in ["active", "trialing"] %}
     <script>
         sessionStorage.setItem("hasActiveSubscription", "true");
-        window.location.replace("/dashboard");
+        window.history.replaceState(null, "", "/dashboard");
+        window.location.href = "/dashboard";
     </script>
     {% endif %}
 
