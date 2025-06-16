@@ -511,12 +511,19 @@ async def landing_page(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_optional)
 ):
+    subscription_status = None
+    if current_user:
+        query = text("SELECT has_active_subscription(:email)")
+        result = db.execute(query, {"email": current_user.email}).scalar()
+        subscription_status = "active" if result == "ACTIVE" else "inactive"
+
     return templates.TemplateResponse("landing.html", {
         "request": request,
         "user_email": current_user.email if current_user else None,
-        "user_subscription_status": current_user.subscription_status if current_user else None,
+        "user_subscription_status": subscription_status,
         "paddle_token": PADDLE_CLIENT_TOKEN
     })
+
 
 @app.get("/logout")
 def logout(request: Request):
