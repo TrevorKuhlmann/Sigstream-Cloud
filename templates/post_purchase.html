@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Verifying Your Subscription</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Subscription</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
             font-family: sans-serif;
@@ -40,8 +40,8 @@
     </style>
 </head>
 <body>
-    <h1>Welcome to SigStream, {{ user.customer_name or user.email }}</h1>
-    <p>We’re verifying your subscription...</p>
+    <h1>Welcome to SigStream</h1>
+    <p>We are verifying your subscription...</p>
     <div class="loader"></div>
     <div class="status" id="status">Checking status...</div>
 
@@ -49,17 +49,15 @@
         async function pollForActivation() {
             const res = await fetch("/check-subscription");
             const data = await res.json();
-
             if (data.active) {
                 document.getElementById("status").textContent = "Subscription confirmed. Redirecting...";
                 setTimeout(() => {
                     window.location.href = "/dashboard";
                 }, 1000);
             } else {
-                setTimeout(pollForActivation, 3000); // Check again in 3s
+                setTimeout(pollForActivation, 3000);
             }
         }
-
         pollForActivation();
     </script>
 </body>
