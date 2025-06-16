@@ -44,7 +44,8 @@ from auth import (
 )
 from email_utils import send_magic_link_email
 
-
+from fastapi.responses import RedirectResponse
+from sqlalchemy import text
 
 from fastapi import Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -109,10 +110,13 @@ def get_db():
 # ----------------------------- Magic Link Auth -----------------------------
 
 @app.get("/login-redirect", response_class=RedirectResponse)
-async def login_redirect(request: Request, user: User = Depends(get_current_user)):
-    if user.subscription_status in ("active", "trialing"):
+async def login_redirect(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    query = text("SELECT has_active_subscription(:email)")
+    result = db.execute(query, {"email": user.email}).scalar()
+
+    if result == 'Y':
         return RedirectResponse("/dashboard", status_code=302)
-    # ⬇️ Changed from /choose-plan to /
+
     return RedirectResponse("/", status_code=302)
 
 
