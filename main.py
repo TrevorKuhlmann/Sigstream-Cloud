@@ -515,7 +515,9 @@ async def landing_page(
     if current_user:
         query = text("SELECT has_active_subscription(:email)")
         result = db.execute(query, {"email": current_user.email}).scalar()
-        subscription_status = "active" if result == "ACTIVE" else "inactive"
+        subscription_status = result.lower() if result else None
+        # result = db.execute(query, {"email": current_user.email}).scalar()
+        # subscription_status = "active" if result == "ACTIVE" else "inactive"
 
     return templates.TemplateResponse("landing.html", {
         "request": request,
