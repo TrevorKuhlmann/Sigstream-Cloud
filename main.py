@@ -114,7 +114,7 @@ async def login_redirect(request: Request, user: User = Depends(get_current_user
     query = text("SELECT has_active_subscription(:email)")
     result = db.execute(query, {"email": user.email}).scalar()
 
-    if result == 'Y':
+    if result == 'ACTIVE':
         return RedirectResponse("/dashboard", status_code=302)
 
     return RedirectResponse("/", status_code=302)
