@@ -52,6 +52,7 @@
             if (data.active) {
                 document.getElementById("status").textContent = "Subscription confirmed. Redirecting...";
                 setTimeout(() => {
+                    window.history.replaceState(null, "", "/dashboard");
                     window.location.href = "/dashboard";
                 }, 1000);
             } else {
