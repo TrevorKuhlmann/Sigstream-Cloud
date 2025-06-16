@@ -49,16 +49,18 @@
         async function pollForActivation() {
             const res = await fetch("/check-subscription");
             const data = await res.json();
+
             if (data.active) {
                 document.getElementById("status").textContent = "Subscription confirmed. Redirecting...";
+                sessionStorage.setItem("hasActiveSubscription", "true");
                 setTimeout(() => {
-                    window.history.replaceState(null, "", "/dashboard");
-                    window.location.href = "/dashboard";
+                    window.location.replace("/dashboard");
                 }, 1000);
             } else {
                 setTimeout(pollForActivation, 3000);
             }
         }
+
         pollForActivation();
     </script>
 </body>
