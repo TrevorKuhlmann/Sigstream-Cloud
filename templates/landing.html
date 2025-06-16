@@ -14,6 +14,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
+    <!-- Prevent back button from showing landing page to subscribed users -->
+    <script>
+        if (sessionStorage.getItem("hasActiveSubscription") === "true") {
+            window.location.replace("/dashboard");
+        }
+    </script>
+
     <script type="text/javascript">
     const CONFIG = {
       clientToken: "test_5852ced8925dae79f0c0bac4614",
@@ -107,7 +114,8 @@
 
     {% if user_email and user_subscription_status in ["active", "trialing"] %}
     <script>
-        window.location.replace("/dashboard");  // Clean back button behavior
+        sessionStorage.setItem("hasActiveSubscription", "true");
+        window.location.replace("/dashboard");
     </script>
     {% endif %}
 
@@ -120,7 +128,7 @@
         <div>
             {% if user_email %}
             <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
-            <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+            <a href="/logout" onclick="sessionStorage.clear()" class="text-blue-600 hover:underline">Logout</a>
             {% else %}
             <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
             <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
