@@ -1,27 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SigStreamCloud - Remote Device Monitoring</title>
-  <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS." />
-  <meta property="og:title" content="SigStream" />
-  <meta property="og:description" content="Track uptime, alerts, and performance from anywhere." />
-  <meta property="og:image" content="/static/img/sigstream-logo.png" />
-  <meta name="theme-color" content="#1e40af" />
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SigStreamCloud - Remote Device Monitoring</title>
+    <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS." />
+    <meta property="og:title" content="SigStream" />
+    <meta property="og:description" content="Track uptime, alerts, and performance from anywhere." />
+    <meta property="og:image" content="/static/img/sigstream-logo.png" />
+    <meta name="theme-color" content="#1e40af" />
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
-  <script>
-    const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
-    if (isSubscribed) {
-      window.location.replace("/dashboard");
-    }
-  </script>
+    <script>
+        const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
+        if (isSubscribed) {
+            window.location.replace("/dashboard");
+        }
+    </script>
 
-  <script type="text/javascript">
+    <script type="text/javascript">
     const CONFIG = {
       clientToken: "test_5852ced8925dae79f0c0bac4614",
       prices: {
@@ -100,7 +100,20 @@
       currentCountry = e.target.value;
       updatePrices();
     });
-  </script>
+    </script>
+
+    <script>
+  const hasToken = document.cookie.includes("access_token");
+  const isSubscribed = "{{ user_subscription_status }}" === "ACTIVE" || "{{ user_subscription_status }}" === "trialing";
+
+  if (hasToken && isSubscribed) {
+    sessionStorage.setItem("hasActiveSubscription", "true");
+    window.location.replace("/dashboard");
+  } else {
+    sessionStorage.removeItem("hasActiveSubscription");
+  }
+    </script>
+
 </head>
 
 <body>
