@@ -10,7 +10,7 @@
   const status = "{{ user_subscription_status }}";  // should be "active", "trialing" or null
 
   // 3. If they’re truly subscribed, replace THIS page in history and move on
-  if (isLoggedIn && (status === "active" || status === "trialing")) {
+  if (isLoggedIn && (status === "ACTIVE" || status === "trialing")) {
     window.location.replace("/dashboard");
   }
     </script>
