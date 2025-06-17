@@ -15,13 +15,21 @@
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
     <!-- ✅ Back nav fix using replaceState -->
-    <script>
+    <!--<script>
         const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
         if (isSubscribed) {
             window.history.replaceState(null, "", "/dashboard");
             window.location.href = "/dashboard";
         }
+    </script>-->
+
+    <script>
+        const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
+        if (isSubscribed) {
+            window.location.replace("/dashboard");
+        }
     </script>
+
 
     <script type="text/javascript">
     const CONFIG = {

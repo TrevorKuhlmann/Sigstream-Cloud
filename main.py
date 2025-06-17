@@ -516,8 +516,10 @@ async def landing_page(
         query = text("SELECT has_active_subscription(:email)")
         result = db.execute(query, {"email": current_user.email}).scalar()
         subscription_status = result.lower() if result else None
-        # result = db.execute(query, {"email": current_user.email}).scalar()
-        # subscription_status = "active" if result == "ACTIVE" else "inactive"
+
+        # ✅ Server-side redirect to dashboard if subscribed
+        if subscription_status in ("ACTIVE", "trialing"):
+            return RedirectResponse("/dashboard", status_code=302)
 
     return templates.TemplateResponse("landing.html", {
         "request": request,
@@ -525,6 +527,7 @@ async def landing_page(
         "user_subscription_status": subscription_status,
         "paddle_token": PADDLE_CLIENT_TOKEN
     })
+
 
 
 @app.get("/logout")
