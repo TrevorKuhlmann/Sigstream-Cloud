@@ -1,3 +1,4 @@
+{% raw %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,26 +15,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
-    <!-- ✅ Back nav fix using replaceState -->
-    <!--<script>
-        const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
-        if (isSubscribed) {
-            window.history.replaceState(null, "", "/dashboard");
-            window.location.href = "/dashboard";
-        }
-    </script>-->
-
+    {% if user_subscription_status in ["active", "trialing"] %}
     <script>
-        const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
-        if (isSubscribed) {
-            window.location.replace("/dashboard");
-        }
+        sessionStorage.setItem("hasActiveSubscription", "true");
+        window.location.replace("/dashboard");
     </script>
-
+    {% endif %}
 
     <script type="text/javascript">
     const CONFIG = {
-      clientToken: "test_5852ced8925dae79f0c0bac4614",
+      clientToken: "{{ paddle_token }}",
       prices: {
         starter: {
           month: "pri_01jwqg6dfj4qnww97nv52p3m1m",
@@ -90,23 +81,21 @@
     }
 
     function openCheckout(plan) {
-      if (!paddleInitialized) return;
       const email = "{{ user_email }}";
+      const isSubscribed = "{{ user_subscription_status }}" === "active" || "{{ user_subscription_status }}" === "trialing";
+
+      if (!paddleInitialized || !email || isSubscribed) return;
+
       Paddle.Checkout.open({
-        items: [{
-          priceId: CONFIG.prices[plan][currentBillingCycle],
-          quantity: 1
-        }],
+        items: [{ priceId: CONFIG.prices[plan][currentBillingCycle], quantity: 1 }],
         settings: {
           theme: "light",
           displayMode: "overlay",
           variant: "one-page",
           successUrl: "https://sigstreamcloud.com/post-purchase"
         },
-        customer: {
-          email: email
-        },
-        passthrough: JSON.stringify({ email: email })
+        customer: { email },
+        passthrough: JSON.stringify({ email })
       });
     }
 
@@ -119,11 +108,11 @@
 </head>
 
 <body>
+    <!-- Redundant fallback guard -->
     {% if user_email and user_subscription_status in ["active", "trialing"] %}
     <script>
         sessionStorage.setItem("hasActiveSubscription", "true");
-        window.history.replaceState(null, "", "/dashboard");
-        window.location.href = "/dashboard";
+        window.location.replace("/dashboard");
     </script>
     {% endif %}
 
@@ -227,3 +216,4 @@
     </footer>
 </body>
 </html>
+{% endraw %}
