@@ -16,6 +16,8 @@ from jose import jwt
 import os, time, csv, logging
 from paddle_webhook import paddle_webhook  # ✅ IMPORTED HERE
 
+from fastapi.responses import RedirectResponse
+
 from datetime import timedelta
 from database import SessionLocal
 from models import DeviceDataIn, DeviceData, DeviceStatus, User
@@ -504,29 +506,57 @@ def refund(request: Request):
     return templates.TemplateResponse("refund.html", {"request": request})
 
 
-
 @app.get("/", response_class=HTMLResponse)
 async def landing_page(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_optional)
 ):
+    # 1. Determine subscription status
     subscription_status = None
     if current_user:
-        query = text("SELECT has_active_subscription(:email)")
-        result = db.execute(query, {"email": current_user.email}).scalar()
+        result = db.execute(text("SELECT has_active_subscription(:email)"), {"email": current_user.email}).scalar()
         subscription_status = result.lower() if result else None
 
-        # ✅ Server-side redirect to dashboard if subscribed
-        if subscription_status in ("ACTIVE", "trialing"):
-            return RedirectResponse("/dashboard", status_code=302)
+        # 2. If subscribed, redirect immediately (and disable caching)
+        if subscription_status in ("active", "trialing"):
+            response = RedirectResponse("/dashboard", status_code=302)
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            return response
 
-    return templates.TemplateResponse("landing.html", {
+    # 3. Otherwise render landing page, also with no-store so back always revalidates
+    response = templates.TemplateResponse("landing.html", {
         "request": request,
         "user_email": current_user.email if current_user else None,
         "user_subscription_status": subscription_status,
         "paddle_token": PADDLE_CLIENT_TOKEN
     })
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    return response
+
+
+# @app.get("/", response_class=HTMLResponse)
+# async def landing_page(
+#     request: Request,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user_optional)
+# ):
+#     subscription_status = None
+#     if current_user:
+#         query = text("SELECT has_active_subscription(:email)")
+#         result = db.execute(query, {"email": current_user.email}).scalar()
+#         subscription_status = result.lower() if result else None
+
+#         # ✅ Server-side redirect to dashboard if subscribed
+#         if subscription_status in ("ACTIVE", "trialing"):
+#             return RedirectResponse("/dashboard", status_code=302)
+
+#     return templates.TemplateResponse("landing.html", {
+#         "request": request,
+#         "user_email": current_user.email if current_user else None,
+#         "user_subscription_status": subscription_status,
+#         "paddle_token": PADDLE_CLIENT_TOKEN
+#     })
 
 
 
