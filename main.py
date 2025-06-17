@@ -131,7 +131,7 @@ async def login_redirect(request: Request, user: User = Depends(get_current_user
 async def check_subscription(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     query = text("SELECT has_active_subscription(:email)")
     result = db.execute(query, {"email": user.email}).scalar()
-    return {"active": result == 'ACTIVE'}
+    return {"active": result == 'Y'}
 
 
 #- This route is used to display the magic login form
