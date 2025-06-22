@@ -54,7 +54,7 @@
                 document.getElementById("status").textContent = "Subscription confirmed. Redirecting...";
                 sessionStorage.setItem("hasActiveSubscription", "true");
                 setTimeout(() => {
-                    window.location.replace("/dashboard");
+                    window.location.replace("/summary");
                 }, 1000);
             } else {
                 setTimeout(pollForActivation, 3000);

@@ -520,7 +520,7 @@ async def landing_page(
 
         # 2. If subscribed, redirect immediately (and disable caching)
         if subscription_status in ("active", "trialing"):
-            response = RedirectResponse("/dashboard", status_code=302)
+            response = RedirectResponse("/summary", status_code=302)
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
             return response
 
