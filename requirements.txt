@@ -16,6 +16,7 @@ aiosmtplib
 paddle-python-sdk
 utils
 authlib
+httpx
 
 
 
