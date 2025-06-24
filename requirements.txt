@@ -15,7 +15,7 @@ passlib[bcrypt]
 aiosmtplib
 paddle-python-sdk
 utils
-
+authlib
 
 
 
