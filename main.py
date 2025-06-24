@@ -65,9 +65,27 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 import logging
+from fastapi import HTTPException
+
+import os
+from authlib.integrations.starlette_client import OAuth, OAuthError
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+
+#----------------------------- OAuth Setup -----------------------------
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+
+oauth = OAuth()
+oauth.register(
+    name="google",
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
+)
 
 # ----------------------------- Config -----------------------------
 
@@ -292,7 +310,48 @@ def complete_magic_login(token: str, request: Request, db: Session = Depends(get
 #     # return response
 #     response = RedirectResponse(url="/login-redirect")
 #     response.set_cookie("access_token", access_token, httponly=True)
+
+
+
 #     return response
+
+
+
+#----------------------------- OAuth Google Auth -----------------------------
+
+@app.get("/auth/google")
+async def auth_google(request: Request):
+    redirect_uri = request.url_for("auth_google_callback")
+    return await oauth.google.authorize_redirect(request, str(redirect_uri))
+
+
+@app.get("/auth/google/callback")
+async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
+    try:
+        token = await oauth.google.authorize_access_token(request)
+    except OAuthError:
+        raise HTTPException(400, "Google OAuth failed")
+    # Google returns `userinfo` in `id_token` or in `token["userinfo"]`
+    user_info = token.get("userinfo") or await oauth.google.parse_id_token(request, token)
+    email = user_info["email"]
+
+    # --- Upsert user on email ---
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(
+            email=email,
+            hashed_password="",               # no password for OAuth-only
+            customer_name=user_info.get("name", "")
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Issue YOUR JWT cookie just as magic-link login does:
+    access_token = create_access_token(data={"sub": user.email})
+    response = RedirectResponse(url="/login-redirect", status_code=302)
+    response.set_cookie("access_token", access_token, httponly=True)
+    return response
 
 # ----------------------------- Traditional Form Auth -----------------------------
 
