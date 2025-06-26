@@ -5,6 +5,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from database import Base
 
+from sqlalchemy import Boolean, DateTime
+
 # -------------------- Device and User Models --------------------
 
 class DeviceDataIn(BaseModel):
@@ -30,6 +32,10 @@ class User(Base):
     subscription_id = Column(String, nullable=True)
     plan_type = Column(String, nullable=True)
     subscription_status = Column(String, nullable=True)
+
+    # Email confirmation fields
+    email_confirmed    = Column(Boolean, default=False, nullable=False)
+    email_confirmed_at = Column(DateTime, nullable=True)
 
     devices = relationship("DeviceStatus", back_populates="owner")
 

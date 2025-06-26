@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Email Confirmation | SigStream</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="max-w-md mx-auto mt-20 bg-white shadow-md p-8 rounded text-center">
+        {% if error %}
+        <h1 class="text-2xl font-bold text-red-600 mb-4">Oops!</h1>
+        <p class="mb-6 text-gray-700">{{ error }}</p>
+        <a href="/" class="text-blue-600 hover:underline">Back to home</a>
+        {% else %}
+        <h1 class="text-2xl font-bold text-green-600 mb-4">Email Confirmed!</h1>
+        <p class="mb-6 text-gray-700">
+            Thanks for confirming your email.<br />
+            You can now <a href="/login-form" class="text-blue-600 hover:underline">sign in</a>.
+        </p>
+        {% endif %}
+    </div>
+</body>
+</html>
