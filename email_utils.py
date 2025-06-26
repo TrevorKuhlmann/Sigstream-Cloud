@@ -17,9 +17,9 @@ SMTP_PASS = os.getenv("SMTP_PASS")
 
 
 async def send_magic_link_email(to_email: str, link_url: str):
-    """
-    Send a one-time magic login link that expires in 10 minutes.
-    """
+    # """
+    # Send a one-time magic login link that expires in 10 minutes.
+    # """
     msg = EmailMessage()
     msg["From"] = SMTP_USER
     msg["To"] = to_email
@@ -44,10 +44,10 @@ def send_confirmation_email(
     to_email: str,
     base_url: str
 ):
-    """
-    Queue a 24-hour email confirmation link. 
-    base_url should be something like "https://sigstreamcloud.com/".
-    """
+    # """
+    # Queue a 24-hour email confirmation link. 
+    # base_url should be something like "https://sigstreamcloud.com/".
+    # """
     # 1) Create a JWT with a custom "type" claim
     token = create_access_token(
         data={"sub": to_email, "type": "email_confirm"},
