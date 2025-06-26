@@ -24,7 +24,7 @@ async def send_magic_link_email(to_email: str, link_url: str):
     msg = EmailMessage()
     msg["From"] = SMTP_USER
     msg["To"] = to_email
-    msg["Subject"] = "Your Magic Login Link ñ SigStream"
+    msg["Subject"] = "Your Magic Login Link ‚Äì SigStream"
     msg.set_content(
         f"Click this link to log in:\n\n{link_url}\n\n"
         f"This link is valid for 10 minutes."
@@ -49,7 +49,7 @@ def send_confirmation_email(
     Sends a 24-hour confirmation link to `to_email`.
     `base_url` can be overridden, but defaults to your production domain.
     """
-    # 1) Create a JWT with a custom ìtypeî claim for email confirmation
+    # 1) Create a JWT with a custom ‚Äútype‚Äù claim for email confirmation
     token = create_access_token(
         data={"sub": to_email, "type": "email_confirm"},
         expires_delta=timedelta(hours=24)
@@ -59,7 +59,7 @@ def send_confirmation_email(
     confirm_link = f"{base_url.rstrip('/')}/confirm-email?token={token}"
 
     # 3) Compose the email
-    subject = "Please Confirm Your Email ñ SigStream"
+    subject = "Please Confirm Your Email ‚Äì SigStream"
     body = (
         f"Hi there!\n\n"
         f"Thanks for signing up. Please confirm your email address by clicking the link below:\n\n"
