@@ -18,9 +18,9 @@ SMTP_PASS = os.getenv("SMTP_PASS")
 
 
 async def send_magic_link_email(to_email: str, link_url: str):
-    """
-    Send the magic-link login email to `to_email`.
-    """
+    # """
+    # Send the magic-link login email to `to_email`.
+    # """
     msg = EmailMessage()
     msg["From"] = SMTP_USER
     msg["To"] = to_email
@@ -45,10 +45,10 @@ def send_confirmation_email(
     to_email: str,
     base_url: str = "https://sigstreamcloud.com/"
 ):
-    """
-    Sends a 24-hour confirmation link to `to_email`.
-    `base_url` can be overridden, but defaults to your production domain.
-    """
+    # """
+    # Sends a 24-hour confirmation link to `to_email`.
+    # `base_url` can be overridden, but defaults to your production domain.
+    # """
     # 1) Create a JWT with a custom “type” claim for email confirmation
     token = create_access_token(
         data={"sub": to_email, "type": "email_confirm"},
