@@ -1,94 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-900 text-white">
 <head>
     <meta charset="UTF-8">
     <title>SigStream Summary</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-    <div class="max-w-5xl mx-auto py-8 px-4">
-        <!-- Header with Logout + Account dropdown -->
-        <header class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold">Recent Device Telemetry</h2>
-            <div class="flex items-center space-x-2">
-                <!-- Logout -->
-                <a href="/logout"
-                   class="px-4 py-2 bg-red-600 rounded hover:bg-red-700 transition">
-                    Logout
-                </a>
-                <!-- Account Dropdown -->
-                <details class="relative">
-                    <summary class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 cursor-pointer transition">
-                        Account
-                    </summary>
-                    <ul class="absolute right-0 mt-2 w-48 bg-white text-gray-900 rounded shadow-lg overflow-hidden z-10">
-                        <li>
-                            <a href="{{ management_url }}"
-                               class="block px-4 py-2 hover:bg-gray-100 transition">
-                                Manage Subscription
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/account-details"
-                               class="block px-4 py-2 hover:bg-gray-100 transition">
-                                Profile
-                            </a>
-                        </li>
-                    </ul>
-                </details>
-            </div>
-        </header>
+<body class="h-full flex flex-col">
+    <header class="bg-gray-800 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold">SigStream Summary</h1>
+        <div class="flex items-center space-x-4">
+            <a href="/logout"
+               class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded">
+                Logout
+            </a>
 
+            {% if management_url %}
+            <div class="relative group">
+                <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded inline-flex items-center">
+                    Account
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a href="{{ management_url }}"
+                       target="_blank"
+                       class="block px-4 py-2 hover:bg-gray-100">
+                        Manage Subscription
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-auto p-6">
         <!-- Filter form -->
         <form method="get" class="mb-4 flex space-x-2">
             <input name="device_id"
-                   placeholder="Filter by Device ID"
                    value="{{ filter_id or '' }}"
-                   class="flex-1 px-3 py-2 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button type="submit"
-                    class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition">
-                Filter
-            </button>
+                   class="flex-1 px-3 py-2 rounded bg-gray-800 border border-gray-700"
+                   placeholder="Filter by Device ID" />
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">Filter</button>
         </form>
 
         <!-- Export CSV -->
-        <div class="mb-4">
-            <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
-               class="px-4 py-2 bg-green-600 rounded hover:bg-green-700 transition inline-block">
-                Export CSV
-            </a>
-        </div>
+        <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
+           class="inline-block mb-6 px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+            Export CSV
+        </a>
 
-        <!-- Data Table -->
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
-                <thead class="bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-2 text-left">ID</th>
-                        <th class="px-4 py-2 text-left">Device ID</th>
-                        <th class="px-4 py-2 text-left">Data</th>
-                        <th class="px-4 py-2 text-left">Timestamp</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in records %}
-                    <tr class="border-b border-gray-700">
-                        <td class="px-4 py-2">{{ row.id }}</td>
-                        <td class="px-4 py-2">{{ row.device_id }}</td>
-                        <td class="px-4 py-2">{{ row.data }}</td>
-                        <td class="px-4 py-2">{{ row.timestamp | format_ts }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <table class="w-full table-auto border-collapse text-sm">
+            <thead>
+                <tr class="bg-gray-800">
+                    <th class="px-4 py-2 text-left">ID</th>
+                    <th class="px-4 py-2 text-left">Device ID</th>
+                    <th class="px-4 py-2 text-left">Data</th>
+                    <th class="px-4 py-2 text-left">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in records %}
+                <tr class="odd:bg-gray-800 even:bg-gray-700">
+                    <td class="px-4 py-2">{{ row.id }}</td>
+                    <td class="px-4 py-2">{{ row.device_id }}</td>
+                    <td class="px-4 py-2">{{ row.data }}</td>
+                    <td class="px-4 py-2">{{ row.timestamp | format_ts }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-        <!-- No Data Message -->
         {% if records|length == 0 %}
-        <div class="mt-4 px-4 py-3 bg-yellow-500 text-gray-900 rounded">
-            No telemetry data available yet.
-        </div>
+        <div class="mt-6 text-yellow-400">No telemetry data available yet.</div>
         {% endif %}
-    </div>
+    </main>
 </body>
 </html>

@@ -454,13 +454,13 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
 # ----------------------------- Summary with Paddle Management URLs -----------------------------
 
 @app.get("/summary", response_class=HTMLResponse)
-def summary(
+async def summary(
     request: Request,
     device_id: str = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # --- 1) Your existing device‐telemetry fetch ---
+    # 1) Your existing device‐telemetry fetch
     query = (
         db.query(DeviceData)
           .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
@@ -470,35 +470,30 @@ def summary(
         query = query.filter(DeviceData.device_id == device_id)
     records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
 
-    # --- 2) Fetch active subscription ID from your DB via SQL ---
-    subscription_id = db.execute(
-        text("""
-            SELECT b.id
-              FROM public.customers a
-              INNER JOIN public.subscriptions b
-                ON a.id = b.customer_id
-             WHERE b.status = 'active'
-               AND a.email = :email
-        """),
-        {"email": current_user.email}
-    ).scalar()
-  
-    management_urls = {}
-    if subscription_id:
-        # --- 3) Call Paddle to retrieve management_urls ---
-        resp = httpx.get(
-            f"https://sandbox-api.paddle.com/subscriptions/{subscription_id}",
-            headers={"Authorization": f"Bearer {PADDLE_API_KEY}"}
-        )
-        if resp.status_code == 200:
-            management_urls = resp.json().get("data", {}).get("management_urls", {})
+    # 2) Grab the active subscription id for this user
+    sub_id = db.execute(text("""
+        SELECT b.id
+          FROM public.customers a
+          JOIN public.subscriptions b ON a.id = b.customer_id
+         WHERE b.status = 'active' AND a.email = :email
+    """), {"email": current_user.email}).scalar()
 
-    # --- 4) Render template with both telemetry + management URLs ---
+    management_url = None
+    if sub_id:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
+                headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
+            )
+            data = resp.json()
+            logging.info(f"Paddle subscription payload for {sub_id}: {data}")
+            management_url = data.get("management_url")
+
     return templates.TemplateResponse("summary.html", {
         "request": request,
         "records": records,
         "filter_id": device_id,
-        "management_urls": management_urls
+        "management_url": management_url
     })
 
 
