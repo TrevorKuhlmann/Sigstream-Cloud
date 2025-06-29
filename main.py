@@ -485,16 +485,23 @@ async def summary(
                 f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
                 headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
             )
-            data = resp.json()
-            logging.info(f"Paddle subscription payload for {sub_id}: {data}")
-            management_url = data.get("management_url")
+    payload = resp.json()
+    logging.info(f"Paddle subscription payload for {sub_id}: {payload}")
+
+    m_urls = payload.get("data", {}).get("management_urls", {})
+    cancel_url = m_urls.get("cancel")
+    update_pm_url = m_urls.get("update_payment_method")
+
 
     return templates.TemplateResponse("summary.html", {
-        "request": request,
+         "request": request,
         "records": records,
         "filter_id": device_id,
-        "management_url": management_url
-    })
+        "cancel_url": cancel_url,
+        "update_pm_url": update_pm_url,
+    }
+                                      
+                                      )
 
 
 # @app.get("/summary", response_class=HTMLResponse)
