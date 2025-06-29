@@ -3,57 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <title>SigStream Summary</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-dark text-white">
-    <div class="container mt-5">
-
-        <!-- ← Navigation Bar → -->
-        <div class="d-flex justify-content-between mb-4">
-            <div>
-                <a href="/logout" class="btn btn-outline-light">Logout</a>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-5xl mx-auto py-8 px-4">
+        <!-- Header with Logout + Account dropdown -->
+        <header class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold">Recent Device Telemetry</h2>
+            <div class="flex items-center space-x-2">
+                <!-- Logout -->
+                <a href="/logout"
+                   class="px-4 py-2 bg-red-600 rounded hover:bg-red-700 transition">
+                    Logout
+                </a>
+                <!-- Account Dropdown -->
+                <details class="relative">
+                    <summary class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 cursor-pointer transition">
+                        Account
+                    </summary>
+                    <ul class="absolute right-0 mt-2 w-48 bg-white text-gray-900 rounded shadow-lg overflow-hidden z-10">
+                        <li>
+                            <a href="{{ management_url }}"
+                               class="block px-4 py-2 hover:bg-gray-100 transition">
+                                Manage Subscription
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/account-details"
+                               class="block px-4 py-2 hover:bg-gray-100 transition">
+                                Profile
+                            </a>
+                        </li>
+                    </ul>
+                </details>
             </div>
-            <div>
-                <a href="/account" class="btn btn-outline-info">Account Management</a>
-            </div>
-        </div>
-
-        <h2>Recent Device Telemetry</h2>
+        </header>
 
         <!-- Filter form -->
-        <form method="get" class="mb-3 d-flex">
-            <input name="device_id" class="form-control me-2" placeholder="Filter by Device ID" value="{{ filter_id or '' }}">
-            <button class="btn btn-primary">Filter</button>
+        <form method="get" class="mb-4 flex space-x-2">
+            <input name="device_id"
+                   placeholder="Filter by Device ID"
+                   value="{{ filter_id or '' }}"
+                   class="flex-1 px-3 py-2 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <button type="submit"
+                    class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition">
+                Filter
+            </button>
         </form>
 
         <!-- Export CSV -->
-        <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}" class="btn btn-success mb-3">
-            Export CSV
-        </a>
+        <div class="mb-4">
+            <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
+               class="px-4 py-2 bg-green-600 rounded hover:bg-green-700 transition inline-block">
+                Export CSV
+            </a>
+        </div>
 
-        <table class="table table-dark table-striped mt-4">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Device ID</th>
-                    <th>Data</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in records %}
-                <tr>
-                    <td>{{ row.id }}</td>
-                    <td>{{ row.device_id }}</td>
-                    <td>{{ row.data }}</td>
-                    <td>{{ row.timestamp | format_ts }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- Data Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-2 text-left">ID</th>
+                        <th class="px-4 py-2 text-left">Device ID</th>
+                        <th class="px-4 py-2 text-left">Data</th>
+                        <th class="px-4 py-2 text-left">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in records %}
+                    <tr class="border-b border-gray-700">
+                        <td class="px-4 py-2">{{ row.id }}</td>
+                        <td class="px-4 py-2">{{ row.device_id }}</td>
+                        <td class="px-4 py-2">{{ row.data }}</td>
+                        <td class="px-4 py-2">{{ row.timestamp | format_ts }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
+        <!-- No Data Message -->
         {% if records|length == 0 %}
-        <div class="alert alert-warning">No telemetry data available yet.</div>
+        <div class="mt-4 px-4 py-3 bg-yellow-500 text-gray-900 rounded">
+            No telemetry data available yet.
+        </div>
         {% endif %}
     </div>
 </body>

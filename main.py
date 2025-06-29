@@ -1,11 +1,12 @@
 ﻿import os
 import time
 import csv
+import os, httpx
 import logging
 from datetime import datetime, timedelta
 from io import StringIO
 from contextlib import asynccontextmanager
-
+from sqlalchemy import text
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 from fastapi import (
@@ -54,6 +55,7 @@ SECRET_KEY          = os.getenv("SECRET_KEY", "your_default_secret")
 ALGORITHM           = "HS256"
 PADDLE_ENV          = os.getenv("PADDLE_ENV", "sandbox")
 PADDLE_CLIENT_TOKEN = os.getenv("PADDLE_CLIENT_TOKEN")
+PADDLE_API_KEY      = os.getenv("PADDLE_API_KEY")   
 
 # ----------------------------- OAuth Setup -----------------------------
 GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
@@ -449,21 +451,72 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
     })
 
 
+# ----------------------------- Summary with Paddle Management URLs -----------------------------
+
 @app.get("/summary", response_class=HTMLResponse)
 def summary(
     request: Request,
     device_id: str = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user)
 ):
-    query = db.query(DeviceData).join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)\
-             .filter(DeviceStatus.user_id == current_user.id)
+    # --- 1) Your existing device‐telemetry fetch ---
+    query = (
+        db.query(DeviceData)
+          .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
+          .filter(DeviceStatus.user_id == current_user.id)
+    )
     if device_id:
         query = query.filter(DeviceData.device_id == device_id)
     records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
+
+    # --- 2) Fetch active subscription ID from your DB via SQL ---
+    subscription_id = db.execute(
+        text("""
+            SELECT b.id
+              FROM public.customers a
+              INNER JOIN public.subscriptions b
+                ON a.id = b.customer_id
+             WHERE b.status = 'active'
+               AND a.email = :email
+        """),
+        {"email": current_user.email}
+    ).scalar()
+
+    management_urls = {}
+    if subscription_id:
+        # --- 3) Call Paddle to retrieve management_urls ---
+        resp = httpx.get(
+            f"https://api.paddle.com/subscriptions/{subscription_id}",
+            headers={"Authorization": f"Bearer {PADDLE_API_KEY}"}
+        )
+        if resp.status_code == 200:
+            management_urls = resp.json().get("data", {}).get("management_urls", {})
+
+    # --- 4) Render template with both telemetry + management URLs ---
     return templates.TemplateResponse("summary.html", {
-        "request": request, "records": records, "filter_id": device_id
+        "request": request,
+        "records": records,
+        "filter_id": device_id,
+        "management_urls": management_urls
     })
+
+
+# @app.get("/summary", response_class=HTMLResponse)
+# def summary(
+#     request: Request,
+#     device_id: str = None,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     query = db.query(DeviceData).join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)\
+#              .filter(DeviceStatus.user_id == current_user.id)
+#     if device_id:
+#         query = query.filter(DeviceData.device_id == device_id)
+#     records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
+#     return templates.TemplateResponse("summary.html", {
+#         "request": request, "records": records, "filter_id": device_id
+#     })
 
 
 # ----------------------------- CSV Export & Devices -----------------------------
