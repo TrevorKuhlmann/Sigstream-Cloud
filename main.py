@@ -482,12 +482,12 @@ def summary(
         """),
         {"email": current_user.email}
     ).scalar()
-
+  
     management_urls = {}
     if subscription_id:
         # --- 3) Call Paddle to retrieve management_urls ---
         resp = httpx.get(
-            f"https://api.paddle.com/subscriptions/{subscription_id}",
+            f"https://sandbox-api.paddle.com/subscriptions/{subscription_id}",
             headers={"Authorization": f"Bearer {PADDLE_API_KEY}"}
         )
         if resp.status_code == 200:
