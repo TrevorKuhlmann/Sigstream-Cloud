@@ -133,16 +133,16 @@ class Address(Base):
 
     #--
 
-    class ApiKey(Base):
-     __tablename__ = "api_keys"
+   class ApiKey(Base):
+    __tablename__ = "api_keys"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)   # ✅ Must have primary_key=True
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     key = Column(String, unique=True, nullable=False, index=True)
-    status = Column(String, default="active")  # 'active' or 'revoked'
+    status = Column(String, default="active")
     created_at = Column(DateTime, server_default=func.now())
     revoked_at = Column(DateTime, nullable=True)
-    device_id = Column(String, nullable=True)  # e.g. machine fingerprint
+    device_id = Column(String, nullable=True)
+    bound_at = Column(DateTime, nullable=True)   # ✅ Your new audit column
 
-    # optional backref to user
     user = relationship("User", back_populates="api_keys")
