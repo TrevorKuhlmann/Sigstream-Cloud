@@ -571,6 +571,7 @@ async def summary(
         "filter_id": device_id,
         "cancel_url": cancel_url,
         "update_pm_url": update_pm_url,
+         "user": current_user   # ✅ Add this line!
     }
                                       
                                       )
