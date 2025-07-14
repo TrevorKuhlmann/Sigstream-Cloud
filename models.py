@@ -133,7 +133,7 @@ class Address(Base):
 
     #--
 
-   class ApiKey(Base):
+class ApiKey(Base):
     __tablename__ = "api_keys"
 
     id = Column(Integer, primary_key=True, index=True)   # ✅ Must have primary_key=True
