@@ -30,7 +30,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
-
+from datetime import datetime
 from auth import (
     create_access_token,
     get_db,
@@ -47,6 +47,10 @@ from email_utils import send_magic_link_email, send_confirmation_email
 from crud import insert_data, update_heartbeat
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
+
+
+from models import ApiKey  # 👈 new model you added to models.py
+from pydantic import BaseModel
 
 # ----------------------------- Load Env -----------------------------
 load_dotenv()
@@ -167,6 +171,12 @@ async def magic_login_register(
         "email": email,
         "message": "Check your inbox and click the magic link to log in.",
     })
+
+#----------------------------- Claim Request Model -----------------------------
+class ClaimRequest(BaseModel):
+    api_key: str
+    machine_id: str
+
 
 
 @app.post("/magic-login-signin", response_class=HTMLResponse)
@@ -427,19 +437,81 @@ def login_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     return {"access_token": token, "token_type": "bearer"}
 
 
+#----------------------------- API Key Validation -----------------------------
+
+def validate_device_key(api_key_str: str, machine_id: str, db: Session):
+    if not api_key_str or not machine_id:
+        raise HTTPException(status_code=400, detail="Missing API key or device ID.")
+    api_key = db.query(ApiKey).filter(
+        ApiKey.key == api_key_str,
+        ApiKey.status == "active"
+    ).first()
+    if not api_key:
+        raise HTTPException(status_code=403, detail="Invalid API key.")
+    if api_key.device_id != machine_id:
+        raise HTTPException(status_code=403, detail=f"Key mismatch: bound to {api_key.device_id}.")
+    return api_key
+
+
 # ----------------------------- Data Endpoints -----------------------------
 @app.post("/data")
 def receive_data(
     payload: DeviceDataIn,
     db: Session = Depends(get_db),
     x_api_key: str = Header(None),
+    x_device_id: str = Header(None),  # 👈 agent must send this too
 ):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+    validate_device_key(x_api_key, x_device_id, db)
     ts = payload.timestamp or int(time.time())
     insert_data(payload.device_id, payload.data, ts, db)
     update_heartbeat(payload.device_id, ts, db)
     return {"status": "success"}
+
+
+
+#----------------------------- Device Claiming -----------------------------
+@app.post("/api/claim")
+def claim_device(
+    payload: ClaimRequest,
+    db: Session = Depends(get_db)
+):
+    api_key = db.query(ApiKey).filter(
+        ApiKey.key == payload.api_key,
+        ApiKey.status == "active"
+    ).first()
+
+    if not api_key:
+        raise HTTPException(status_code=403, detail="Invalid or revoked API key.")
+
+    if api_key.device_id is None:
+        # ✅ First time claim — bind device & set bound_at
+        api_key.device_id = payload.machine_id
+        api_key.bound_at = datetime.utcnow()
+        db.commit()
+
+        logging.info(
+            f"API key {api_key.key} bound to device {payload.machine_id} at {api_key.bound_at}."
+        )
+
+        return {
+            "status": "bound",
+            "message": f"Key bound to {payload.machine_id} at {api_key.bound_at}."
+        }
+
+    elif api_key.device_id == payload.machine_id:
+        # ✅ Already claimed by same device — allow
+        return {
+            "status": "ok",
+            "message": "Device already bound — everything ok."
+        }
+
+    else:
+        # ❌ Key bound to different device — block reuse
+        raise HTTPException(
+            status_code=403,
+            detail=f"Key already bound to {api_key.device_id}."
+        )
+
 
 
 # ----------------------------- Dashboard & Summary -----------------------------

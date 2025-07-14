@@ -7,6 +7,11 @@ from database import Base
 
 from sqlalchemy import Boolean, DateTime
 
+
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy.orm import relationship
+from database import Base
+
 # -------------------- Device and User Models --------------------
 
 class DeviceDataIn(BaseModel):
@@ -38,6 +43,7 @@ class User(Base):
     email_confirmed_at = Column(DateTime, nullable=True)
 
     devices = relationship("DeviceStatus", back_populates="owner")
+    api_keys = relationship("ApiKey", back_populates="user")
 
 class DeviceStatus(Base):
     __tablename__ = 'device_status'
@@ -123,3 +129,20 @@ class Address(Base):
     postal_code = Column(String, nullable=True)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+
+
+    #--
+
+    class ApiKey(Base):
+     __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    key = Column(String, unique=True, nullable=False, index=True)
+    status = Column(String, default="active")  # 'active' or 'revoked'
+    created_at = Column(DateTime, server_default=func.now())
+    revoked_at = Column(DateTime, nullable=True)
+    device_id = Column(String, nullable=True)  # e.g. machine fingerprint
+
+    # optional backref to user
+    user = relationship("User", back_populates="api_keys")
