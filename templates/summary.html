@@ -3,14 +3,24 @@
 <head>
     <meta charset="UTF-8" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>SigStream Summary</title>
+    <title>SigStream Dashboard</title>
 </head>
 <body class="h-full flex flex-col">
 
     <!-- Header -->
     <header class="bg-gray-800 px-6 py-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold">SigStream Summary</h1>
+        <h1 class="text-2xl font-bold">SigStream Dashboard</h1>
         <div class="flex items-center space-x-4">
+            <a href="/api-management"
+               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center">
+                <!-- Heroicon Key icon -->
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9V3m0 0a9 9 0 100 18 9 9 0 000-18z" />
+                </svg>
+                API Management
+            </a>
+
             <a href="/logout"
                class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded">
                 Logout
@@ -44,8 +54,21 @@
         </div>
     </header>
 
+    <!-- Hero Section -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-lg mx-6 my-6">
+        <h2 class="text-xl font-semibold mb-2">Welcome to your Telemetry Dashboard</h2>
+        <p class="mb-4 text-gray-300">
+            To start monitoring your devices, you need to generate an API key and claim your devices.
+            Each device needs its own unique key.
+        </p>
+        <a href="/api-management"
+           class="inline-block px-5 py-3 bg-blue-600 hover:bg-blue-700 rounded font-semibold">
+            ➕ Manage API Keys
+        </a>
+    </section>
+
     <!-- Main Content -->
-    <main class="flex-1 overflow-auto p-6 space-y-6">
+    <main class="flex-1 overflow-auto px-6 pb-6 space-y-6">
 
         <!-- Filter & Export -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
