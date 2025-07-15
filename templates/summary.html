@@ -37,13 +37,16 @@
             </a>
 
             <!-- API Management -->
-            <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="/api-management"
+               class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
+                <!-- Key Icon -->
+                <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
+                          d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                API Management
+                Create API Key
             </a>
+
 
             <!-- Account -->
             {% if cancel_url or update_pm_url %}
