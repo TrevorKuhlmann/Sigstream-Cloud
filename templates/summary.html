@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-900 text-white">
+<html lang="en" class="h-full bg-gray-100 text-gray-900">
 <head>
     <meta charset="UTF-8" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -9,16 +9,16 @@
 <body class="h-full flex">
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-gray-800 flex flex-col">
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div class="flex items-center space-x-2 p-6">
             <img src="/static/SigStreamLogo.png" alt="SigStream" class="w-10 h-10">
             <span class="text-xl font-bold">SigStream</span>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <!-- Dashboard link -->
-            <a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-700">
+            <!-- Dashboard -->
+            <a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
                 <!-- Heroicon: Home -->
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -27,20 +27,18 @@
                 Dashboard
             </a>
 
-            <!-- Summary link -->
-            <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-700">
-                <!-- Heroicon: Chart Bar -->
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Summary -->
+            <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 3v18h18M9 17V9M15 17V5" />
                 </svg>
                 Device Summary
             </a>
 
-            <!-- API Management link -->
-            <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-700">
-                <!-- Heroicon: Key -->
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- API Management -->
+            <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
                 </svg>
@@ -50,9 +48,8 @@
             <!-- Account -->
             {% if cancel_url or update_pm_url %}
             <div class="relative group">
-                <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-700">
-                    <!-- Heroicon: Cog -->
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -74,8 +71,7 @@
             {% endif %}
 
             <!-- Logout -->
-            <a href="/logout" class="flex items-center px-4 py-2 rounded hover:bg-gray-700 text-red-400">
-                <!-- Heroicon: Logout -->
+            <a href="/logout" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 text-red-600">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5m0 14v-1m0-10V5" />
@@ -87,14 +83,18 @@
 
     <!-- Main Content -->
     <div class="flex-1 overflow-auto p-8">
-        <!-- Welcome Hero -->
-        <section class="bg-gray-800 p-6 rounded-lg shadow mb-6">
+        <!-- Hero -->
+        <section class="bg-white p-6 rounded-lg shadow mb-6 border border-gray-200">
             <h2 class="text-xl font-semibold mb-2">Welcome, {{ user.customer_name or 'User' }}</h2>
-            <p class="mb-4 text-gray-300">
-                To start monitoring your devices, you must generate API keys and claim your machines.
-                Each key is unique to a single device.
+            <p class="mb-4 text-gray-700">
+                To start monitoring your devices, create your API keys and claim your machines.
             </p>
-            <a href="/api-management" class="inline-block px-5 py-3 bg-blue-600 hover:bg-blue-700 rounded font-semibold">
+            <a href="/api-management" class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
+                <!-- Key icon -->
+                <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
+                </svg>
                 ➕ Create API Keys
             </a>
         </section>
@@ -105,21 +105,32 @@
                 <input name="device_id"
                        placeholder="Filter by Device ID"
                        value="{{ filter_id or '' }}"
-                       class="px-3 py-2 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+                       class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                    <!-- Funnel Icon -->
+                    <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z" />
+                    </svg>
                     Filter
                 </button>
             </form>
             <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
-               class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+               class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+                <!-- Download icon -->
+                <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v6m0 0l-3-3m3 3l3-3M12 4v8" />
+                </svg>
                 Export CSV
             </a>
         </div>
 
+
         <!-- Telemetry Table -->
         <div class="overflow-x-auto">
-            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
-                <thead class="bg-gray-700">
+            <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <thead class="bg-gray-100">
                     <tr>
                         <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Device ID</th>
@@ -127,9 +138,9 @@
                         <th class="px-4 py-2 text-left text-sm font-medium">Timestamp</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-700">
+                <tbody class="divide-y divide-gray-200">
                     {% for row in records %}
-                    <tr class="hover:bg-gray-700">
+                    <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 text-sm">{{ row.id }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.device_id }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.data }}</td>
@@ -139,7 +150,7 @@
                 </tbody>
             </table>
             {% if records|length == 0 %}
-            <div class="mt-4 p-4 bg-yellow-500 text-black rounded">
+            <div class="mt-4 p-4 bg-yellow-200 text-gray-900 rounded">
                 No telemetry data available yet.
             </div>
             {% endif %}
