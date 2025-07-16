@@ -2,6 +2,7 @@
 import time
 import csv
 import os, httpx
+from secrets import token_hex
 import logging
 from datetime import datetime, timedelta
 from io import StringIO
@@ -675,3 +676,91 @@ def logout(request: Request):
 
 # ----------------------------- Paddle Webhook -----------------------------
 app.include_router(paddle_router)
+
+# ----------------------------- API Management Page -----------------------------
+@app.get("/api-management", response_class=HTMLResponse)
+def api_management(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    api_keys = (
+        db.query(ApiKey)
+        .filter(ApiKey.user_id == current_user.id)
+        .order_by(ApiKey.created_at.desc())
+        .all()
+    )
+
+    # Get active Paddle subscription for Account dropdown, just like summary page
+    sub_id = db.execute(text("""
+        SELECT b.id
+          FROM public.customers a
+          JOIN public.subscriptions b ON a.id = b.customer_id
+         WHERE b.status = 'active' AND a.email = :email
+    """), {"email": current_user.email}).scalar()
+
+    cancel_url = update_pm_url = None
+    if sub_id:
+        import httpx, os
+        import asyncio
+        async def fetch_urls():
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
+                    headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
+                )
+                payload = resp.json()
+                urls = payload.get("data", {}).get("management_urls", {})
+                return urls.get("cancel"), urls.get("update_payment_method")
+        cancel_url, update_pm_url = asyncio.run(fetch_urls())
+
+    return templates.TemplateResponse(
+        "api-management.html",
+        {
+            "request": request,
+            "api_keys": api_keys,
+            "cancel_url": cancel_url,
+            "update_pm_url": update_pm_url,
+            "user": current_user
+        }
+    )
+
+#----------------------------- API Key Creation -----------------------------
+
+
+
+@app.get("/api-management/create")
+def create_api_key(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_key = ApiKey(
+        user_id=current_user.id,
+        key=token_hex(16),  # generates a 32-char hex string
+        status="active"
+    )
+    db.add(new_key)
+    db.commit()
+    return RedirectResponse("/api-management", status_code=302)
+
+#----------------------------- API Key Revocation -----------------------------
+
+@app.post("/api-management/revoke/{key_id}")
+def revoke_api_key(
+    key_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    api_key = db.query(ApiKey).filter(
+        ApiKey.id == key_id,
+        ApiKey.user_id == current_user.id
+    ).first()
+    if not api_key:
+        raise HTTPException(status_code=404, detail="API key not found.")
+    api_key.status = "revoked"
+    api_key.revoked_at = datetime.utcnow()
+    db.commit()
+    return RedirectResponse("/api-management", status_code=302)
+
+
+
