@@ -1,141 +1,87 @@
 ﻿<!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-100 text-gray-900">
+<html lang="en" class="bg-gray-100 text-gray-900">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
+    <title>API Key Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>SigStream API Management</title>
-    <link rel="icon" href="/static/SigStreamLogo.png">
 </head>
-<body class="h-full flex">
+<body class="min-h-screen p-6">
 
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div class="flex items-center space-x-2 p-6">
-            <img src="/static/SigStreamLogo.png" alt="SigStream" class="w-10 h-10">
-            <span class="text-xl font-bold">SigStream</span>
-        </div>
-        <nav class="flex-1 px-4 space-y-2">
-            <!-- Dashboard -->
-            <a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 22V12h6v10" />
-                </svg>
-                Dashboard
-            </a>
+    <h1 class="text-3xl font-bold mb-6">API Key Management</h1>
 
-            <!-- Summary -->
-            <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M3 3v18h18M9 17V9M15 17V5" />
-                </svg>
-                Device Summary
-            </a>
-
-            <!-- API Management -->
-            <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 bg-gray-100">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
-                </svg>
-                API Management
-            </a>
-
-            <!-- Account -->
-            {% if cancel_url or update_pm_url %}
-            <div class="relative group">
-                <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
-                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Account
-                </button>
-                <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {% if update_pm_url %}
-                    <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-                        Update Payment Method
-                    </a>
-                    {% endif %}
-                    {% if cancel_url %}
-                    <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-                        Cancel Subscription
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Logout -->
-            <a href="/logout" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 text-red-600">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5m0 14v-1m0-10V5" />
-                </svg>
-                Logout
-            </a>
-        </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="flex-1 overflow-auto p-8">
-        <h1 class="text-2xl font-bold mb-6">API Key Management</h1>
-
-        <!-- Create New Key -->
-        <a href="/api-management/create"
-           class="inline-flex items-center mb-6 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
+    <!-- Generate Button -->
+    <form method="post" action="/generate-key">
+        <button type="submit"
+                class="flex items-center px-5 py-3 mb-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded shadow">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
+                      d="M13 16h-1v-4h-1m0-4h.01M12 12h0m-6.938 4.828a10 10 0 1113.856 0" />
             </svg>
             Generate New API Key
-        </a>
+        </button>
+    </form>
 
-        <!-- Key Table -->
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Key</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Status</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Created</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Bound Device</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% for key in api_keys %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 text-sm font-mono">{{ key.key }}</td>
-                        <td class="px-4 py-2 text-sm">{{ key.status }}</td>
-                        <td class="px-4 py-2 text-sm">{{ key.created_at.strftime('%Y-%m-%d') }}</td>
-                        <td class="px-4 py-2 text-sm">{{ key.device_id or '-' }}</td>
-                        <td class="px-4 py-2 text-sm">
-                            {% if key.status == 'active' %}
-                            <form method="post" action="/api-management/revoke/{{ key.id }}">
-                                <button type="submit"
-                                        class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
-                                    Revoke
-                                </button>
-                            </form>
-                            {% else %}
-                            <span class="text-gray-400 text-xs italic">Revoked</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            {% if api_keys|length == 0 %}
-            <div class="mt-4 p-4 bg-yellow-200 text-gray-900 rounded">
-                You don’t have any API keys yet. Click “Generate New API Key” above to create one.
-            </div>
-            {% endif %}
-        </div>
+    {% if api_keys %}
+    <!-- Table -->
+    <div class="overflow-x-auto rounded-lg shadow">
+        <table class="min-w-full bg-white border border-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-medium">Key</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium">Status</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium">Created</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium">Bound Device</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for key in api_keys %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm flex items-center space-x-2">
+                        <span class="truncate max-w-[220px]">{{ key.key }}</span>
+                        <button onclick="copyToClipboard('{{ key.key }}')" title="Copy key to clipboard">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 16h8M8 12h8m-6 8h6a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </button>
+                    </td>
+                    <td class="px-4 py-2 text-sm">{{ key.status }}</td>
+                    <td class="px-4 py-2 text-sm">{{ key.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="px-4 py-2 text-sm">{{ key.device_id or '-' }}</td>
+                    <td class="px-4 py-2 text-sm">
+                        <form method="post" action="/revoke-key" onsubmit="return confirmRevoke();">
+                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                            <button type="submit"
+                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">
+                                Revoke
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="mt-6 p-4 bg-yellow-100 text-gray-800 rounded shadow">
+        You don't have any API keys yet. Click the button above to generate one.
+    </div>
+    {% endif %}
+
+    <!-- JS Clipboard + Revoke -->
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Copied to clipboard!");
+            });
+        }
+
+        function confirmRevoke() {
+            return confirm("Are you sure you want to revoke this API key? This action cannot be undone.");
+        }
+    </script>
+
 </body>
 </html>
