@@ -469,6 +469,26 @@ def receive_data(
     return {"status": "success"}
 
 
+# ----------------------------- Heartbeat Endpoint -----------------------------
+class HeartbeatPayload(BaseModel):
+    device_id: str
+    heartbeat_time: str
+    status: str
+
+@app.post("/api/heartbeat")
+def receive_heartbeat(
+    payload: HeartbeatPayload,
+    db: Session = Depends(get_db),
+    x_api_key: str = Header(None),
+    x_machine_id: str = Header(None)
+):
+    validate_device_key(x_api_key, x_machine_id, db)
+
+    ts = int(datetime.fromisoformat(payload.heartbeat_time).timestamp())
+    update_heartbeat(payload.device_id, ts, db)
+
+    return {"status": "heartbeat received"}
+
 
 #----------------------------- Device Claiming -----------------------------
 @app.post("/api/claim")
