@@ -461,13 +461,18 @@ def receive_data(
     payload: DeviceDataIn,
     db: Session = Depends(get_db),
     x_api_key: str = Header(None),
-    x_device_id: str = Header(None),  # 👈 agent must send this too
+    x_device_id: str = Header(None),
 ):
-    validate_device_key(x_api_key, x_device_id, db)
+    api_key = validate_device_key(x_api_key, x_device_id, db)
+
     ts = payload.timestamp or int(time.time())
     insert_data(payload.device_id, payload.data, ts, db)
-    update_heartbeat(payload.device_id, ts, db)
+    
+    # ✅ Pass user from API key to heartbeat
+    update_heartbeat(payload.device_id, ts, db, api_key.user)
+
     return {"status": "success"}
+
 
 
 # ----------------------------- Heartbeat Endpoint -----------------------------
@@ -483,12 +488,11 @@ def receive_heartbeat(
     x_api_key: str = Header(None),
     x_machine_id: str = Header(None)
 ):
-    validate_device_key(x_api_key, x_machine_id, db)
-
+    api_key = validate_device_key(x_api_key, x_machine_id, db)
     ts = int(datetime.fromisoformat(payload.heartbeat_time).timestamp())
-    update_heartbeat(payload.device_id, ts, db)
-
+    update_heartbeat(payload.device_id, ts, db, api_key.user)  # ✅ add user
     return {"status": "heartbeat received"}
+
 
 
 #----------------------------- Device Claiming -----------------------------
