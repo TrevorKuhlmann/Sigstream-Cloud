@@ -531,7 +531,7 @@ def claim_device(
             user_id=api_key.user_id,
             label=payload.description,
             last_seen=int(time.time()),
-            status="online"
+            
         )
         db.add(status)
 
