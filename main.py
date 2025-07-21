@@ -468,18 +468,20 @@ def receive_data(
 
     try:
         api_key = validate_device_key(x_api_key, x_device_id, db)
+        user = api_key.user  # ✅ Add this line
         ts = payload.timestamp or int(time.time())
-        
+
         logging.info(f"Validated API key. Inserting data: {payload.data}")
-        insert_data(payload.device_id, payload.data, ts, db)
+        insert_data(payload.device_id, payload.data, ts, db, user)  # ✅ Now has all args
 
         logging.info("Calling update_heartbeat...")
-        update_heartbeat(payload.device_id, ts, db, api_key.user)
+        update_heartbeat(payload.device_id, ts, db, user)
 
         return {"status": "success"}
     except Exception as e:
         logging.exception("Error in /data endpoint")
         raise
+
 
 
 
