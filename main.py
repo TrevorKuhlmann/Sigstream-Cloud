@@ -463,15 +463,24 @@ def receive_data(
     x_api_key: str = Header(None),
     x_device_id: str = Header(None),
 ):
-    api_key = validate_device_key(x_api_key, x_device_id, db)
+    logging.info(f"Received /data call. API key: {x_api_key[:6]}..., Device ID header: {x_device_id}")
+    logging.info(f"Payload: {payload.json()}")
 
-    ts = payload.timestamp or int(time.time())
-    insert_data(payload.device_id, payload.data, ts, db)
-    
-    # ✅ Pass user from API key to heartbeat
-    update_heartbeat(payload.device_id, ts, db, api_key.user)
+    try:
+        api_key = validate_device_key(x_api_key, x_device_id, db)
+        ts = payload.timestamp or int(time.time())
+        
+        logging.info(f"Validated API key. Inserting data: {payload.data}")
+        insert_data(payload.device_id, payload.data, ts, db)
 
-    return {"status": "success"}
+        logging.info("Calling update_heartbeat...")
+        update_heartbeat(payload.device_id, ts, db, api_key.user)
+
+        return {"status": "success"}
+    except Exception as e:
+        logging.exception("Error in /data endpoint")
+        raise
+
 
 
 
