@@ -94,6 +94,7 @@
                         <th class="px-4 py-2 text-left text-sm font-medium">Status</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Created</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Bound Device</th>
+                        <th class="px-4 py-2 text-left text-sm font-medium">Label</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Actions</th>
                     </tr>
                 </thead>
@@ -104,6 +105,7 @@
                         <td class="px-4 py-2 text-sm">{{ key.status }}</td>
                         <td class="px-4 py-2 text-sm">{{ key.created_at.strftime('%Y-%m-%d') }}</td>
                         <td class="px-4 py-2 text-sm">{{ key.device_id or '-' }}</td>
+                        <td class="px-4 py-2 text-sm">{{ key.label or '-' }}</td>
                         <td class="px-4 py-2 text-sm">
                             {% if key.status == 'active' %}
                             <button onclick="showToast('{{ key.id }}')"

@@ -174,12 +174,13 @@ async def magic_login_register(
     })
 
 #----------------------------- Claim Request Model -----------------------------
+
 class ClaimRequest(BaseModel):
     api_key: str
     machine_id: str
+    description: str  # 👈 Add this
 
-
-
+#------------------------- Magic Link Sign-In -----------------------------
 @app.post("/magic-login-signin", response_class=HTMLResponse)
 async def magic_signin(
     request: Request,
@@ -508,6 +509,9 @@ def claim_device(
         # ✅ First time claim — bind device & set bound_at
         api_key.device_id = payload.machine_id
         api_key.bound_at = datetime.utcnow()
+           
+  
+        api_key.label = payload.description  # 👈 Set label from agent
         db.commit()
 
         logging.info(
