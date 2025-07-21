@@ -505,6 +505,7 @@ def receive_heartbeat(
 
 
 #----------------------------- Device Claiming -----------------------------
+
 @app.post("/api/claim")
 def claim_device(
     payload: ClaimRequest,
@@ -522,9 +523,18 @@ def claim_device(
         # ✅ First time claim — bind device & set bound_at
         api_key.device_id = payload.machine_id
         api_key.bound_at = datetime.utcnow()
-           
-  
-        api_key.label = payload.description  # 👈 Set label from agent
+        api_key.label = payload.description  # still fine for ApiKey
+
+        # ✅ Also create entry in device_status table
+        status = DeviceStatus(
+            device_id=payload.machine_id,
+            user_id=api_key.user_id,
+            label=payload.description,
+            last_seen=int(time.time()),
+            status="online"
+        )
+        db.add(status)
+
         db.commit()
 
         logging.info(
@@ -537,14 +547,12 @@ def claim_device(
         }
 
     elif api_key.device_id == payload.machine_id:
-        # ✅ Already claimed by same device — allow
         return {
             "status": "ok",
             "message": "Device already bound — everything ok."
         }
 
     else:
-        # ❌ Key bound to different device — block reuse
         raise HTTPException(
             status_code=403,
             detail=f"Key already bound to {api_key.device_id}."
