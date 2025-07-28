@@ -95,7 +95,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
                 </svg>
-               Create API Keys
+                Create API Keys
             </a>
         </section>
 
@@ -128,7 +128,6 @@
                     <tr>
                         <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Device ID</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Label</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Data</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Timestamp</th>
                     </tr>
@@ -138,7 +137,6 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 text-sm">{{ row.id }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.device_id }}</td>
-                        <td class="px-4 py-2 text-sm">{{ row.device_status.label or "—" }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.data }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.timestamp | format_ts }}</td>
                     </tr>
