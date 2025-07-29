@@ -128,6 +128,7 @@
                     <tr>
                         <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Device ID</th>
+                        <th class="px-4 py-2 text-left text-sm font-medium">Label</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Data</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Timestamp</th>
                     </tr>
@@ -137,6 +138,7 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 text-sm">{{ row.id }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.device_id }}</td>
+                        <td class="px-4 py-2 text-sm">{{ row.device_status.label or "—" }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.data }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.timestamp | format_ts }}</td>
                     </tr>
