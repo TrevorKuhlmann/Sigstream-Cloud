@@ -576,60 +576,70 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
 @app.get("/summary", response_class=HTMLResponse)
 async def summary(
     request: Request,
-    device_id: str = None,
+    device_label: str = None,  # 🔄 Changed from device_id to device_label
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 1) Your existing device‐telemetry fetch
+    # Get all labels to populate dropdown
+    labels = (
+        db.query(DeviceStatus.label)
+          .filter(DeviceStatus.user_id == current_user.id)
+          .distinct()
+          .order_by(DeviceStatus.label)
+          .all()
+    )
+
+    # Device telemetry fetch
     query = (
         db.query(DeviceData)
           .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
           .filter(DeviceStatus.user_id == current_user.id)
     )
-    if device_id:
-        query = query.filter(DeviceData.device_id == device_id)
+    if device_label:
+        query = query.filter(DeviceStatus.label == device_label)
 
     records = (
-    query
-    .with_entities(DeviceData, DeviceStatus.label)
-    .order_by(DeviceData.timestamp.desc())
-    .limit(100)
-    .all()
-)
+        query
+        .with_entities(DeviceData, DeviceStatus.label)
+        .order_by(DeviceData.timestamp.desc())
+        .limit(100)
+        .all()
+    )
 
-    # 2) Grab the active subscription id for this user
+    # Subscription management
     sub_id = db.execute(text("""
         SELECT b.id
-          FROM public.customers a
-          JOIN public.subscriptions b ON a.id = b.customer_id
-         WHERE b.status = 'active' AND a.email = :email
+        FROM public.customers a
+        JOIN public.subscriptions b ON a.id = b.customer_id
+        WHERE b.status = 'active' AND a.email = :email
     """), {"email": current_user.email}).scalar()
 
-    management_url = None
+    cancel_url = update_pm_url = None
     if sub_id:
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
                 headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
             )
-    payload = resp.json()
-    logging.info(f"Paddle subscription payload for {sub_id}: {payload}")
+        payload = resp.json()
+        logging.info(f"Paddle subscription payload for {sub_id}: {payload}")
 
-    m_urls = payload.get("data", {}).get("management_urls", {})
-    cancel_url = m_urls.get("cancel")
-    update_pm_url = m_urls.get("update_payment_method")
-
+        m_urls = payload.get("data", {}).get("management_urls", {})
+        cancel_url = m_urls.get("cancel")
+        update_pm_url = m_urls.get("update_payment_method")
 
     return templates.TemplateResponse("summary.html", {
-         "request": request,
+        "request": request,
         "records": records,
-        "filter_id": device_id,
+        "device_label": device_label,
+        "labels": [row.label for row in labels if row.label],
         "cancel_url": cancel_url,
         "update_pm_url": update_pm_url,
-         "user": current_user   # ✅ Add this line!
-    }
+        "user": current_user
+    })
+
                                       
-                                      )
+                                      
 
 
 # @app.get("/summary", response_class=HTMLResponse)
