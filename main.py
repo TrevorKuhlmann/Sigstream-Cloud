@@ -588,7 +588,14 @@ async def summary(
     )
     if device_id:
         query = query.filter(DeviceData.device_id == device_id)
-    records = query.order_by(DeviceData.timestamp.desc()).limit(100).all()
+
+    records = (
+    query
+    .with_entities(DeviceData, DeviceStatus.label)
+    .order_by(DeviceData.timestamp.desc())
+    .limit(100)
+    .all()
+)
 
     # 2) Grab the active subscription id for this user
     sub_id = db.execute(text("""

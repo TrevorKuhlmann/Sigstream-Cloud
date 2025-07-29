@@ -127,7 +127,7 @@
                 <thead class="bg-gray-100">
                     <tr>
                         <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Device ID</th>
+                        <th class="px-4 py-2 text-left text-sm font-medium">Device</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Data</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Timestamp</th>
                     </tr>
@@ -136,7 +136,7 @@
                     {% for row in records %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 text-sm">{{ row.id }}</td>
-                        <td class="px-4 py-2 text-sm">{{ row.device_id }}</td>
+                        <td class="px-4 py-2 text-sm">{{ label or row.device_id }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.data }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.timestamp | format_ts }}</td>
                     </tr>
