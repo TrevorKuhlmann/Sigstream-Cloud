@@ -6,8 +6,11 @@ from database import SessionLocal
 from models import User
 from passlib.context import CryptContext
 from dotenv import load_dotenv
+from fastapi.responses import RedirectResponse
+
 import os
 from datetime import datetime, timedelta
+
 
 # Load .env variables
 load_dotenv()
@@ -44,18 +47,19 @@ def get_db():
 #         )
 
 
-from fastapi.responses import RedirectResponse
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     token = request.cookies.get("access_token")
     if not token:
         if request.headers.get("accept", "").startswith("text/html"):
-            # 👇 Redirect browser users to landing
-            raise RedirectResponse(url="/")
+            return RedirectResponse(url="/")  # ✅ return, don't raise
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
         )
+
+
+
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
