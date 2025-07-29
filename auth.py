@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status, Request
+﻿from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -35,9 +35,23 @@ def get_db():
         from fastapi import Request
 
 # Modified get_current_user that reads token from cookie
+# def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+#     token = request.cookies.get("access_token")
+#     if not token:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Not authenticated"
+#         )
+
+
+from fastapi.responses import RedirectResponse
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     token = request.cookies.get("access_token")
     if not token:
+        if request.headers.get("accept", "").startswith("text/html"):
+            # 👇 Redirect browser users to landing
+            raise RedirectResponse(url="/")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
