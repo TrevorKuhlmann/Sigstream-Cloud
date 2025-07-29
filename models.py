@@ -26,14 +26,6 @@ class DeviceData(Base):
     data = Column(String)
     timestamp = Column(Integer)
 
-    # 👇 Relationship to access label from DeviceStatus
-    device_status = relationship(
-        "DeviceStatus",
-        primaryjoin="DeviceData.device_id == foreign(DeviceStatus.device_id)",
-        viewonly=True,
-        uselist=False
-    )
-
 class User(Base):
     __tablename__ = 'users'
 
