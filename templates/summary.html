@@ -15,9 +15,7 @@
             <span class="text-xl font-bold">SigStream</span>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <!-- Dashboard -->
             <a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <!-- Heroicon: Home -->
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -27,8 +25,7 @@
                 Dashboard
             </a>
 
-            <!-- Summary -->
-            <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
+            <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 bg-gray-100 font-semibold">
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 3v18h18M9 17V9M15 17V5" />
@@ -36,7 +33,6 @@
                 Device Summary
             </a>
 
-            <!-- API Management -->
             <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -45,7 +41,6 @@
                 API Management
             </a>
 
-            <!-- Account -->
             {% if cancel_url or update_pm_url %}
             <div class="relative group">
                 <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
@@ -70,7 +65,6 @@
             </div>
             {% endif %}
 
-            <!-- Logout -->
             <a href="/logout" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 text-red-600">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -83,14 +77,12 @@
 
     <!-- Main Content -->
     <div class="flex-1 overflow-auto p-8">
-        <!-- Hero -->
         <section class="bg-white p-6 rounded-lg shadow mb-6 border border-gray-200">
             <h2 class="text-xl font-semibold mb-2">Welcome, {{ user.customer_name or 'User' }}</h2>
             <p class="mb-4 text-gray-700">
                 To start monitoring your devices, create your API keys and claim your machines.
             </p>
             <a href="/api-management" class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
-                <!-- Key icon -->
                 <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
@@ -99,8 +91,7 @@
             </a>
         </section>
 
-        <!-- Filter & Export -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between flex-wrap mb-6 space-y-4 md:space-y-0">
             <form method="get" class="flex space-x-2">
                 <input name="device_id"
                        placeholder="Filter by Device ID"
@@ -112,7 +103,6 @@
             </form>
             <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
                class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
-                <!-- Download icon -->
                 <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v6m0 0l-3-3m3 3l3-3M12 4v8" />
@@ -121,41 +111,31 @@
             </a>
         </div>
 
-        <!-- Telemetry Table -->
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto shadow-sm">
             <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <thead class="bg-gray-100">
+                <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
                         <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Device</th>
                         <th class="px-4 py-2 text-left text-sm font-medium">Data</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Timestamp</th>
+                        <th class="px-4 py-2 text-right text-sm font-medium">Timestamp</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     {% for row, label in records %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 {% if loop.index0 % 2 == 0 %}bg-white{% else %}bg-gray-50{% endif %}">
                         <td class="px-4 py-2 text-sm">{{ row.id }}</td>
-                        <td class="px-4 py-2 text-sm">{{ label or row.device_id }}</td>
+                        <td class="px-4 py-2 text-sm flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                            <span title="Device ID: {{ row.device_id }}">{{ label or row.device_id }}</span>
+                        </td>
                         <td class="px-4 py-2 text-sm">{{ row.data }}</td>
-                        <td class="px-4 py-2 text-sm">
+                        <td class="px-4 py-2 text-sm text-right">
                             {% if row.timestamp is not none %}
                             {{ row.timestamp | format_ts }}
                             {% else %}
                             N/A
                             {% endif %}
                         </td>
-                    </tr>
-                    {% endfor %}
-
-                </tbody>
-            </table>
-            {% if records|length == 0 %}
-            <div class="mt-4 p-4 bg-yellow-200 text-gray-900 rounded">
-                No telemetry data available yet.
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
