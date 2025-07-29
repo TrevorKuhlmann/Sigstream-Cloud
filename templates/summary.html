@@ -139,3 +139,18 @@
                             N/A
                             {% endif %}
                         </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                
+            </table>
+
+            {% if records|length == 0 %}
+            <div class="mt-4 p-4 bg-yellow-200 text-gray-900 rounded">
+                No telemetry data available yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
