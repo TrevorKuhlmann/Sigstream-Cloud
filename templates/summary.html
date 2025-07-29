@@ -133,14 +133,21 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    {% for row in records %}
+                    {% for row, label in records %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 text-sm">{{ row.id }}</td>
                         <td class="px-4 py-2 text-sm">{{ label or row.device_id }}</td>
                         <td class="px-4 py-2 text-sm">{{ row.data }}</td>
-                        <td class="px-4 py-2 text-sm">{{ row.timestamp | format_ts }}</td>
+                        <td class="px-4 py-2 text-sm">
+                            {% if row.timestamp is not none %}
+                            {{ row.timestamp | format_ts }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
+
                 </tbody>
             </table>
             {% if records|length == 0 %}
