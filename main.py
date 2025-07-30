@@ -606,6 +606,14 @@ async def summary(
         .all()
     )
 
+    device_count = (
+    db.query(DeviceStatus.device_id)
+    .filter(DeviceStatus.user_id == current_user.id)
+    .distinct()
+    .count()
+)
+
+
     # Subscription management
     sub_id = db.execute(text("""
         SELECT b.id
@@ -635,7 +643,8 @@ async def summary(
         "labels": [row.label for row in labels if row.label],
         "cancel_url": cancel_url,
         "update_pm_url": update_pm_url,
-        "user": current_user
+        "user": current_user,
+        "device_count": device_count,  # 👈 new!
     })
 
    #----------------------------- Summary Data API -----------------------------
