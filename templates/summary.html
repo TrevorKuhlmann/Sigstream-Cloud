@@ -97,7 +97,7 @@
                         class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Devices</option>
                     {% for label in labels %}
-                    <option value="{{ label }}" {% if device_label==label %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ label }}" {% if device_label= =label %}selected{% endif %}>{{ label }}</option>
 
                     {% endfor %}
                 </select>
@@ -115,6 +115,15 @@
                 Export CSV
             </a>
         </div>
+
+        <div class="flex items-center space-x-2 mb-2 text-sm text-green-600">
+            <div class="relative flex h-3 w-3">
+                <div class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></div>
+                <div class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></div>
+            </div>
+            <span>Live</span>
+        </div>
+
 
         <div class="overflow-x-auto shadow-sm">
             <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
