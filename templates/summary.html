@@ -126,28 +126,11 @@
                         <th class="px-4 py-2 text-right text-sm font-medium">Timestamp</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% for row, label in records %}
-                    <tr class="hover:bg-gray-50 {% if loop.index0 % 2 == 0 %}bg-white{% else %}bg-gray-50{% endif %}">
-                        <td class="px-4 py-2 text-sm">{{ row.id }}</td>
-                        <td class="px-4 py-2 text-sm flex items-center space-x-2">
-                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
-                            </svg>
-                            <span title="Device ID: {{ row.device_id }}">{{ label or row.device_id }}</span>
-                        </td>
-                        <td class="px-4 py-2 text-sm">{{ row.data }}</td>
-                        <td class="px-4 py-2 text-sm text-right">
-                            {% if row.timestamp is not none %}
-                            {{ row.timestamp | format_ts }}
-                            {% else %}
-                            N/A
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
+                <tbody id="data-table-body" class="divide-y divide-gray-200">
+                    <!-- Data rows will be injected by JS -->
                 </tbody>
-                
+
+
             </table>
 
             {% if records|length == 0 %}
@@ -157,5 +140,47 @@
             {% endif %}
         </div>
     </div>
+
+
+    <script>
+        const formatTimestamp = (ts) => {
+            const dt = new Date(ts * 1000);
+            return dt.toLocaleString();
+        };
+
+        const loadData = async () => {
+            const label = new URLSearchParams(window.location.search).get("device_label");
+            const res = await fetch(`/api/summary-data${label ? `?device_label=${label}` : ''}`);
+            const data = await res.json();
+
+            const tbody = document.querySelector("#data-table-body");
+
+            tbody.innerHTML = "";
+            tbody.classList.add("bg-yellow-50");
+            setTimeout(() => tbody.classList.remove("bg-yellow-50"), 300);
+
+
+            data.forEach(row => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="px-4 py-2 text-sm">${row.id}</td>
+                    <td class="px-4 py-2 text-sm flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                        <span title="Device ID: ${row.device_id}">${row.label || row.device_id}</span>
+                    </td>
+                    <td class="px-4 py-2 text-sm">${row.data}</td>
+                    <td class="px-4 py-2 text-sm text-right">${formatTimestamp(row.timestamp)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        setInterval(loadData, 5000);  // refresh every 5 seconds
+        loadData();  // load initially
+    </script>
+
 </body>
 </html>

@@ -638,8 +638,37 @@ async def summary(
         "user": current_user
     })
 
-                                      
-                                      
+   #----------------------------- Summary Data API -----------------------------
+   #                                   
+@app.get("/api/summary-data")
+async def summary_data(device_label: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    query = (
+        db.query(DeviceData, DeviceStatus.label)
+        .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
+        .filter(DeviceStatus.user_id == current_user.id)
+    )
+    if device_label:
+        query = query.filter(DeviceStatus.label == device_label)
+
+    records = (
+        query.order_by(DeviceData.timestamp.desc())
+        .limit(100)
+        .all()
+    )
+
+    def serialize(row):
+        device_data, label = row
+        return {
+            "id": device_data.id,
+            "device_id": device_data.device_id,
+            "label": label,
+            "data": device_data.data,
+            "timestamp": device_data.timestamp,
+        }
+
+    return [serialize(r) for r in records]
+
+
 
 
 # @app.get("/summary", response_class=HTMLResponse)
