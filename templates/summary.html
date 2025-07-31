@@ -51,7 +51,7 @@
                     Account
                 </button>
                 <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {% if update_pm_url %}
+                    <!--{% if update_pm_url %}
                     <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
                         Update Payment Method
                     </a>
@@ -60,7 +60,7 @@
                     <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
                         Cancel Subscription
                     </a>
-                    {% endif %}
+                    {% endif %}-->
                 </div>
             </div>
             {% endif %}
@@ -79,6 +79,33 @@
     <div class="flex-1 overflow-auto p-8">
         <section class="bg-white p-6 rounded-lg shadow mb-6 border border-gray-200">
             <h2 class="text-xl font-semibold mb-2">Welcome, {{ user.customer_name or 'User' }}</h2>
+
+
+            <!-- ✅ Account Dropdown Moved to Top Right -->
+            <div class="flex justify-end mb-4">
+                <div class="relative group inline-block">
+                    <button class="flex items-center px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 shadow">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Account
+                    </button>
+                    <div class="absolute right-0 mt-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                        {% if update_pm_url %}
+                        <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                            Update Payment Method
+                        </a>
+                        {% endif %}
+                        {% if cancel_url %}
+                        <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                            Cancel Subscription
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <p class="mb-4 text-gray-700">
                 To start monitoring your devices, create your API keys and claim your machines.
             </p>
@@ -91,6 +118,7 @@
             </a>
         </section>
 
+        
         <!-- ✅ Device Count Tile -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200 flex items-center justify-between">
@@ -100,10 +128,11 @@
                 </div>
                 <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          d="M9 2H7a2 2 0 00-2 2v2m0 12v2a2 2 0 002 2h2m6 0h2a2 2 0 002-2v-2m0-12V4a2 2 0 00-2-2h-2M7 12h10M12 7v10" />
                 </svg>
             </div>
         </div>
+
 
 
         <div class="flex flex-col md:flex-row md:items-center md:justify-between flex-wrap mb-6 space-y-4 md:space-y-0">
