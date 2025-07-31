@@ -53,17 +53,17 @@
                     Account
                 </button>
                 <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">-->
-                    <!--{% if update_pm_url %}
-                    <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-                        Update Payment Method
-                    </a>
-                    {% endif %}
-                    {% if cancel_url %}
-                    <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-                        Cancel Subscription
-                    </a>
-                    {% endif %}-->
-                <!--</div>
+            <!--{% if update_pm_url %}
+            <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                Update Payment Method
+            </a>
+            {% endif %}
+            {% if cancel_url %}
+            <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                Cancel Subscription
+            </a>
+            {% endif %}-->
+            <!--</div>
             </div>
             {% endif %}-->
 
@@ -128,9 +128,9 @@
                     <p class="text-3xl font-bold text-blue-600 mt-1">{{ device_count }}</p>
                 </div>
                 <!--<svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 2H7a2 2 0 00-2 2v2m0 12v2a2 2 0 002 2h2m6 0h2a2 2 0 002-2v-2m0-12V4a2 2 0 00-2-2h-2M7 12h10M12 7v10" />
-            </svg>-->
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 2H7a2 2 0 00-2 2v2m0 12v2a2 2 0 002 2h2m6 0h2a2 2 0 002-2v-2m0-12V4a2 2 0 00-2-2h-2M7 12h10M12 7v10" />
+                </svg>-->
             </div>
         </div>
 
@@ -213,28 +213,59 @@
             tbody.classList.add("bg-yellow-50");
             setTimeout(() => tbody.classList.remove("bg-yellow-50"), 300);
 
-
             data.forEach(row => {
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50";
                 tr.innerHTML = `
                     <td class="px-4 py-2 text-sm">${row.id}</td>
-                    <td class="px-4 py-2 text-sm flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                        <span title="Device ID: ${row.device_id}">${row.label || row.device_id}</span>
+                    <td class="px-4 py-2 text-sm">
+                        <div class="flex flex-col">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                <span title="Device ID: ${row.device_id}">${row.label || row.device_id}</span>
+                            </div>
+                            <span class="text-xs text-gray-500">
+                                Last seen: <span data-last-seen="${row.device_id}">...</span>
+                            </span>
+                        </div>
                     </td>
                     <td class="px-4 py-2 text-sm">${row.data}</td>
                     <td class="px-4 py-2 text-sm text-right">${formatTimestamp(row.timestamp)}</td>
                 `;
                 tbody.appendChild(tr);
             });
+
+            // ✅ Update the "Last seen" timestamps after rows are added
+            document.querySelectorAll("[data-last-seen]").forEach(el => {
+                const deviceId = el.dataset.lastSeen;
+                const latestTs = data.find(d => d.device_id === deviceId)?.timestamp;
+                if (latestTs) {
+                    const minutesAgo = Math.floor((Date.now() / 1000 - latestTs) / 60);
+                    if (minutesAgo === 0) {
+                        el.textContent = "just now";
+                        el.className = "text-green-600 font-medium";
+                    } else if (minutesAgo <= 5) {
+                        el.textContent = `${minutesAgo} min ago`;
+                        el.className = "text-yellow-600 font-medium";
+                    } else {
+                        el.textContent = `${minutesAgo} min ago`;
+                        el.className = "text-red-600 font-medium";
+                    }
+                } else {
+                    el.textContent = "n/a";
+                    el.className = "text-gray-500";
+                }
+            });
+
         };
 
-        setInterval(loadData, 5000);  // refresh every 5 seconds
-        loadData();  // load initially
+        // ✅ Initial load and auto-refresh every 5 seconds
+        loadData();
+        setInterval(loadData, 5000);
     </script>
+
 
 </body>
 </html>

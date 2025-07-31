@@ -4,6 +4,7 @@ import csv
 import os, httpx
 from secrets import token_hex
 import logging
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from io import StringIO
 from contextlib import asynccontextmanager
@@ -606,6 +607,13 @@ async def summary(
         .all()
     )
 
+    last_seen_map = dict(
+    db.query(DeviceData.device_id, func.max(DeviceData.timestamp))
+    .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
+    .filter(DeviceStatus.user_id == current_user.id)
+    .group_by(DeviceData.device_id)
+    .all())
+
     device_count = (
     db.query(DeviceStatus.device_id)
     .filter(DeviceStatus.user_id == current_user.id)
@@ -645,6 +653,8 @@ async def summary(
         "update_pm_url": update_pm_url,
         "user": current_user,
         "device_count": device_count,  # 👈 new!
+        "last_seen_map": last_seen_map
+
     })
 
    #----------------------------- Summary Data API -----------------------------
