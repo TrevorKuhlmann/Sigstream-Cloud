@@ -5,6 +5,7 @@ import os, httpx
 from secrets import token_hex
 import logging
 from sqlalchemy import func
+from sqlalchemy.orm import aliased
 from datetime import datetime, timedelta
 from io import StringIO
 from contextlib import asynccontextmanager
@@ -790,20 +791,35 @@ def logout(request: Request):
 app.include_router(paddle_router)
 
 # ----------------------------- API Management Page -----------------------------
+
+
 @app.get("/api-management", response_class=HTMLResponse)
 def api_management(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Join ApiKey with DeviceStatus to get label
+    # api_keys = (
+    #     db.query(ApiKey.device_id, ApiKey.api_key, ApiKey.active, ApiKey.created_at, DeviceStatus.label)
+    #     .join(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
+    #     .filter(ApiKey.user_id == current_user.id)
+    #     .order_by(ApiKey.created_at.desc())
+    #     .all()
+    # )
+
+    #- Fetch API keys with device labels
+
     api_keys = (
-        db.query(ApiKey)
-        .filter(ApiKey.user_id == current_user.id)
-        .order_by(ApiKey.created_at.desc())
-        .all()
+    db.query(ApiKey.device_id, ApiKey.api_key.label("key"), ApiKey.active.label("status"), ApiKey.created_at, DeviceStatus.label)
+    .outerjoin(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
+    .filter(ApiKey.user_id == current_user.id)
+    .order_by(ApiKey.created_at.desc())
+    .all()
     )
 
-    # Get active Paddle subscription for Account dropdown, just like summary page
+
+    # Paddle subscription check (unchanged)
     sub_id = db.execute(text("""
         SELECT b.id
           FROM public.customers a
@@ -826,6 +842,7 @@ def api_management(
                 return urls.get("cancel"), urls.get("update_payment_method")
         cancel_url, update_pm_url = asyncio.run(fetch_urls())
 
+    # Return with updated context
     return templates.TemplateResponse(
         "api-management.html",
         {
@@ -836,6 +853,7 @@ def api_management(
             "user": current_user
         }
     )
+
 
 #----------------------------- API Key Creation -----------------------------
 
