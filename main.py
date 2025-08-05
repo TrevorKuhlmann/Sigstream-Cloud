@@ -96,6 +96,36 @@ app.add_middleware(
 )
 
 templates = Jinja2Templates(directory="templates")
+
+#--------------------------------------------------------
+def format_relative(ts):
+    if not ts:
+        return {"text": "-", "cls": "text-gray-400"}
+
+    now = datetime.utcnow()
+    diff = now - datetime.utcfromtimestamp(ts)
+
+    seconds = int(diff.total_seconds())
+    minutes = seconds // 60
+    hours   = minutes // 60
+    days    = diff.days
+
+    if seconds < 60:
+        return {"text": "Just now", "cls": "text-green-600"}
+    elif minutes < 10:
+        return {"text": f"{minutes} min ago", "cls": "text-green-600"}
+    elif minutes < 60:
+        return {"text": f"{minutes} min ago", "cls": "text-yellow-500"}
+    elif hours < 24:
+        return {"text": f"{hours} hours ago", "cls": "text-orange-500"}
+    elif days == 1:
+        return {"text": "Yesterday", "cls": "text-red-500"}
+    else:
+        return {"text": f"{days} days ago", "cls": "text-red-600"}
+
+# 🔧 Register the filter for use in Jinja templates
+templates.env.filters["relative_ts"] = format_relative
+
 templates.env.filters['format_ts'] = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 logging.basicConfig(level=logging.INFO)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
