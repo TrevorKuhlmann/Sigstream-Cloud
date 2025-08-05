@@ -110,7 +110,7 @@
                         <td class="px-4 py-2 text-sm">{{ key.label or '-' }}</td>
                         <td class="px-4 py-2 text-sm">
                             {% if key.status == 'active' %}
-                            <button onclick="showToast('{{ key.id }}')"
+                            <button onclick="showToast('{{ key.key }}')"
                                     class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
                                 Revoke
                             </button>
@@ -121,6 +121,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+
             </table>
 
             {% if api_keys|length == 0 %}

@@ -811,7 +811,13 @@ def api_management(
     #- Fetch API keys with device labels
 
     api_keys = (
-    db.query(ApiKey.device_id, ApiKey.api_key.label("key"), ApiKey.active.label("status"), ApiKey.created_at, DeviceStatus.label)
+    db.query(
+        ApiKey.device_id,
+        ApiKey.key.label("key"),
+        ApiKey.status,
+        ApiKey.created_at,
+        DeviceStatus.label
+     )
     .outerjoin(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
     .filter(ApiKey.user_id == current_user.id)
     .order_by(ApiKey.created_at.desc())
