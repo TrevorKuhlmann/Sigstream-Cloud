@@ -641,7 +641,14 @@ async def summary(
           .filter(DeviceStatus.user_id == current_user.id)
     )
     if device_label:
-        query = query.filter(DeviceStatus.label == device_label)
+     device_id_match = (
+        db.query(DeviceStatus.device_id)
+        .filter(DeviceStatus.user_id == current_user.id, DeviceStatus.label == device_label)
+        .scalar()
+    )
+    if device_id_match:
+        query = query.filter(DeviceData.device_id == device_id_match)
+
 
     records = (
         query
