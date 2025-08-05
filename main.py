@@ -812,18 +812,19 @@ def api_management(
 
     api_keys = (
     db.query(
-        ApiKey.id,             # ✅ Add this line back
         ApiKey.device_id,
-        ApiKey.api_key.label("key"),
-        ApiKey.active.label("status"),
+        ApiKey.key.label("key"),
+        ApiKey.status,
         ApiKey.created_at,
-        DeviceStatus.label
-    )
+        DeviceStatus.label.label("label"),
+        ApiKey.id.label("id")  # Needed for revocation logic
+     )
     .outerjoin(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
     .filter(ApiKey.user_id == current_user.id)
     .order_by(ApiKey.created_at.desc())
     .all()
-    ) 
+    )
+
 
 
 
