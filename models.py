@@ -25,6 +25,7 @@ class DeviceData(Base):
     device_id = Column(String)
     data = Column(String)
     timestamp = Column(Integer)
+    user_id = Column(Integer, ForeignKey("users.id"))  # ✅ NEW
 
 class User(Base):
     __tablename__ = 'users'
