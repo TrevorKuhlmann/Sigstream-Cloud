@@ -3,6 +3,7 @@ import time
 import csv
 import os, httpx
 from secrets import token_hex
+from datetime import datetime, timedelta
 import logging
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
@@ -141,6 +142,18 @@ async def check_subscription(
         {"email": user.email},
     ).scalar()
     return {"active": result == 'ACTIVE'}
+
+#----------------------------- Admin Purge Old Telemetry -----------------------------
+
+@app.get("/admin/purge-old", include_in_schema=False)
+def purge_old_telemetry(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # You can add stricter logic here to restrict who can purge
+    delete_old_device_data(db, days=7)
+    return {"status": "ok", "message": "Old telemetry data purged."}
+
 
 
 # ----------------------------- Magic Link Registration & Sign-In -----------------------------
@@ -902,4 +915,11 @@ def revoke_api_key(
     return RedirectResponse("/api-management", status_code=302)
 
 
+#----------------------------- Cleanup Old Device Data -----------------------------
 
+
+def delete_old_device_data(db: Session, days: int = 7):
+    cutoff = int((datetime.utcnow() - timedelta(days=days)).timestamp())
+    deleted = db.query(DeviceData).filter(DeviceData.timestamp < cutoff).delete()
+    db.commit()
+    print(f"🧹 Deleted {deleted} rows older than {days} days from device_data.")
