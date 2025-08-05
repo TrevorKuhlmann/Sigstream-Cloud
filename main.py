@@ -640,6 +640,9 @@ async def summary(
           .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
           .filter(DeviceStatus.user_id == current_user.id)
     )
+
+    device_id_match = None  # ✅ Prevent UnboundLocalError
+
     if device_label:
      device_id_match = (
         db.query(DeviceStatus.device_id)
