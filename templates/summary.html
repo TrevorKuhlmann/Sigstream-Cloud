@@ -36,12 +36,18 @@
             </a>
 
             <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
+                <!-- Key icon -->
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <!-- ring -->
+                    <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
+                    <!-- shaft + teeth -->
+                    <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path d="M16 9v6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path d="M19 10v4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
                 API Management
             </a>
+
 
             <!--{% if cancel_url or update_pm_url %}
     <div class="relative group">
@@ -68,13 +74,16 @@
     {% endif %}-->
             <!-- Developer API (Sidebar item) -->
             <a href="/developer-api"
-               class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
-          hover:bg-gray-100 text-gray-700
+               class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 text-gray-700
           {% if request.url.path.startswith('/developer-api') %} bg-gray-100 {% endif %}">
-                <!-- Icon (code brackets) -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16" />
+                <!-- Code icon </> in blue -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <!-- chevron left -->
+                    <path d="M9 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                    <!-- slash -->
+                    <path d="M13 6l-2 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                    <!-- chevron right -->
+                    <path d="M15 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                 </svg>
                 <span>Developer API</span>
             </a>
