@@ -134,15 +134,15 @@
             </p>
             <a href="/api-management"
                class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
-                <!-- Key icon -->
-                <svg class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
                     <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     <path d="M16 9v6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     <path d="M19 10v4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
-                Create API Keys
+                <span>Create API Keys</span>
             </a>
+
         </section>
 
 
@@ -174,17 +174,24 @@
                     {% endfor %}
                 </select>
 
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
-                    Filter
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
+                    <!-- Funnel (filter) icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 4h18v2l-7 7v5l-4 2v-7L3 6V4z" />
+                    </svg>
+                    <span>Filter</span>
                 </button>
+
             </form>
             <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
-               class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+               class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium">
                 <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v6m0 0l-3-3m3 3l3-3M12 4v8" />
                 </svg>
-                Export CSV
+                <span>Export CSV</span>
             </a>
         </div>
 
