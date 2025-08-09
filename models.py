@@ -45,6 +45,9 @@ class User(Base):
 
     devices = relationship("DeviceStatus", back_populates="owner")
     api_keys = relationship("ApiKey", back_populates="user")
+    
+    created_at = Column(DateTime, server_default=func.now())
+
 
 class DeviceStatus(Base):
     __tablename__ = 'device_status'

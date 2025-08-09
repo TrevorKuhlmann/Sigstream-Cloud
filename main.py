@@ -1,12 +1,17 @@
 ﻿import os
 import time
 import csv
+import anyio
+from fastapi import status
 import os, httpx
+from routes_devapi import router as devapi_router
+from sse_broker import broker
 from secrets import token_hex
 from datetime import datetime, timedelta
 import logging
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
+from fastapi import Query
 from datetime import datetime, timedelta
 from io import StringIO
 from contextlib import asynccontextmanager
@@ -95,7 +100,12 @@ app.add_middleware(
     same_site="lax",
 )
 
+# ----------------------------- Routers -----------------------------
+
+app.include_router(devapi_router)
+
 templates = Jinja2Templates(directory="templates")
+
 
 #--------------------------------------------------------
 def format_relative(ts):
@@ -252,7 +262,12 @@ async def magic_signin(
         "message": "Check your email and click the magic link to sign in.",
     })
 
+#----------------------------- Developer API Documentation -----------------------------
+@app.get("/developer-api", response_class=HTMLResponse)
+def developer_api_page(request: Request):
+    return templates.TemplateResponse("developer_api.html", {"request": request})
 
+#----------------------------- Magic Link Completion -----------------------------
 @app.get("/magic-auth", response_class=HTMLResponse)
 async def complete_magic_login(
     token: str,
@@ -501,6 +516,56 @@ def validate_device_key(api_key_str: str, machine_id: str, db: Session):
 
 
 # ----------------------------- Data Endpoints -----------------------------
+# @app.post("/data")
+# def receive_data(
+#     payload: DeviceDataIn,
+#     db: Session = Depends(get_db),
+#     x_api_key: str = Header(None),
+#     x_device_id: str = Header(None),
+# ):
+#     logging.info(f"Received /data call. API key: {x_api_key[:6]}..., Device ID header: {x_device_id}")
+#     logging.info(f"Payload: {payload.json()}")
+
+#     try:
+#         api_key = validate_device_key(x_api_key, x_device_id, db)
+#         user = api_key.user
+#         ts = payload.timestamp or int(time.time())
+
+#         logging.info(f"Validated API key. Inserting data: {payload.data}")
+#         insert_data(payload.device_id, payload.data, ts, db, user)
+
+#         logging.info("Calling update_heartbeat...")
+#         update_heartbeat(payload.device_id, ts, db, user)
+
+
+#         # --- NEW: fire-and-forget SSE publish (non-blocking, best-effort) ---
+#         try:
+#             import asyncio
+#             # optional label for nicer client display
+#             device_label = db.query(DeviceStatus.label)\
+#                 .filter(DeviceStatus.user_id == user.id, DeviceStatus.device_id == payload.device_id)\
+#                 .scalar()
+
+#             live_payload = {
+#                 "device_id": payload.device_id,
+#                 "label": device_label,
+#                 "data": payload.data,
+#                 "timestamp": ts,
+#                 "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
+#             }
+#             asyncio.create_task(
+#                 broker.publish((int(user.id), str(payload.device_id)), live_payload, event="telemetry")
+#             )
+#         except Exception:
+#             logging.exception("SSE publish failed (non-fatal)")
+#         # --- END NEW ---
+
+#         return {"status": "success"}
+#     except Exception as e:
+#         logging.exception("Error in /data endpoint")
+#         raise
+
+
 @app.post("/data")
 def receive_data(
     payload: DeviceDataIn,
@@ -513,21 +578,61 @@ def receive_data(
 
     try:
         api_key = validate_device_key(x_api_key, x_device_id, db)
-        user = api_key.user  # ✅ Add this line
+        user = api_key.user
         ts = payload.timestamp or int(time.time())
 
         logging.info(f"Validated API key. Inserting data: {payload.data}")
-        insert_data(payload.device_id, payload.data, ts, db, user)  # ✅ Now has all args
+        insert_data(payload.device_id, payload.data, ts, db, user)
 
         logging.info("Calling update_heartbeat...")
         update_heartbeat(payload.device_id, ts, db, user)
+
+        # --- Publish live SSE events (non-blocking, safe from sync context) ---
+        try:
+            import anyio
+            # optional label for nicer client display
+            device_label = db.query(DeviceStatus.label)\
+                .filter(
+                    DeviceStatus.user_id == user.id,
+                    DeviceStatus.device_id == payload.device_id
+                )\
+                .scalar()
+
+            telemetry_payload = {
+                "device_id": payload.device_id,
+                "label": device_label,
+                "data": payload.data,
+                "timestamp": ts,
+                "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
+            }
+            heartbeat_payload = {
+                "device_id": payload.device_id,
+                "timestamp": ts,
+                "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
+                "status": "online"  # data received implies device is online
+            }
+
+            # Dispatch coroutines onto the main event loop
+            anyio.from_thread.run(
+                broker.publish,
+                (int(user.id), str(payload.device_id)),
+                telemetry_payload,
+                "telemetry"
+            )
+            anyio.from_thread.run(
+                broker.publish,
+                (int(user.id), str(payload.device_id)),
+                heartbeat_payload,
+                "heartbeat"
+            )
+        except Exception:
+            logging.exception("SSE publish failed (non-fatal)")
+        # --- END SSE publish ---
 
         return {"status": "success"}
     except Exception as e:
         logging.exception("Error in /data endpoint")
         raise
-
-
 
 
 
@@ -963,3 +1068,10 @@ def delete_old_device_data(db: Session, days: int = 7):
     deleted = db.query(DeviceData).filter(DeviceData.timestamp < cutoff).delete()
     db.commit()
     print(f"🧹 Deleted {deleted} rows older than {days} days from device_data.")
+
+
+
+
+
+
+ 

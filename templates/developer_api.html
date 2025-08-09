@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="utf-8" />
+    <title>SigStream • Developer API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-full text-gray-900">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-2xl font-semibold mb-2">Developer API</h1>
+        <p class="text-sm text-gray-600 mb-6">
+            Read your device telemetry via a REST endpoint or subscribe to live updates with Server‑Sent Events (SSE).
+            Authentication is per‑device using your <code class="px-1 py-0.5 bg-gray-200 rounded text-xs">API key</code>.
+        </p>
+
+        <div class="space-y-8">
+
+            <section class="bg-white rounded-xl shadow p-5">
+                <h2 class="text-lg font-medium mb-3">Authentication</h2>
+                <ul class="list-disc ml-6 text-sm text-gray-700">
+                    <li><b>REST:</b> send your device’s API key in the <code class="bg-gray-100 px-1 rounded">X-API-Key</code> header.</li>
+                    <li><b>SSE:</b> browsers can’t set headers for <code>EventSource</code>, so pass it as a query param: <code>?api_key=YOUR_KEY</code>.</li>
+                </ul>
+            </section>
+
+            <section class="bg-white rounded-xl shadow p-5">
+                <h2 class="text-lg font-medium mb-3">Read Historical Telemetry (REST)</h2>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>GET /devapi/telemetry?limit=100&amp;since=2025-08-01T00:00:00Z
+Header: X-API-Key: &lt;YOUR_DEVICE_API_KEY&gt;</code></pre>
+
+                <p class="text-sm text-gray-700 mt-3">Example (curl):</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>curl -H "X-API-Key: YOUR_DEVICE_API_KEY" \
+  "https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>
+
+                <p class="text-sm text-gray-700 mt-3">Response shape:</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>[
+  {
+    "id": 12345,
+    "device_id": "ABC123",
+    "label": "Water Tanker",
+    "data": {"rssi": -70, "value": 42},
+    "timestamp": 1723200000,
+    "ts_iso": "2025-08-09T10:00:00Z"
+  },
+  ...
+]</code></pre>
+            </section>
+
+            <section class="bg-white rounded-xl shadow p-5">
+                <h2 class="text-lg font-medium mb-3">Live Stream (SSE)</h2>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>GET /devapi/stream?api_key=YOUR_DEVICE_API_KEY</code></pre>
+
+                <p class="text-sm text-gray-700 mt-3">Example (curl):</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>curl -N "https://sigstreamcloud.com/devapi/stream?api_key=YOUR_DEVICE_API_KEY"</code></pre>
+
+                <p class="text-sm text-gray-700 mt-3">Browser example:</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>&lt;script&gt;
+const es = new EventSource("/devapi/stream?api_key=YOUR_DEVICE_API_KEY");
+es.addEventListener("telemetry", (e) =&gt; {
+  const row = JSON.parse(e.data);
+  console.log("telemetry", row);
+});
+es.addEventListener("heartbeat", (e) =&gt; {
+  const hb = JSON.parse(e.data);
+  console.log("heartbeat", hb);
+});
+es.onerror = (e) =&gt; console.warn("SSE error:", e);
+&lt;/script&gt;</code></pre>
+            </section>
+
+            <section class="bg-white rounded-xl shadow p-5">
+                <h2 class="text-lg font-medium mb-3">Status Codes</h2>
+                <ul class="list-disc ml-6 text-sm text-gray-700">
+                    <li><code>401</code> Missing/invalid API key</li>
+                    <li><code>403</code> API key not bound or bound to another device</li>
+                    <li><code>200</code> Success</li>
+                </ul>
+            </section>
+
+        </div>
+    </div>
+</body>
+</html>
