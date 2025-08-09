@@ -16,14 +16,14 @@
         </div>
         <nav class="flex-1 px-4 space-y-2">
             <!--<a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 22V12h6v10" />
-        </svg>
-        Dashboard
-    </a>-->
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 22V12h6v10" />
+                </svg>
+                Dashboard
+            </a>-->
 
             <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 bg-gray-100 font-semibold">
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,28 +50,28 @@
 
 
             <!--{% if cancel_url or update_pm_url %}
-    <div class="relative group">
-        <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
-            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Account
-        </button>
-        <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">-->
+            <div class="relative group">
+                <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Account
+                </button>
+                <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">-->
             <!--{% if update_pm_url %}
-    <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-        Update Payment Method
-    </a>
-    {% endif %}
-    {% if cancel_url %}
-    <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-        Cancel Subscription
-    </a>
-    {% endif %}-->
+            <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                Update Payment Method
+            </a>
+            {% endif %}
+            {% if cancel_url %}
+            <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                Cancel Subscription
+            </a>
+            {% endif %}-->
             <!--</div>
-    </div>
-    {% endif %}-->
+            </div>
+            {% endif %}-->
             <!-- Developer API (Sidebar item) -->
             <a href="/developer-api"
                class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 text-gray-700
@@ -132,10 +132,14 @@
             <p class="mb-4 text-gray-700">
                 To start monitoring your devices, create your API keys and claim your machines.
             </p>
-            <a href="/api-management" class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
-                <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M10 21a5 5 0 100-10 5 5 0 000 10zM21 21l-6-6" />
+            <a href="/api-management"
+               class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold">
+                <!-- Key icon -->
+                <svg class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
+                    <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path d="M16 9v6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    <path d="M19 10v4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
                 Create API Keys
             </a>
@@ -165,7 +169,7 @@
                         class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Devices</option>
                     {% for label in labels %}
-                    <option value="{{ label }}" {% if device_label==label %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ label }}" {% if device_label= =label %}selected{% endif %}>{{ label }}</option>
 
                     {% endfor %}
                 </select>
@@ -225,13 +229,37 @@
             return dt.toLocaleString();
         };
 
+        // NEW: relative time + color class
+        const relativeAgo = (epochSeconds) => {
+            const now = Math.floor(Date.now() / 1000);
+            const diff = Math.max(0, now - epochSeconds);
+
+            if (diff < 30) return { text: "just now", cls: "text-green-600 font-medium" };
+
+            const minutes = Math.floor(diff / 60);
+            if (minutes < 60) {
+                // 0–9 min = green, 10–59 = yellow
+                const cls = minutes < 10 ? "text-green-600 font-medium" : "text-yellow-600 font-medium";
+                return { text: `${minutes} min ago`, cls };
+            }
+
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) {
+                // 1–23 hours = orange
+                return { text: `${hours} hour${hours === 1 ? "" : "s"} ago`, cls: "text-orange-500 font-medium" };
+            }
+
+            const days = Math.floor(hours / 24);
+            // ≥ 1 day = red
+            return { text: `${days} day${days === 1 ? "" : "s"} ago`, cls: "text-red-600 font-medium" };
+        };
+
         const loadData = async () => {
             const label = new URLSearchParams(window.location.search).get("device_label");
             const res = await fetch(`/api/summary-data${label ? `?device_label=${label}` : ''}`);
             const data = await res.json();
 
             const tbody = document.querySelector("#data-table-body");
-
             tbody.innerHTML = "";
             tbody.classList.add("bg-yellow-50");
             setTimeout(() => tbody.classList.remove("bg-yellow-50"), 300);
@@ -240,61 +268,53 @@
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50";
                 tr.innerHTML = `
-                    <td class="px-4 py-2 text-sm">${row.id}</td>
-                    <td class="px-4 py-2 text-sm">
-                        <div class="flex flex-col">
-                            <div class="flex items-center space-x-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
-                                </svg>
-                               <span class="relative group cursor-pointer">
-    ${row.label || row.device_id}
-    <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-90 opacity-0 group-hover:opacity-100 transition bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap">
-        ID: ${row.device_id}
-    </span>
-</span>
-
-                            </div>
-                            <span class="text-xs text-gray-500">
-                                Last seen: <span data-last-seen="${row.device_id}">...</span>
-                            </span>
-                        </div>
-                    </td>
-                    <td class="px-4 py-2 text-sm">${row.data}</td>
-                    <td class="px-4 py-2 text-sm text-right">${formatTimestamp(row.timestamp)}</td>
-                `;
+            <td class="px-4 py-2 text-sm">${row.id}</td>
+            <td class="px-4 py-2 text-sm">
+              <div class="flex flex-col">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                  <span class="relative group cursor-pointer">
+                    ${row.label || row.device_id}
+                    <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-90 opacity-0 group-hover:opacity-100 transition bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap">
+                      ID: ${row.device_id}
+                    </span>
+                  </span>
+                </div>
+                <span class="text-xs text-gray-500">
+                  Last seen: <span data-last-seen="${row.device_id}">...</span>
+                </span>
+              </div>
+            </td>
+            <td class="px-4 py-2 text-sm">${row.data}</td>
+            <td class="px-4 py-2 text-sm text-right">${formatTimestamp(row.timestamp)}</td>
+          `;
                 tbody.appendChild(tr);
             });
 
-            // ✅ Update the "Last seen" timestamps after rows are added
+            // NEW: apply relative formatting per device
             document.querySelectorAll("[data-last-seen]").forEach(el => {
                 const deviceId = el.dataset.lastSeen;
+                // data is newest-first, so .find is OK
                 const latestTs = data.find(d => d.device_id === deviceId)?.timestamp;
-                if (latestTs) {
-                    const minutesAgo = Math.floor((Date.now() / 1000 - latestTs) / 60);
-                    if (minutesAgo === 0) {
-                        el.textContent = "just now";
-                        el.className = "text-green-600 font-medium";
-                    } else if (minutesAgo <= 5) {
-                        el.textContent = `${minutesAgo} min ago`;
-                        el.className = "text-yellow-600 font-medium";
-                    } else {
-                        el.textContent = `${minutesAgo} min ago`;
-                        el.className = "text-red-600 font-medium";
-                    }
 
+                if (latestTs) {
+                    const rel = relativeAgo(latestTs);
+                    el.textContent = rel.text;
+                    el.className = `text-xs ${rel.cls}`;
                 } else {
                     el.textContent = "n/a";
-                    el.className = "text-gray-500";
+                    el.className = "text-xs text-gray-500";
                 }
             });
-
         };
 
-        // ✅ Initial load and auto-refresh every 5 seconds
+        // Initial load + 5s refresh
         loadData();
         setInterval(loadData, 5000);
     </script>
+
 
 
 </body>
