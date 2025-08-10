@@ -11,22 +11,22 @@
 
     <!-- Redirect if logged-in + subscribed -->
     <script>
-    (function () {
-      const hasToken = document.cookie.includes("access_token");
-      const status = ("{{ user_subscription_status or '' }}").toLowerCase();
-      if (hasToken && (status === "active" || status === "trialing")) {
-        location.replace("/summary");
-      }
-    })();
+  (function () {
+    const hasToken = document.cookie.includes("access_token");
+    const status = ("{{ user_subscription_status or '' }}").toLowerCase();
+    if (hasToken && (status === "active" || status === "trialing")) {
+      location.replace("/summary");
+    }
+  })();
     </script>
 
     <style>
         .hero-bg {
-            background-image: radial-gradient(900px 420px at -10% -10%, rgba(59,130,246,.10), transparent), radial-gradient(900px 420px at 110% -10%, rgba(14,165,233,.12), transparent)
+            background-image: radial-gradient(900px 420px at -10% -10%,rgba(59,130,246,.10),transparent),radial-gradient(900px 420px at 110% -10%,rgba(14,165,233,.12),transparent)
         }
 
         .card {
-            transition: transform .2s ease, box-shadow .2s ease
+            transition: transform .2s ease,box-shadow .2s ease
         }
 
             .card:hover {
@@ -47,44 +47,68 @@
 
     <!-- Paddle: single USD plan with 14-day trial -->
     <script>
-    // TODO: set to your live price id with 14-day trial + $15/mo (USD)
-    const PADDLE_PRICE_ID = "pri_your_single_plan_id";
+  // 👉 SET THIS to your actual Paddle price id (the one that has 14‑day trial + $15/mo)
+        const PRICE_ID = "pri_01jwqfc5c86tn0cffspqqw35yt";
 
-    const PADDLE_ENV   = "sandbox"; // switch to "production" when live
-    const PADDLE_TOKEN = "{{ paddle_token or 'test_5852ced8925dae79f0c0bac4614' }}";
+  // These come from your server; fall back to sandbox token if not provided
+  const PADDLE_ENV   = "{{ 'production' if (os.getenv('PADDLE_ENV') == 'production') else 'sandbox' }}" || "sandbox";
+  const PADDLE_TOKEN = "{{ paddle_token or 'test_5852ced8925dae79f0c0bac4614' }}";
 
-    let paddleReady = false;
+  // Robustly wait for Paddle to be available before init
+  function whenPaddleReady(cb){
+    if (window.Paddle && typeof Paddle.Initialize === "function") return cb();
+    setTimeout(()=>whenPaddleReady(cb), 40);
+  }
 
-    function initPaddle() {
+  let paddleReady = false;
+  whenPaddleReady(function(){
+    try{
       Paddle.Environment.set(PADDLE_ENV);
       Paddle.Initialize({
         token: PADDLE_TOKEN,
-        eventCallback: (e) => console.log("Paddle event:", e),
+        eventCallback: (e)=>console.log("Paddle event:", e),
       });
       paddleReady = true;
+      console.log("[Paddle] initialized", {env:PADDLE_ENV});
+    }catch(err){
+      console.error("[Paddle] init failed", err);
+    }
+  });
+
+  function openCheckoutSigstream() {
+    if (!PRICE_ID || PRICE_ID.startsWith("pri_xxxxxx")) {
+      console.error("PRICE_ID missing. Set your real Paddle price id.");
+      alert("Checkout temporarily unavailable. Please try again later.");
+      return;
+    }
+    if (!paddleReady) {
+      console.warn("Paddle not ready yet; retrying...");
+      return setTimeout(openCheckoutSigstream, 120);
     }
 
-    function openCheckoutSigstream() {
-      if (!paddleReady) return;
-
-      const email = "{{ user_email or '' }}";
-      const opts = {
-        items: [{ priceId: PADDLE_PRICE_ID, quantity: 1 }],
-        settings: {
-          theme: "light",
-          displayMode: "overlay",
-          variant: "one-page",
-          successUrl: "{{ request.base_url }}post-purchase"
-        }
-      };
-      if (email) {
-        opts.customer = { email };
-        opts.passthrough = JSON.stringify({ email });
+    const email = "{{ user_email or '' }}";
+    const opts = {
+      items: [{ priceId: PRICE_ID, quantity: 1 }],
+      settings: {
+        theme: "light",
+        displayMode: "overlay",
+        variant: "one-page",
+        // successUrl must be absolute. request.base_url already includes trailing slash
+        successUrl: "{{ request.base_url }}post-purchase"
       }
-      Paddle.Checkout.open(opts);
+    };
+    if (email) {
+      opts.customer = { email };
+      opts.passthrough = JSON.stringify({ email });
     }
 
-    document.addEventListener("DOMContentLoaded", initPaddle);
+    try {
+      Paddle.Checkout.open(opts);
+    } catch (e) {
+      console.error("Paddle.Checkout.open failed", e);
+      alert("Could not open checkout. Please refresh and try again.");
+    }
+  }
     </script>
 </head>
 
@@ -140,7 +164,7 @@
                 </p>
                 <p class="mt-2 text-xs text-slate-500">Linux/macOS agents coming soon.</p>
 
-                <!-- KPI Tiles (static for now) -->
+                <!-- KPI Tiles (placeholder numbers) -->
                 <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600">
                     <div class="card bg-slate-50 p-4 rounded-lg">
                         <div class="text-slate-500">Online devices</div>
@@ -157,7 +181,7 @@
                 </div>
             </div>
 
-            <!-- Media: screenshot now, video later -->
+            <!-- Media: screenshot now -->
             <div class="relative">
                 <div class="absolute -inset-3 bg-blue-200/30 blur-2xl rounded-3xl"></div>
                 <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -177,25 +201,20 @@
             <div class="mt-10 grid sm:grid-cols-3 gap-6">
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- key -->
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="7.5" cy="12" r="3" stroke-width="2" /><path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /></svg>
                     </div>
                     <h3 class="font-semibold">1) Create an API key</h3>
                     <p class="text-sm text-slate-600 mt-1">Per‑device keys keep data clean and tenant‑safe.</p>
                 </div>
-
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- windows-ish -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5l9-2v8H3V5zm10-2l8-2v10h-8V3zM3 13h9v8l-9-2v-6zm10 0h8v10l-8-2v-8z" /></svg>
                     </div>
                     <h3 class="font-semibold">2) Install the Windows agent</h3>
                     <p class="text-sm text-slate-600 mt-1">Reads telemetry from a <strong>COM port</strong> (e.g., COM3), buffers offline, and forwards securely.</p>
                 </div>
-
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- dashboard -->
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="6" rx="2" stroke-width="2" /><rect x="3" y="12" width="10" height="8" rx="2" stroke-width="2" /><rect x="15" y="12" width="6" height="8" rx="2" stroke-width="2" /></svg>
                     </div>
                     <h3 class="font-semibold">3) View or build</h3>
@@ -212,7 +231,6 @@
             <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- lightning -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-12h-7l1-8z" /></svg>
                     </div>
                     <h3 class="font-semibold">SSE live streaming</h3>
@@ -220,7 +238,6 @@
                 </div>
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- agent -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z" /></svg>
                     </div>
                     <h3 class="font-semibold">Lightweight agent</h3>
@@ -228,7 +245,6 @@
                 </div>
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- plus -->
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 12h14M12 5v14" stroke-width="2" stroke-linecap="round" /></svg>
                     </div>
                     <h3 class="font-semibold">Developer‑friendly</h3>
@@ -236,7 +252,6 @@
                 </div>
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- shield -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 4v6c0 4-3 9-8 10-5-1-8-6-8-10V6l8-4z" /></svg>
                     </div>
                     <h3 class="font-semibold">Tenant‑aware security</h3>
@@ -244,7 +259,6 @@
                 </div>
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- window -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4z" /></svg>
                     </div>
                     <h3 class="font-semibold">Built‑in dashboard</h3>
@@ -252,7 +266,6 @@
                 </div>
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- circle -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" /></svg>
                     </div>
                     <h3 class="font-semibold">Hobbyist pricing</h3>
@@ -270,7 +283,7 @@
                 <div class="card border border-slate-200 rounded-xl p-5">
                     <div class="text-sm font-semibold text-slate-700 mb-2">REST — latest telemetry</div>
                     <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-800 overflow-x-auto"><code>curl -H "X-API-Key: YOUR_DEVICE_API_KEY" \
-  "https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>
+"https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>
                 </div>
                 <div class="card border border-slate-200 rounded-xl p-5">
                     <div class="text-sm font-semibold text-slate-700 mb-2">SSE — live stream</div>
