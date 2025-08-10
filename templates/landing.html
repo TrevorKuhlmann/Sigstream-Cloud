@@ -1,155 +1,352 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
-    <script>
-      const isLoggedIn = document.cookie.includes("access_token");
-      const status = "{{ user_subscription_status }}";
-      if (isLoggedIn && (status === "ACTIVE" || status === "trialing")) {
-        window.location.replace("/dashboard");
-      }
-    </script>
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SigStreamCloud - Remote Device Monitoring</title>
-    <meta name="description" content="Monitor remote IoT, telecom, and cold storage devices in real-time. Fast, reliable, and lightweight SaaS." />
-    <meta property="og:title" content="SigStream" />
-    <meta property="og:description" content="Track uptime, alerts, and performance from anywhere." />
-    <meta property="og:image" content="/static/img/sigstream-logo.png" />
-    <meta name="theme-color" content="#1e40af" />
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
-
-    <!-- ✅ Pass user email to external JS -->
-    <meta name="sigstream-user-email" content="{{ user_email or '' }}">
-
+    <title>SigStream — Real‑time device telemetry made simple</title>
+    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built‑in dashboard or simple REST & SSE APIs. 14‑day trial then $15/month (USD)." />
+    <link rel="icon" href="/static/favicon.ico" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
+    <!-- Pass user email to external /static/js/paddle.js (keeps payment logic separate) -->
+    <meta name="sigstream-user-email" content="{{ user_email or '' }}">
+
+    <!-- Auto-redirect if logged-in + subscribed -->
     <script>
+    (function () {
       const hasToken = document.cookie.includes("access_token");
-      const isSubscribed = "{{ user_subscription_status }}" === "ACTIVE" || "{{ user_subscription_status }}" === "trialing";
-      if (hasToken && isSubscribed) {
-        sessionStorage.setItem("hasActiveSubscription", "true");
-        window.location.replace("/dashboard");
-      } else {
-        sessionStorage.removeItem("hasActiveSubscription");
+      const status = ("{{ user_subscription_status or '' }}").toLowerCase();
+      if (hasToken && (status === "active" || status === "trialing")) {
+        location.replace("/summary");
       }
+    })();
     </script>
 
-    <!-- ✅ Load our extracted Paddle logic -->
-    <script src="/static/js/paddle.js?v=1"></script>
+    <style>
+        .hero-bg {
+            background-image: radial-gradient(900px 420px at -10% -10%, rgba(59,130,246,.12), transparent), radial-gradient(900px 420px at 110% -10%, rgba(14,165,233,.12), transparent);
+        }
+
+        .card {
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 16px 30px rgba(2,6,23,.08);
+            }
+
+        .badge {
+            font-size: .72rem;
+            padding: .25rem .6rem;
+            border-radius: .5rem;
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+    </style>
+
+    <!-- Our extracted Paddle logic (already working) -->
+    <script src="/static/js/paddle.js?v=2"></script>
 </head>
-<body>
-    {% if user_email and user_subscription_status in ["active", "trialing"] %}
-    {% if request.cookies.get("access_token") %}
-    <script>
-        sessionStorage.setItem("hasActiveSubscription", "true");
-        window.location.replace("/dashboard");
-    </script>
-    {% endif %}
-    {% endif %}
+
+<body class="min-h-full bg-white text-slate-900">
 
     <!-- Header -->
-    <header class="flex items-center justify-between px-8 py-4 bg-white shadow">
-        <div class="flex items-center">
-            <img src="/static/img/sigstream-logo.png" alt="SigStream Logo" class="h-12 w-12 mr-2 rounded" />
-            <span class="text-xl font-bold text-blue-700">SigStream</span>
-        </div>
-        <div>
-            {% if user_email %}
-            <span class="text-gray-700 mr-4">Logged in as <strong>{{ user_email }}</strong></span>
-            <a href="/logout" onclick="sessionStorage.clear()" class="text-blue-600 hover:underline">Logout</a>
-            {% else %}
-            <a href="/login-form" class="text-gray-700 hover:text-blue-700 mr-4">Login</a>
-            <a href="/register-form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Get Started</a>
-            {% endif %}
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
+                <span class="text-lg font-semibold text-blue-700">SigStream</span>
+            </a>
+            <nav class="flex items-center gap-4">
+                <a href="#how" class="text-sm text-slate-600 hover:text-slate-900">How it works</a>
+                <a href="#features" class="text-sm text-slate-600 hover:text-slate-900">Features</a>
+                <a href="#code" class="text-sm text-slate-600 hover:text-slate-900">Code</a>
+                <a href="#pricing" class="text-sm text-slate-600 hover:text-slate-900">Pricing</a>
+                {% if user_email %}
+                <a href="/summary" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Dashboard</a>
+                <a href="/logout" class="text-sm text-slate-600 hover:text-slate-900">Logout</a>
+                {% else %}
+                <a href="/login-form" class="text-sm text-slate-600 hover:text-slate-900">Login</a>
+                <a href="/register-form" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Get Started</a>
+                {% endif %}
+            </nav>
         </div>
     </header>
 
     <!-- Hero -->
-    <section class="bg-blue-50 py-20 text-center px-6">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Monitor Your Devices in Real-Time</h1>
-        <p class="mt-4 text-lg text-gray-700">Track telemetry, uptime, and performance across remote IoT systems with ease.</p>
-        <div class="mt-6">
-            {% if user_email %}
-            <a href="/dashboard" class="inline-block bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700 transition">Go to Dashboard</a>
-            {% else %}
-            <a href="/register-form" class="inline-block bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700 transition">Start Free</a>
-            {% endif %}
+    <section class="hero-bg">
+        <div class="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+            <div>
+                <div class="badge bg-blue-100 text-blue-800 inline-flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Live telemetry in seconds
+                </div>
+                <h1 class="mt-3 text-4xl md:text-5xl font-bold leading-tight">
+                    Real‑time device monitoring that’s <span class="text-blue-700">developer‑friendly</span>
+                </h1>
+                <p class="mt-4 text-lg text-slate-700">
+                    Install our lightweight <strong>Windows agent</strong> (reads from a <strong>COM port</strong>), streams telemetry with
+                    <strong>offline buffering</strong>, and view it live in our <strong>built‑in dashboard</strong> — or consume it via simple REST & SSE APIs.
+                </p>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    {% if user_email %}
+                    <a href="/summary" class="px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Open Dashboard</a>
+                    <a href="/developer-api#agent" class="px-5 py-3 rounded-lg border border-slate-300 text-slate-800 hover:bg-slate-50">Download Agent</a>
+                    {% else %}
+                    <a href="/register-form" class="px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Start Free</a>
+                    <a href="/developer-api" class="px-5 py-3 rounded-lg border border-slate-300 text-slate-800 hover:bg-slate-50">Read the API</a>
+                    {% endif %}
+                </div>
+                <p class="mt-4 text-sm text-slate-500">
+                    Windows agent (COM port) • Offline buffering • SSE live updates • Per‑device API keys
+                </p>
+
+                <!-- KPI Tiles (illustrative; you can wire real values later) -->
+                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600">
+                    <div class="card bg-slate-50 p-4 rounded-lg">
+                        <div class="text-slate-500">Online devices</div>
+                        <div class="text-2xl font-semibold text-slate-900">10</div>
+                    </div>
+                    <div class="card bg-slate-50 p-4 rounded-lg">
+                        <div class="text-slate-500">Events / min (5m)</div>
+                        <div class="text-2xl font-semibold text-slate-900">2.1k</div>
+                    </div>
+                    <div class="card bg-slate-50 p-4 rounded-lg">
+                        <div class="text-slate-500">Buffered offline</div>
+                        <div class="text-2xl font-semibold text-slate-900">134</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media: screenshot now; swap to short video later if you like -->
+            <div class="relative">
+                <div class="absolute -inset-3 bg-blue-200/30 blur-2xl rounded-3xl"></div>
+                <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <img src="/static/media/dashboard-screengrab.png"
+                         alt="SigStream dashboard showing live telemetry and device list"
+                         class="w-full"
+                         loading="lazy" />
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Pricing -->
-    <section id="pricing" class="py-24 bg-white text-center">
-        <h2 class="text-3xl font-bold mb-8">Simple Pricing</h2>
-        <div class="inline-flex items-center bg-gray-100 rounded-lg p-1 mb-8">
-            <button id="monthlyBtn" class="px-4 py-2 rounded-md text-sm bg-white" onclick="updateBillingCycle('month')">Monthly</button>
-            <button id="yearlyBtn" class="px-4 py-2 rounded-md text-sm" onclick="updateBillingCycle('year')">Yearly (Save 20%)</button>
-        </div>
+    <!-- How it works -->
+    <section id="how" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center">How it works</h2>
+            <div class="mt-10 grid sm:grid-cols-3 gap-6">
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- Key icon -->
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
+                            <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold">1) Create an API key</h3>
+                    <p class="text-sm text-slate-600 mt-1">Per‑device keys keep data clean and tenant‑safe.</p>
+                </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <!-- Free -->
-            <div class="border rounded-lg p-6 shadow-sm">
-                <h3 class="text-xl font-semibold mb-2">Free</h3>
-                <p class="text-gray-600 mb-4">Get started with up to 3 devices.</p>
-                <div class="text-2xl font-bold mb-4">$0<span class="text-base font-medium">/month</span></div>
-                {% if user_email %}
-                <a href="/dashboard" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Start Free</a>
-                {% else %}
-                <a href="/register-form" class="mt-4 inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Start Free</a>
-                {% endif %}
-            </div>
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- Windows-ish tile -->
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 5l9-2v8H3V5zm10-2l8-2v10h-8V3zM3 13h9v8l-9-2v-6zm10 0h8v10l-8-2v-8z" />
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold">2) Install the Windows agent</h3>
+                    <p class="text-sm text-slate-600 mt-1">Reads telemetry from a <strong>COM port</strong> (e.g., COM3), buffers offline, and forwards securely.</p>
+                </div>
 
-            <!-- Starter -->
-            <div class="border rounded-lg p-6 bg-blue-600 text-white shadow-lg">
-                <h3 class="text-xl font-semibold mb-2">Starter</h3>
-                <p class="mb-4">Up to 10 devices, basic alerts & dashboard access.</p>
-                <div class="text-2xl font-bold mb-4"><span id="starter-price">$9</span><span class="text-base font-medium">/month</span></div>
-                {% if user_email and user_subscription_status in ["active", "trialing"] %}
-                <button disabled class="mt-4 px-6 py-2 bg-gray-300 text-white rounded font-semibold cursor-not-allowed">Already Subscribed</button>
-                {% elif user_email %}
-                <button onclick="openCheckout('starter')" class="mt-4 px-6 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 font-semibold transition duration-300">Buy Starter</button>
-                {% else %}
-                <button disabled class="mt-4 px-6 py-2 bg-white text-gray-400 border border-gray-300 rounded font-semibold cursor-not-allowed">Login to Buy</button>
-                {% endif %}
-            </div>
-
-            <!-- Pro -->
-            <div class="border rounded-lg p-6 shadow-sm">
-                <h3 class="text-xl font-semibold mb-2">Pro</h3>
-                <p class="text-gray-600 mb-4">Unlimited devices, full features & priority support.</p>
-                <div class="text-2xl font-bold mb-4"><span id="pro-price">$29</span><span class="text-base font-medium">/month</span></div>
-                {% if user_email and user_subscription_status in ["active", "trialing"] %}
-                <button disabled class="mt-4 px-6 py-2 bg-gray-300 text-white rounded font-semibold cursor-not-allowed">Already Subscribed</button>
-                {% elif user_email %}
-                <button onclick="openCheckout('pro')" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition duration-300">Buy Pro</button>
-                {% else %}
-                <button disabled class="mt-4 px-6 py-2 bg-blue-300 text-white rounded font-semibold cursor-not-allowed">Login to Buy</button>
-                {% endif %}
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- Dashboard -->
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <rect x="3" y="4" width="18" height="6" rx="2" stroke-width="2"></rect>
+                            <rect x="3" y="12" width="10" height="8" rx="2" stroke-width="2"></rect>
+                            <rect x="15" y="12" width="6" height="8" rx="2" stroke-width="2"></rect>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold">3) View or build</h3>
+                    <p class="text-sm text-slate-600 mt-1">Use our <strong>built‑in dashboard</strong> (no code), or integrate via REST & <code>EventSource</code> (SSE).</p>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="mt-12">
-            <label for="countrySelect" class="text-sm font-medium text-gray-600">Test localization</label>
-            <select id="countrySelect" class="ml-2 px-4 py-2 rounded-lg border border-gray-300">
-                <option value="US">🇺🇸 United States</option>
-                <option value="GB">🇬🇧 United Kingdom</option>
-                <option value="DE">🇩🇪 Germany</option>
-                <option value="FR">🇫🇷 France</option>
-                <option value="ZA">🇿🇦 South Africa</option>
-            </select>
+    <!-- Features -->
+    <section id="features" class="py-16 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center">Everything you need — nothing you don’t</h2>
+            <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- lightning -->
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-12h-7l1-8z" /></svg>
+                    </div>
+                    <h3 class="font-semibold">SSE live streaming</h3>
+                    <p class="text-sm text-slate-600 mt-1">Low‑latency updates for dashboards and dev tools with browser‑native SSE.</p>
+                </div>
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- agent -->
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z" /></svg>
+                    </div>
+                    <h3 class="font-semibold">Lightweight agent</h3>
+                    <p class="text-sm text-slate-600 mt-1">Offline buffering + backpressure so data survives patchy networks.</p>
+                </div>
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- plus -->
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 12h14M12 5v14" stroke-width="2" stroke-linecap="round" /></svg>
+                    </div>
+                    <h3 class="font-semibold">Developer‑friendly</h3>
+                    <p class="text-sm text-slate-600 mt-1">Curl, fetch, and EventSource examples; JSON payloads you control.</p>
+                </div>
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- shield -->
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 4v6c0 4-3 9-8 10-5-1-8-6-8-10V6l8-4z" /></svg>
+                    </div>
+                    <h3 class="font-semibold">Tenant‑aware security</h3>
+                    <p class="text-sm text-slate-600 mt-1">Per‑device keys mapped to owners; safe by default for shared fleets.</p>
+                </div>
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- window -->
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4z" /></svg>
+                    </div>
+                    <h3 class="font-semibold">Built‑in dashboard</h3>
+                    <p class="text-sm text-slate-600 mt-1">A clean UI out of the box — ideal if you don’t want to write front‑end code.</p>
+                </div>
+                <div class="card p-5 border border-slate-200 rounded-xl">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
+                        <!-- circle -->
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" /></svg>
+                    </div>
+                    <h3 class="font-semibold">Hobbyist pricing</h3>
+                    <p class="text-sm text-slate-600 mt-1">14‑day free trial • $15/month • Cancel anytime.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code samples -->
+    <section id="code" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center">Build in minutes</h2>
+            <div class="mt-8 grid md:grid-cols-2 gap-6">
+                <div class="card border border-slate-200 rounded-xl p-5">
+                    <div class="text-sm font-semibold text-slate-700 mb-2">REST — latest telemetry</div>
+                    <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-800 overflow-x-auto"><code>curl -H "X-API-Key: YOUR_DEVICE_API_KEY" \
+  "https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>
+                </div>
+                <div class="card border border-slate-200 rounded-xl p-5">
+                    <div class="text-sm font-semibold text-slate-700 mb-2">SSE — live stream</div>
+                    <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-800 overflow-x-auto"><code>&lt;script&gt;
+const es = new EventSource("/devapi/stream?api_key=YOUR_DEVICE_API_KEY");
+es.addEventListener("telemetry", (e) =&gt; console.log(JSON.parse(e.data)));
+es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data)));
+&lt;/script&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing: single USD plan -->
+    <section id="pricing" class="py-20 bg-slate-50">
+        <div class="max-w-3xl mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold">Try it free, then $15/month</h2>
+            <p class="mt-2 text-slate-600">14‑day free trial • Cancel anytime • Charged in USD</p>
+
+            <div class="mt-10 grid grid-cols-1 gap-6 text-left">
+                <div class="card border-2 border-blue-200 rounded-2xl p-6 bg-white">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold">SigStream</h3>
+                        <span class="badge bg-blue-100 text-blue-800">14‑day trial</span>
+                    </div>
+                    <p class="text-slate-600 mt-1">Full access: Windows agent (COM port), built‑in dashboard, REST & SSE APIs.</p>
+                    <div class="mt-4 text-3xl font-bold">
+                        <span id="starter-price">$15.00</span>
+                        <span class="text-base font-medium text-slate-500">/month</span>
+                    </div>
+
+                    {% if user_email and user_subscription_status in ["active","trialing"] %}
+                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">
+                        Already active
+                    </button>
+                    {% elif user_email %}
+                    <button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                        Start 14‑day trial
+                    </button>
+                    {% else %}
+                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/80 text-white">
+                        Login to start trial
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-16 bg-white">
+        <div class="max-w-5xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center">Frequently asked</h2>
+            <div class="mt-10 grid md:grid-cols-2 gap-6">
+                <div class="card p-6 border border-slate-200 rounded-xl">
+                    <h3 class="font-semibold">Does it work without internet?</h3>
+                    <p class="text-sm text-slate-600 mt-1">Yes. The Windows agent buffers locally and forwards when connectivity returns.</p>
+                </div>
+                <div class="card p-6 border border-slate-200 rounded-xl">
+                    <h3 class="font-semibold">How do I stream live data?</h3>
+                    <p class="text-sm text-slate-600 mt-1">Use our SSE endpoint with <code>EventSource</code>, or just open the built‑in dashboard.</p>
+                </div>
+                <div class="card p-6 border border-slate-200 rounded-xl">
+                    <h3 class="font-semibold">What about Linux/macOS?</h3>
+                    <p class="text-sm text-slate-600 mt-1">Windows agent is available today. Linux/macOS agents are on the roadmap.</p>
+                </div>
+                <div class="card p-6 border border-slate-200 rounded-xl">
+                    <h3 class="font-semibold">How are devices secured?</h3>
+                    <p class="text-sm text-slate-600 mt-1">Each device gets its own API key, tenant‑mapped, with server‑side validation.</p>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-gray-300 py-6 text-center">
-        <p>© 2025 SigStream. All rights reserved.</p>
-        <p class="text-sm mt-2">Questions? <a href="mailto:admin@sigstreamcloud.com" class="text-blue-400 underline">Contact Support</a></p>
-        <div class="mt-4 text-sm">
-            <a href="/terms" class="text-gray-400 hover:underline mr-4">Terms</a>
-            <a href="/privacy" class="text-gray-400 hover:underline mr-4">Privacy</a>
-            <a href="/refund" class="text-gray-400 hover:underline">Refunds</a>
+    <footer class="bg-slate-900 text-slate-300">
+        <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
+            <div>
+                <div class="flex items-center gap-2">
+                    <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
+                    <span class="font-semibold text-white">SigStream</span>
+                </div>
+                <p class="mt-3 text-sm text-slate-400">Telemetry that’s fast, dependable, and friendly for builders.</p>
+            </div>
+            <div class="text-sm">
+                <div class="text-slate-400 mb-2">Product</div>
+                <a href="#how" class="block hover:underline">How it works</a>
+                <a href="#features" class="block hover:underline">Features</a>
+                <a href="#pricing" class="block hover:underline">Pricing</a>
+                <a href="/developer-api" class="block hover:underline">Developer API</a>
+            </div>
+            <div class="text-sm">
+                <div class="text-slate-400 mb-2">Legal</div>
+                <a href="/terms" class="block hover:underline">Terms</a>
+                <a href="/privacy" class="block hover:underline">Privacy</a>
+                <a href="/refund" class="block hover:underline">Refunds</a>
+                <a href="mailto:admin@sigstreamcloud.com" class="block hover:underline mt-2 text-blue-300">Contact support</a>
+            </div>
+        </div>
+        <div class="border-t border-slate-800 text-center text-xs text-slate-500 py-4">
+            © 2025 SigStream. All rights reserved.
         </div>
     </footer>
+
 </body>
 </html>
