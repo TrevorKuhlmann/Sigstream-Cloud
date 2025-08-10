@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SigStream — Real‑time device telemetry made simple</title>
-    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built‑in dashboard or simple REST & SSE APIs. 14‑day trial then $15/month (USD)." />
+    <title>SigStream — Real-time device telemetry made simple</title>
+    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built-in dashboard or simple REST & SSE APIs. Affordable and hobbyist-friendly — 14-day trial then $15/month (USD)." />
     <link rel="icon" href="/static/favicon.ico" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
-    <!-- Pass user email to external /static/js/paddle.js (keeps payment logic separate) -->
+    <!-- Pass user email to /static/js/paddle.js -->
     <meta name="sigstream-user-email" content="{{ user_email or '' }}">
 
     <!-- Auto-redirect if logged-in + subscribed -->
@@ -24,8 +24,26 @@
     </script>
 
     <style>
-        .hero-bg {
-            background-image: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246,0.25), transparent), radial-gradient(1200px 600px at 110% -10%, rgba(14,165,233,0.22), transparent), radial-gradient(1000px 500px at 50% 120%, rgba(147,51,234,0.08), transparent); /* subtle purple */
+        /* Full-page animated gradient */
+        body {
+            min-height: 100%;
+            background: linear-gradient(135deg, #e0f2fe, #dbeafe, #ede9fe);
+            background-size: 300% 300%;
+            animation: gradientMove 18s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .card {
@@ -48,14 +66,11 @@
         }
     </style>
 
-
-
-    <!-- Our extracted Paddle logic (already working) -->
+    <!-- Paddle checkout logic (unchanged) -->
     <script src="/static/js/paddle.js?v=2"></script>
 </head>
 
-<body class="min-h-full bg-white text-slate-900">
-
+<body class="text-slate-900">
     <!-- Header -->
     <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -80,18 +95,18 @@
     </header>
 
     <!-- Hero -->
-    <section class="hero-bg">
+    <section>
         <div class="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-10 items-center">
             <div>
                 <div class="badge bg-blue-100 text-blue-800 inline-flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Live telemetry in seconds
                 </div>
                 <h1 class="mt-3 text-4xl md:text-5xl font-bold leading-tight">
-                    Real‑time device monitoring that’s <span class="text-blue-700">developer‑friendly</span>
+                    Real-time device monitoring that’s <span class="text-blue-700">developer-friendly</span> & <span class="text-indigo-600">hobbyist-friendly</span>
                 </h1>
                 <p class="mt-4 text-lg text-slate-700">
                     Install our lightweight <strong>Windows agent</strong> (reads from a <strong>COM port</strong>), streams telemetry with
-                    <strong>offline buffering</strong>, and view it live in our <strong>built‑in dashboard</strong> — or consume it via simple REST & SSE APIs.
+                    <strong>offline buffering</strong>, and view it live in our <strong>built-in dashboard</strong> — or consume it via simple REST & SSE APIs.
                 </p>
                 <div class="mt-6 flex flex-wrap gap-3">
                     {% if user_email %}
@@ -103,27 +118,11 @@
                     {% endif %}
                 </div>
                 <p class="mt-4 text-sm text-slate-500">
-                    Windows agent (COM port) • Offline buffering • SSE live updates • Per‑device API keys
+                    Affordable • 14-day free trial • $15/month (USD) • Cancel anytime
                 </p>
-
-                <!-- KPI Tiles (illustrative; you can wire real values later) -->
-                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600">
-                    <div class="card bg-slate-50 p-4 rounded-lg">
-                        <div class="text-slate-500">Online devices</div>
-                        <div class="text-2xl font-semibold text-slate-900">10</div>
-                    </div>
-                    <div class="card bg-slate-50 p-4 rounded-lg">
-                        <div class="text-slate-500">Events / min (5m)</div>
-                        <div class="text-2xl font-semibold text-slate-900">2.1k</div>
-                    </div>
-                    <div class="card bg-slate-50 p-4 rounded-lg">
-                        <div class="text-slate-500">Buffered offline</div>
-                        <div class="text-2xl font-semibold text-slate-900">134</div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Media: screenshot now; swap to short video later if you like -->
+            <!-- Media placeholder -->
             <div class="relative">
                 <div class="absolute -inset-3 bg-blue-200/30 blur-2xl rounded-3xl"></div>
                 <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
