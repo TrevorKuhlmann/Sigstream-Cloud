@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SigStream — Real‑time device telemetry made simple</title>
-    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built‑in dashboard or simple REST & SSE APIs. 14‑day trial then $15/month." />
+    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built‑in dashboard or simple REST & SSE APIs. 14‑day trial then $15/month (USD)." />
     <link rel="icon" href="/static/favicon.ico" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
@@ -45,38 +45,46 @@
         }
     </style>
 
-    <!-- Paddle config: single USD plan with 14-day trial -->
+    <!-- Paddle: single USD plan with 14-day trial -->
     <script>
-    const PADDLE_PRICE_ID = "pri_your_single_plan_id"; // TODO: set to your $15/mo w/14-day trial priceId
+    // TODO: set to your live price id with 14-day trial + $15/mo (USD)
+    const PADDLE_PRICE_ID = "pri_your_single_plan_id";
+
+    const PADDLE_ENV   = "sandbox"; // switch to "production" when live
+    const PADDLE_TOKEN = "{{ paddle_token or 'test_5852ced8925dae79f0c0bac4614' }}";
 
     let paddleReady = false;
 
-    async function initializePaddle() {
-      Paddle.Environment.set("sandbox"); // TODO: switch to "production" when live
+    function initPaddle() {
+      Paddle.Environment.set(PADDLE_ENV);
       Paddle.Initialize({
-        token: "{{ paddle_token or 'test_5852ced8925dae79f0c0bac4614' }}",
+        token: PADDLE_TOKEN,
         eventCallback: (e) => console.log("Paddle event:", e),
       });
       paddleReady = true;
     }
 
-    function openCheckout() {
+    function openCheckoutSigstream() {
       if (!paddleReady) return;
+
       const email = "{{ user_email or '' }}";
-      Paddle.Checkout.open({
+      const opts = {
         items: [{ priceId: PADDLE_PRICE_ID, quantity: 1 }],
         settings: {
           theme: "light",
           displayMode: "overlay",
           variant: "one-page",
-          successUrl: "https://sigstreamcloud.com/post-purchase",
-        },
-        customer: email ? { email } : undefined,
-        passthrough: email ? JSON.stringify({ email }) : undefined,
-      });
+          successUrl: "{{ request.base_url }}post-purchase"
+        }
+      };
+      if (email) {
+        opts.customer = { email };
+        opts.passthrough = JSON.stringify({ email });
+      }
+      Paddle.Checkout.open(opts);
     }
 
-    document.addEventListener("DOMContentLoaded", initializePaddle);
+    document.addEventListener("DOMContentLoaded", initPaddle);
     </script>
 </head>
 
@@ -132,7 +140,7 @@
                 </p>
                 <p class="mt-2 text-xs text-slate-500">Linux/macOS agents coming soon.</p>
 
-                <!-- KPI Tiles -->
+                <!-- KPI Tiles (static for now) -->
                 <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600">
                     <div class="card bg-slate-50 p-4 rounded-lg">
                         <div class="text-slate-500">Online devices</div>
@@ -149,7 +157,7 @@
                 </div>
             </div>
 
-            <!-- Media: use screenshot for now (video optional below) -->
+            <!-- Media: screenshot now, video later -->
             <div class="relative">
                 <div class="absolute -inset-3 bg-blue-200/30 blur-2xl rounded-3xl"></div>
                 <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -157,12 +165,6 @@
                          alt="SigStream dashboard showing live telemetry and device list"
                          class="w-full"
                          loading="lazy" />
-                    <!-- Optional: switch to video later
-                    <video class="w-full aspect-video"
-                           src="/static/media/dashboard-demo.webm"
-                           poster="/static/media/dashboard-screengrab.png"
-                           autoplay muted loop playsinline></video>
-                    -->
                 </div>
             </div>
         </div>
@@ -184,7 +186,7 @@
 
                 <div class="card p-5 border border-slate-200 rounded-xl">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- windows-shaped -->
+                        <!-- windows-ish -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5l9-2v8H3V5zm10-2l8-2v10h-8V3zM3 13h9v8l-9-2v-6zm10 0h8v10l-8-2v-8z" /></svg>
                     </div>
                     <h3 class="font-semibold">2) Install the Windows agent</h3>
@@ -288,56 +290,28 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
             <h2 class="text-3xl font-bold">Try it free, then $15/month</h2>
             <p class="mt-2 text-slate-600">14‑day free trial • Cancel anytime • Charged in USD</p>
 
-            <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                <!-- Explore (optional) -->
-                <div class="card border border-slate-200 rounded-2xl p-6">
-                    <h3 class="text-xl font-semibold">Explore</h3>
-                    <p class="text-slate-600 mt-1">Create an account and look around.</p>
-                    <div class="mt-4 text-3xl font-bold">$0<span class="text-base font-medium text-slate-500">/trial</span></div>
-                    <a href="{% if user_email %}/summary{% else %}/register-form{% endif %}" class="mt-5 inline-block px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Start Free</a>
-                </div>
-
-                <!-- Single plan -->
-                <div class="card border-2 border-blue-200 rounded-2xl p-6 bg-white md:col-span-2">
+            <div class="mt-10 grid grid-cols-1 gap-6 text-left">
+                <div class="card border-2 border-blue-200 rounded-2xl p-6 bg-white">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold">SigStream</h3>
                         <span class="badge bg-blue-100 text-blue-800">14‑day trial</span>
                     </div>
-                    <p class="text-slate-600 mt-1">Full access: Windows agent, built‑in dashboard, REST & SSE APIs.</p>
+                    <p class="text-slate-600 mt-1">Full access: Windows agent (COM port), built‑in dashboard, REST & SSE APIs.</p>
                     <div class="mt-4 text-3xl font-bold">$15<span class="text-base font-medium text-slate-500">/month</span></div>
 
                     {% if user_email and user_subscription_status in ["active","trialing"] %}
-                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">Already active</button>
+                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">
+                        Already active
+                    </button>
                     {% elif user_email %}
-                    <button onclick="openCheckout()" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Start 14‑day trial</button>
+                    <button onclick="openCheckoutSigstream()" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                        Start 14‑day trial
+                    </button>
                     {% else %}
-                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/80 text-white">Login to start trial</a>
+                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/80 text-white">
+                        Login to start trial
+                    </a>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="py-16 bg-white">
-        <div class="max-w-5xl mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center">FAQ</h2>
-            <div class="mt-8 grid md:grid-cols-2 gap-6">
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">Does the agent handle flaky networks?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Yes—telemetry queues locally and flushes on reconnect with backoff and retries.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">Is there a built‑in dashboard?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Yes—view devices and live telemetry without writing front‑end code.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">How do I get live data?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Use <code>GET /devapi/stream?api_key=...</code> and listen with <code>EventSource</code>.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">Is it tenant‑aware?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Yes—per‑device keys map to owners. REST & SSE queries are scoped accordingly.</p>
                 </div>
             </div>
         </div>
