@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
+    <meta name="sigstream-user-email" content="{{ user_email or '' }}">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SigStream — Real‑time device telemetry made simple</title>
@@ -307,7 +308,9 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
                         Already active
                     </button>
                     {% elif user_email %}
-                    <button onclick="openCheckout()" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                    <button type="button"
+                            class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                            onclick="openCheckout('starter')">
                         Start 14‑day trial
                     </button>
                     {% else %}
