@@ -3,16 +3,16 @@
 <head>
     <!-- put this at the very top of your <head> in landing.html -->
     <script>
-  // 1. Check for a valid session cookie
-  const isLoggedIn = document.cookie.includes("access_token");
+      // 1. Check for a valid session cookie
+      const isLoggedIn = document.cookie.includes("access_token");
 
-  // 2. Pull in the Jinja-passed subscription status (already lowercased in main.py)
-  const status = "{{ user_subscription_status }}";  // should be "active", "trialing" or null
+      // 2. Pull in the Jinja-passed subscription status (already lowercased in main.py)
+      const status = "{{ user_subscription_status }}";  // should be "active", "trialing" or null
 
-  // 3. If they’re truly subscribed, replace THIS page in history and move on
-  if (isLoggedIn && (status === "ACTIVE" || status === "trialing")) {
-    window.location.replace("/dashboard");
-  }
+      // 3. If they’re truly subscribed, replace THIS page in history and move on
+      if (isLoggedIn && (status === "ACTIVE" || status === "trialing")) {
+        window.location.replace("/dashboard");
+      }
     </script>
 
     <meta charset="UTF-8" />
@@ -35,17 +35,18 @@
         }
     </script>
 
+    <!-- MINIMAL CHANGE: point everything to ONE price id -->
     <script type="text/javascript">
     const CONFIG = {
       clientToken: "test_5852ced8925dae79f0c0bac4614",
       prices: {
         starter: {
-              month: "pri_01k2a34vybk4jm215h0yx9e0ye",
-          year: "pri_01jwqgc2kfrk65k3vny97qvzjs"
+          month: "pri_01k2a34vybk4jm215h0yx9e0ye",
+          year:  "pri_01k2a34vybk4jm215h0yx9e0ye"
         },
         pro: {
-            month: "pri_01k2a34vybk4jm215h0yx9e0ye",
-          year: "pri_01jwqfdcczrqng8re8pey45c22"
+          month: "pri_01k2a34vybk4jm215h0yx9e0ye",
+          year:  "pri_01k2a34vybk4jm215h0yx9e0ye"
         }
       }
     };
@@ -82,15 +83,23 @@
         ],
         address: { countryCode: currentCountry }
       };
-      const result = await Paddle.PricePreview(request);
-      result.data.details.lineItems.forEach((item) => {
-        const price = item.formattedTotals.subtotal;
-        if (item.price.id === CONFIG.prices.starter[currentBillingCycle]) {
-          document.getElementById("starter-price").textContent = price;
-        } else if (item.price.id === CONFIG.prices.pro[currentBillingCycle]) {
-          document.getElementById("pro-price").textContent = price;
-        }
-      });
+      try {
+        const result = await Paddle.PricePreview(request);
+        result.data.details.lineItems.forEach((item) => {
+          const price = item.formattedTotals.subtotal;
+          // both are the same price id; this will simply set the same value in both spots
+          if (item.price.id === CONFIG.prices.starter[currentBillingCycle]) {
+            const el = document.getElementById("starter-price");
+            if (el) el.textContent = price;
+          }
+          if (item.price.id === CONFIG.prices.pro[currentBillingCycle]) {
+            const el = document.getElementById("pro-price");
+            if (el) el.textContent = price;
+          }
+        });
+      } catch (e) {
+        console.warn("PricePreview failed (OK in minimal mode):", e);
+      }
     }
 
     function openCheckout(plan) {
@@ -117,15 +126,15 @@
     </script>
 
     <script>
-  const hasToken = document.cookie.includes("access_token");
-  const isSubscribed = "{{ user_subscription_status }}" === "ACTIVE" || "{{ user_subscription_status }}" === "trialing";
+      const hasToken = document.cookie.includes("access_token");
+      const isSubscribedFlag = "{{ user_subscription_status }}" === "ACTIVE" || "{{ user_subscription_status }}" === "trialing";
 
-  if (hasToken && isSubscribed) {
-    sessionStorage.setItem("hasActiveSubscription", "true");
-    window.location.replace("/dashboard");
-  } else {
-    sessionStorage.removeItem("hasActiveSubscription");
-  }
+      if (hasToken && isSubscribedFlag) {
+        sessionStorage.setItem("hasActiveSubscription", "true");
+        window.location.replace("/dashboard");
+      } else {
+        sessionStorage.removeItem("hasActiveSubscription");
+      }
     </script>
 
 </head>
