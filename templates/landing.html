@@ -1,353 +1,1 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SigStream — Real-time device telemetry made simple</title>
-    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built-in dashboard or simple REST & SSE APIs. Affordable and hobbyist-friendly — 14-day trial then $15/month (USD)." />
-    <link rel="icon" href="/static/favicon.ico" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-
-    <!-- Pass user email to /static/js/paddle.js -->
-    <meta name="sigstream-user-email" content="{{ user_email or '' }}">
-
-    <!-- Auto-redirect if logged-in + subscribed -->
-    <script>
-    (function () {
-      const hasToken = document.cookie.includes("access_token");
-      const status = ("{{ user_subscription_status or '' }}").toLowerCase();
-      if (hasToken && (status === "active" || status === "trialing")) {
-        location.replace("/summary");
-      }
-    })();
-    </script>
-
-    <style>
-        /* Full-page animated gradient */
-        body {
-            min-height: 100%;
-            background: linear-gradient(135deg, #e0f2fe, #dbeafe, #ede9fe);
-            background-size: 300% 300%;
-            animation: gradientMove 18s ease infinite;
-        }
-
-        @keyframes gradientMove {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .card {
-            transition: transform .2s ease, box-shadow .2s ease;
-        }
-
-            .card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 16px 30px rgba(2,6,23,.08);
-            }
-
-        .badge {
-            font-size: .72rem;
-            padding: .25rem .6rem;
-            border-radius: .5rem;
-        }
-
-        code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        }
-    </style>
-
-    <!-- Paddle checkout logic (unchanged) -->
-    <script src="/static/js/paddle.js?v=2"></script>
-</head>
-
-<body class="text-slate-900">
-    <!-- Header -->
-    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-2">
-                <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
-                <span class="text-lg font-semibold text-blue-700">SigStream</span>
-            </a>
-            <nav class="flex items-center gap-4">
-                <a href="#how" class="text-sm text-slate-600 hover:text-slate-900">How it works</a>
-                <a href="#features" class="text-sm text-slate-600 hover:text-slate-900">Features</a>
-                <a href="#code" class="text-sm text-slate-600 hover:text-slate-900">Code</a>
-                <a href="#pricing" class="text-sm text-slate-600 hover:text-slate-900">Pricing</a>
-                {% if user_email %}
-                <a href="/summary" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Dashboard</a>
-                <a href="/logout" class="text-sm text-slate-600 hover:text-slate-900">Logout</a>
-                {% else %}
-                <a href="/login-form" class="text-sm text-slate-600 hover:text-slate-900">Login</a>
-                <a href="/register-form" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Get Started</a>
-                {% endif %}
-            </nav>
-        </div>
-    </header>
-
-    <!-- Hero -->
-    <section>
-        <div class="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-10 items-center">
-            <div>
-                <div class="badge bg-blue-100 text-blue-800 inline-flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Live telemetry in seconds
-                </div>
-                <h1 class="mt-3 text-4xl md:text-5xl font-bold leading-tight">
-                    Real-time device monitoring that’s <span class="text-blue-700">developer-friendly</span> & <span class="text-indigo-600">hobbyist-friendly</span>
-                </h1>
-                <p class="mt-4 text-lg text-slate-700">
-                    Install our lightweight <strong>Windows agent</strong> (reads from a <strong>COM port</strong>), streams telemetry with
-                    <strong>offline buffering</strong>, and view it live in our <strong>built-in dashboard</strong> — or consume it via simple REST & SSE APIs.
-                </p>
-                <div class="mt-6 flex flex-wrap gap-3">
-                    {% if user_email %}
-                    <a href="/summary" class="px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Open Dashboard</a>
-                    <a href="/developer-api#agent" class="px-5 py-3 rounded-lg border border-slate-300 text-slate-800 hover:bg-slate-50">Download Agent</a>
-                    {% else %}
-                    <a href="/register-form" class="px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Start Free</a>
-                    <a href="/developer-api" class="px-5 py-3 rounded-lg border border-slate-300 text-slate-800 hover:bg-slate-50">Read the API</a>
-                    {% endif %}
-                </div>
-                <p class="mt-4 text-sm text-slate-500">
-                    Affordable • 14-day free trial • $15/month (USD) • Cancel anytime
-                </p>
-            </div>
-
-            <!-- Media placeholder -->
-            <div class="relative">
-                <div class="absolute -inset-3 bg-blue-200/30 blur-2xl rounded-3xl"></div>
-                <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    <img src="/static/media/dashboard-screengrab.png"
-                         alt="SigStream dashboard showing live telemetry and device list"
-                         class="w-full"
-                         loading="lazy" />
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How it works -->
-    <section id="how" class="py-16 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center">How it works</h2>
-            <div class="mt-10 grid sm:grid-cols-3 gap-6">
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- Key icon -->
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
-                            <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold">1) Create an API key</h3>
-                    <p class="text-sm text-slate-600 mt-1">Per‑device keys keep data clean and tenant‑safe.</p>
-                </div>
-
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- Windows-ish tile -->
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3 5l9-2v8H3V5zm10-2l8-2v10h-8V3zM3 13h9v8l-9-2v-6zm10 0h8v10l-8-2v-8z" />
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold">2) Install the Windows agent</h3>
-                    <p class="text-sm text-slate-600 mt-1">Reads telemetry from a <strong>COM port</strong> (e.g., COM3), buffers offline, and forwards securely.</p>
-                </div>
-
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- Dashboard -->
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <rect x="3" y="4" width="18" height="6" rx="2" stroke-width="2"></rect>
-                            <rect x="3" y="12" width="10" height="8" rx="2" stroke-width="2"></rect>
-                            <rect x="15" y="12" width="6" height="8" rx="2" stroke-width="2"></rect>
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold">3) View or build</h3>
-                    <p class="text-sm text-slate-600 mt-1">Use our <strong>built‑in dashboard</strong> (no code), or integrate via REST & <code>EventSource</code> (SSE).</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" class="py-16 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center">Everything you need — nothing you don’t</h2>
-            <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- lightning -->
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-12h-7l1-8z" /></svg>
-                    </div>
-                    <h3 class="font-semibold">SSE live streaming</h3>
-                    <p class="text-sm text-slate-600 mt-1">Low‑latency updates for dashboards and dev tools with browser‑native SSE.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- agent -->
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z" /></svg>
-                    </div>
-                    <h3 class="font-semibold">Lightweight agent</h3>
-                    <p class="text-sm text-slate-600 mt-1">Offline buffering + backpressure so data survives patchy networks.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- plus -->
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 12h14M12 5v14" stroke-width="2" stroke-linecap="round" /></svg>
-                    </div>
-                    <h3 class="font-semibold">Developer‑friendly</h3>
-                    <p class="text-sm text-slate-600 mt-1">Curl, fetch, and EventSource examples; JSON payloads you control.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- shield -->
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 4v6c0 4-3 9-8 10-5-1-8-6-8-10V6l8-4z" /></svg>
-                    </div>
-                    <h3 class="font-semibold">Tenant‑aware security</h3>
-                    <p class="text-sm text-slate-600 mt-1">Per‑device keys mapped to owners; safe by default for shared fleets.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- window -->
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4z" /></svg>
-                    </div>
-                    <h3 class="font-semibold">Built‑in dashboard</h3>
-                    <p class="text-sm text-slate-600 mt-1">A clean UI out of the box — ideal if you don’t want to write front‑end code.</p>
-                </div>
-                <div class="card p-5 border border-slate-200 rounded-xl">
-                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">
-                        <!-- circle -->
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" /></svg>
-                    </div>
-                    <h3 class="font-semibold">Hobbyist pricing</h3>
-                    <p class="text-sm text-slate-600 mt-1">14‑day free trial • $15/month • Cancel anytime.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Code samples -->
-    <section id="code" class="py-16 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center">Build in minutes</h2>
-            <div class="mt-8 grid md:grid-cols-2 gap-6">
-                <div class="card border border-slate-200 rounded-xl p-5">
-                    <div class="text-sm font-semibold text-slate-700 mb-2">REST — latest telemetry</div>
-                    <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-800 overflow-x-auto"><code>curl -H "X-API-Key: YOUR_DEVICE_API_KEY" \
-  "https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>
-                </div>
-                <div class="card border border-slate-200 rounded-xl p-5">
-                    <div class="text-sm font-semibold text-slate-700 mb-2">SSE — live stream</div>
-                    <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-800 overflow-x-auto"><code>&lt;script&gt;
-const es = new EventSource("/devapi/stream?api_key=YOUR_DEVICE_API_KEY");
-es.addEventListener("telemetry", (e) =&gt; console.log(JSON.parse(e.data)));
-es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data)));
-&lt;/script&gt;</code></pre>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing: single USD plan -->
-    <section id="pricing" class="py-20 bg-slate-50">
-        <div class="max-w-3xl mx-auto px-6 text-center">
-            <h2 class="text-3xl font-bold">Try it free, then $15/month</h2>
-            <p class="mt-2 text-slate-600">14‑day free trial • Cancel anytime • Charged in USD</p>
-
-            <div class="mt-10 grid grid-cols-1 gap-6 text-left">
-                <div class="card border-2 border-blue-200 rounded-2xl p-6 bg-white">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xl font-semibold">SigStream</h3>
-                        <span class="badge bg-blue-100 text-blue-800">14‑day trial</span>
-                    </div>
-                    <p class="text-slate-600 mt-1">Full access: Windows agent (COM port), built‑in dashboard, REST & SSE APIs.</p>
-                    <div class="mt-4 text-3xl font-bold">
-                        <span id="starter-price">$15.00</span>
-                        <span class="text-base font-medium text-slate-500">/month</span>
-                    </div>
-
-                    {% if user_email and user_subscription_status in ["active","trialing"] %}
-                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">
-                        Already active
-                    </button>
-                    {% elif user_email %}
-                    <button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                        Start 14‑day trial
-                    </button>
-                    {% else %}
-                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/80 text-white">
-                        Login to start trial
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="py-16 bg-white">
-        <div class="max-w-5xl mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center">Frequently asked</h2>
-            <div class="mt-10 grid md:grid-cols-2 gap-6">
-                <div class="card p-6 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">Does it work without internet?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Yes. The Windows agent buffers locally and forwards when connectivity returns.</p>
-                </div>
-                <div class="card p-6 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">How do I stream live data?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Use our SSE endpoint with <code>EventSource</code>, or just open the built‑in dashboard.</p>
-                </div>
-                <div class="card p-6 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">What about Linux/macOS?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Windows agent is available today. Linux/macOS agents are on the roadmap.</p>
-                </div>
-                <div class="card p-6 border border-slate-200 rounded-xl">
-                    <h3 class="font-semibold">How are devices secured?</h3>
-                    <p class="text-sm text-slate-600 mt-1">Each device gets its own API key, tenant‑mapped, with server‑side validation.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-300">
-        <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
-            <div>
-                <div class="flex items-center gap-2">
-                    <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
-                    <span class="font-semibold text-white">SigStream</span>
-                </div>
-                <p class="mt-3 text-sm text-slate-400">Telemetry that’s fast, dependable, and friendly for builders.</p>
-            </div>
-            <div class="text-sm">
-                <div class="text-slate-400 mb-2">Product</div>
-                <a href="#how" class="block hover:underline">How it works</a>
-                <a href="#features" class="block hover:underline">Features</a>
-                <a href="#pricing" class="block hover:underline">Pricing</a>
-                <a href="/developer-api" class="block hover:underline">Developer API</a>
-            </div>
-            <div class="text-sm">
-                <div class="text-slate-400 mb-2">Legal</div>
-                <a href="/terms" class="block hover:underline">Terms</a>
-                <a href="/privacy" class="block hover:underline">Privacy</a>
-                <a href="/refund" class="block hover:underline">Refunds</a>
-                <a href="mailto:admin@sigstreamcloud.com" class="block hover:underline mt-2 text-blue-300">Contact support</a>
-            </div>
-        </div>
-        <div class="border-t border-slate-800 text-center text-xs text-slate-500 py-4">
-            © 2025 SigStream. All rights reserved.
-        </div>
-    </footer>
-
-</body>
-</html>
+<!DOCTYPE html><html lang="en" class="h-full"><head>    <meta charset="UTF-8" />    <meta name="viewport" content="width=device-width, initial-scale=1" />    <title>SigStream — Real-time device telemetry made simple</title>    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built-in dashboard or simple REST & SSE APIs. Affordable and hobbyist-friendly. 14-day trial then $15/month (USD)." />    <link rel="icon" href="/static/favicon.ico" />    <script src="https://cdn.tailwindcss.com"></script>    <!-- Paddle config kept external and already working -->    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>    <!-- Pass user email to /static/js/paddle.js -->    <meta name="sigstream-user-email" content="{{ user_email or '' }}">    <!-- Auto-redirect if logged-in + subscribed -->    <script>    (function () {      const hasToken = document.cookie.includes("access_token");      const status = ("{{ user_subscription_status or '' }}").toLowerCase();      if (hasToken && (status === "active" || status === "trialing")) {        location.replace("/summary");      }    })();    </script>    <style>        :root {            /* overall strength of the page background */            --page-glow-opacity: 0.55; /* tweak 0.35–0.7 as you like */        }        /* Full-page animated gradient backdrop (sits behind everything) */        .animated-bg {            position: fixed;            inset: 0;            z-index: -1;            pointer-events: none;            background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246, var(--page-glow-opacity)), transparent 70%), radial-gradient(1200px 600px at 110% -10%, rgba(20,184,166, calc(var(--page-glow-opacity) * 0.9)), transparent 70%), radial-gradient(1000px 520px at 50% 120%, rgba(147,51,234, calc(var(--page-glow-opacity) * 0.45)), transparent 70%);            filter: saturate(105%);            animation: gradientDrift 30s ease-in-out infinite alternate;            will-change: background-position;        }        /* Slightly stronger hero “inner” glow to frame the top content */        .hero-frame {            position: relative;            isolation: isolate;        }            .hero-frame::before {                content: "";                position: absolute;                inset: -24px -16px -24px -16px;                z-index: -1;                border-radius: 2rem;                background: radial-gradient(900px 420px at -10% -20%, rgba(59,130,246,.20), transparent 70%), radial-gradient(900px 420px at 110% -20%, rgba(20,184,166,.18), transparent 70%), radial-gradient(800px 380px at 50% 130%, rgba(147,51,234,.12), transparent 70%);                filter: saturate(110%) blur(0.2px);                animation: gradientDrift 30s ease-in-out infinite alternate;            }        /* animation */        @keyframes gradientDrift {            0% {                background-position: -10% -10%, 110% -10%, 50% 120%;            }            50% {                background-position: 0% -15%, 100% -5%, 52% 115%;            }            100% {                background-position: 10% -8%, 95% -12%, 48% 125%;            }        }        /* Respect reduced motion */        @media (prefers-reduced-motion: reduce) {            .animated-bg,            .hero-frame::before {                animation: none !important;            }        }        .card {            transition: transform .2s ease, box-shadow .2s ease;        }            .card:hover {                transform: translateY(-2px);                box-shadow: 0 16px 30px rgba(2,6,23,.08);            }        .badge {            font-size: .72rem;            padding: .25rem .6rem;            border-radius: .5rem;        }        code {            font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;        }    </style></head><body class="min-h-full bg-white/70 text-slate-900">    <!-- full-page animated gradient -->    <div class="animated-bg" aria-hidden="true"></div>    <!-- Header -->    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">            <a href="/" class="flex items-center gap-2">                <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />                <span class="text-lg font-semibold text-blue-700">SigStream</span>            </a>            <nav class="flex items-center gap-4">                <a href="#how" class="text-sm text-slate-700 hover:text-slate-900">How it works</a>                <a href="#features" class="text-sm text-slate-700 hover:text-slate-900">Features</a>                <a href="#code" class="text-sm text-slate-700 hover:text-slate-900">Code</a>                <a href="#pricing" class="text-sm text-slate-700 hover:text-slate-900">Pricing</a>                {% if user_email %}                <a href="/summary" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Dashboard</a>                <a href="/logout" class="text-sm text-slate-700 hover:text-slate-900">Logout</a>                {% else %}                <a href="/login-form" class="text-sm text-slate-700 hover:text-slate-900">Login</a>                <a href="/register-form" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Get Started</a>                {% endif %}            </nav>        </div>    </header>    <!-- Hero -->    <section class="py-12 md:py-16">        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-10 items-center hero-frame">            <div>                <div class="badge bg-blue-100 text-blue-800 inline-flex items-center gap-2">                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Live telemetry in seconds                </div>                <h1 class="mt-3 text-4xl md:text-5xl font-bold leading-tight">                    Real-time device monitoring that’s <span class="text-blue-700">developer-friendly</span>                </h1>                <p class="mt-4 text-lg text-slate-800">                    Install our lightweight <strong>Windows agent</strong> (reads a <strong>COM port</strong>), streams telemetry with                    <strong>offline buffering</strong>, and view it live in our <strong>built-in dashboard</strong> — or consume it via simple REST & SSE APIs.                </p>                <p class="mt-3 text-base text-slate-800">                    <strong>Affordable & hobbyist-friendly:</strong> 14-day free trial, then just <strong>$15/month</strong> (USD). No lock-in.                </p>                <div class="mt-6 flex flex-wrap gap-3">                    {% if user_email %}                    <a href="/summary" class="px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Open Dashboard</a>                    <a href="/developer-api#agent" class="px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/70 hover:bg-white">Download Agent</a>                    {% else %}                    <a href="/register-form" class="px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Start Free</a>                    <a href="/developer-api" class="px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/70 hover:bg-white">Read the API</a>                    {% endif %}                </div>                <!-- KPI tiles (placeholders) -->                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-700">                    <div class="card bg-white/70 backdrop-blur p-4 rounded-lg border border-slate-200">                        <div class="text-slate-600">Online devices</div>                        <div class="text-2xl font-semibold text-slate-900">10</div>                    </div>                    <div class="card bg-white/70 backdrop-blur p-4 rounded-lg border border-slate-200">                        <div class="text-slate-600">Events / min (5m)</div>                        <div class="text-2xl font-semibold text-slate-900">2.1k</div>                    </div>                    <div class="card bg-white/70 backdrop-blur p-4 rounded-lg border border-slate-200">                        <div class="text-slate-600">Buffered offline</div>                        <div class="text-2xl font-semibold text-slate-900">134</div>                    </div>                </div>            </div>            <!-- Media -->            <div class="relative">                <div class="absolute -inset-3 bg-blue-200/30 blur-2xl rounded-3xl"></div>                <div class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">                    <img src="/static/media/dashboard-screengrab.png" alt="SigStream dashboard showing live telemetry and device list" class="w-full" loading="lazy" />                </div>            </div>        </div>    </section>    <!-- How it works -->    <section id="how" class="py-16">        <div class="max-w-7xl mx-auto px-6">            <h2 class="text-3xl font-bold text-center">How it works</h2>            <div class="mt-10 grid sm:grid-cols-3 gap-6">                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">                            <circle cx="7.5" cy="12" r="3" stroke-width="2" />                            <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />                        </svg>                    </div>                    <h3 class="font-semibold">1) Create an API key</h3>                    <p class="text-sm text-slate-700 mt-1">Per-device keys keep data clean and tenant-safe.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">                            <path d="M3 5l9-2v8H3V5zm10-2l8-2v10h-8V3zM3 13h9v8l-9-2v-6zm10 0h8v10l-8-2v-8z" />                        </svg>                    </div>                    <h3 class="font-semibold">2) Install the Windows agent</h3>                    <p class="text-sm text-slate-700 mt-1">Reads telemetry from a <strong>COM port</strong> (e.g., COM3), buffers offline, and forwards securely.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">                            <rect x="3" y="4" width="18" height="6" rx="2" stroke-width="2" />                            <rect x="3" y="12" width="10" height="8" rx="2" stroke-width="2" />                            <rect x="15" y="12" width="6" height="8" rx="2" stroke-width="2" />                        </svg>                    </div>                    <h3 class="font-semibold">3) View or build</h3>                    <p class="text-sm text-slate-700 mt-1">Use our <strong>built-in dashboard</strong> (no code), or integrate via REST & <code>EventSource</code> (SSE).</p>                </div>            </div>        </div>    </section>    <!-- Features -->    <section id="features" class="py-16">        <div class="max-w-7xl mx-auto px-6">            <h2 class="text-3xl font-bold text-center">Everything you need — nothing you don’t</h2>            <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-12h-7l1-8z" /></svg>                    </div>                    <h3 class="font-semibold">SSE live streaming</h3>                    <p class="text-sm text-slate-700 mt-1">Low-latency updates for dashboards and dev tools with browser-native SSE.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z" /></svg>                    </div>                    <h3 class="font-semibold">Lightweight agent</h3>                    <p class="text-sm text-slate-700 mt-1">Offline buffering + backpressure so data survives patchy networks.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 12h14M12 5v14" stroke-width="2" stroke-linecap="round" /></svg>                    </div>                    <h3 class="font-semibold">Developer-friendly</h3>                    <p class="text-sm text-slate-700 mt-1">Curl, fetch, and EventSource examples; JSON payloads you control.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 4v6c0 4-3 9-8 10-5-1-8-6-8-10V6l8-4z" /></svg>                    </div>                    <h3 class="font-semibold">Tenant-aware security</h3>                    <p class="text-sm text-slate-700 mt-1">Per-device keys mapped to owners; safe by default for shared fleets.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4z" /></svg>                    </div>                    <h3 class="font-semibold">Built-in dashboard</h3>                    <p class="text-sm text-slate-700 mt-1">A clean UI out of the box — ideal if you don’t want to write front-end code.</p>                </div>                <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">                    <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3">                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" /></svg>                    </div>                    <h3 class="font-semibold">Hobbyist pricing</h3>                    <p class="text-sm text-slate-700 mt-1">Straightforward $15/month after a 14-day free trial. USD only.</p>                </div>            </div>        </div>    </section>    <!-- Code sample -->    <section id="code" class="py-16">        <div class="max-w-7xl mx-auto px-6">            <h2 class="text-3xl font-bold text-center">Build in minutes</h2>            <div class="mt-8 grid md:grid-cols-2 gap-6">                <div class="card rounded-xl p-5 bg-white/80 backdrop-blur border border-slate-200">                    <div class="text-sm font-semibold text-slate-800 mb-2">REST — latest telemetry</div>                    <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-900 overflow-x-auto"><code>curl -H "X-API-Key: YOUR_DEVICE_API_KEY" \  "https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>                </div>                <div class="card rounded-xl p-5 bg-white/80 backdrop-blur border border-slate-200">                    <div class="text-sm font-semibold text-slate-800 mb-2">SSE — live stream</div>                    <pre class="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-900 overflow-x-auto"><code>&lt;script&gt;const es = new EventSource("/devapi/stream?api_key=YOUR_DEVICE_API_KEY");es.addEventListener("telemetry", (e) =&gt; console.log(JSON.parse(e.data)));es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data)));&lt;/script&gt;</code></pre>                </div>            </div>        </div>    </section>    <!-- Pricing: single USD plan -->    <section id="pricing" class="py-20">        <div class="max-w-4xl mx-auto px-6 text-center">            <h2 class="text-3xl font-bold">Try it free, then $15/month</h2>            <p class="mt-2 text-slate-800">Affordable & hobbyist-friendly • 14-day free trial • Cancel anytime • Charged in USD</p>            <div class="mt-10 grid grid-cols-1 gap-6 text-left">                <div class="card rounded-2xl p-6 bg-white/85 backdrop-blur border-2 border-blue-200">                    <div class="flex items-center justify-between">                        <h3 class="text-xl font-semibold">SigStream</h3>                        <span class="badge bg-blue-100 text-blue-800">14-day trial</span>                    </div>                    <p class="text-slate-800 mt-1">Full access: Windows agent (COM port), built-in dashboard, REST & SSE APIs.</p>                    <div class="mt-4 text-3xl font-bold">$15<span class="text-base font-medium text-slate-600">/month</span></div>                    {% if user_email and user_subscription_status in ["active","trialing"] %}                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">                        Already active                    </button>                    {% elif user_email %}                    <button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">                        Start 14-day trial                    </button>                    {% else %}                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/90 text-white hover:bg-blue-700">                        Login to start trial                    </a>                    {% endif %}                </div>            </div>        </div>    </section>    <!-- FAQ -->    <section class="py-16 bg-white">        <div class="max-w-5xl mx-auto px-6">            <h2 class="text-3xl font-bold text-center">Frequently asked</h2>            <div class="mt-10 grid md:grid-cols-2 gap-6">                <div class="card p-6 border border-slate-200 rounded-xl">                    <h3 class="font-semibold">Does it work without internet?</h3>                    <p class="text-sm text-slate-600 mt-1">Yes. The Windows agent buffers locally and forwards when connectivity returns.</p>                </div>                <div class="card p-6 border border-slate-200 rounded-xl">                    <h3 class="font-semibold">How do I stream live data?</h3>                    <p class="text-sm text-slate-600 mt-1">Use our SSE endpoint with <code>EventSource</code>, or just open the built-in dashboard.</p>                </div>                <div class="card p-6 border border-slate-200 rounded-xl">                    <h3 class="font-semibold">What about Linux/macOS?</h3>                    <p class="text-sm text-slate-600 mt-1">Windows agent is available today. Linux/macOS agents are on the roadmap.</p>                </div>                <div class="card p-6 border border-slate-200 rounded-xl">                    <h3 class="font-semibold">How are devices secured?</h3>                    <p class="text-sm text-slate-600 mt-1">Each device gets its own API key, tenant-mapped, with server-side validation.</p>                </div>            </div>        </div>    </section>    <!-- Footer -->    <footer class="bg-slate-900/95 text-slate-300">        <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">            <div>                <div class="flex items-center gap-2">                    <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />                    <span class="font-semibold text-white">SigStream</span>                </div>                <p class="mt-3 text-sm text-slate-400">Telemetry that’s fast, dependable, and friendly for builders.</p>            </div>            <div class="text-sm">                <div class="text-slate-400 mb-2">Product</div>                <a href="#how" class="block hover:underline">How it works</a>                <a href="#features" class="block hover:underline">Features</a>                <a href="#pricing" class="block hover:underline">Pricing</a>                <a href="/developer-api" class="block hover:underline">Developer API</a>            </div>            <div class="text-sm">                <div class="text-slate-400 mb-2">Legal</div>                <a href="/terms" class="block hover:underline">Terms</a>                <a href="/privacy" class="block hover:underline">Privacy</a>                <a href="/refund" class="block hover:underline">Refunds</a>                <a href="mailto:admin@sigstreamcloud.com" class="block hover:underline mt-2 text-blue-300">Contact support</a>            </div>        </div>        <div class="border-t border-slate-800 text-center text-xs text-slate-500 py-4">            © 2025 SigStream. All rights reserved.        </div>    </footer></body></html>
