@@ -1,15 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- put this at the very top of your <head> in landing.html -->
     <script>
-      // 1. Check for a valid session cookie
       const isLoggedIn = document.cookie.includes("access_token");
-
-      // 2. Pull in the Jinja-passed subscription status (already lowercased in main.py)
-      const status = "{{ user_subscription_status }}";  // should be "active", "trialing" or null
-
-      // 3. If they’re truly subscribed, replace THIS page in history and move on
+      const status = "{{ user_subscription_status }}";
       if (isLoggedIn && (status === "ACTIVE" || status === "trialing")) {
         window.location.replace("/dashboard");
       }
@@ -25,111 +19,16 @@
     <meta name="theme-color" content="#1e40af" />
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
 
+    <!-- ✅ Pass user email to external JS -->
+    <meta name="sigstream-user-email" content="{{ user_email or '' }}">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
     <script>
-        const isSubscribed = sessionStorage.getItem("hasActiveSubscription") === "true";
-        if (isSubscribed) {
-            window.location.replace("/dashboard");
-        }
-    </script>
-
-    <!-- MINIMAL CHANGE: point everything to ONE price id -->
-    <script type="text/javascript">
-    const CONFIG = {
-      clientToken: "test_5852ced8925dae79f0c0bac4614",
-      prices: {
-        starter: {
-          month: "pri_01k2a34vybk4jm215h0yx9e0ye",
-          year:  "pri_01k2a34vybk4jm215h0yx9e0ye"
-        },
-        pro: {
-          month: "pri_01k2a34vybk4jm215h0yx9e0ye",
-          year:  "pri_01k2a34vybk4jm215h0yx9e0ye"
-        }
-      }
-    };
-
-    let currentBillingCycle = "month";
-    let currentCountry = "US";
-    let paddleInitialized = false;
-
-    function initializePaddle() {
-      Paddle.Environment.set("sandbox");
-      Paddle.Initialize({
-        token: CONFIG.clientToken,
-        eventCallback: function (event) {
-          console.log("Paddle event:", event);
-        }
-      });
-      paddleInitialized = true;
-      updatePrices();
-    }
-
-    function updateBillingCycle(cycle) {
-      currentBillingCycle = cycle;
-      document.getElementById("monthlyBtn").classList.toggle("bg-white", cycle === "month");
-      document.getElementById("yearlyBtn").classList.toggle("bg-white", cycle === "year");
-      updatePrices();
-    }
-
-    async function updatePrices() {
-      if (!paddleInitialized) return;
-      const request = {
-        items: [
-          { quantity: 1, priceId: CONFIG.prices.starter[currentBillingCycle] },
-          { quantity: 1, priceId: CONFIG.prices.pro[currentBillingCycle] }
-        ],
-        address: { countryCode: currentCountry }
-      };
-      try {
-        const result = await Paddle.PricePreview(request);
-        result.data.details.lineItems.forEach((item) => {
-          const price = item.formattedTotals.subtotal;
-          // both are the same price id; this will simply set the same value in both spots
-          if (item.price.id === CONFIG.prices.starter[currentBillingCycle]) {
-            const el = document.getElementById("starter-price");
-            if (el) el.textContent = price;
-          }
-          if (item.price.id === CONFIG.prices.pro[currentBillingCycle]) {
-            const el = document.getElementById("pro-price");
-            if (el) el.textContent = price;
-          }
-        });
-      } catch (e) {
-        console.warn("PricePreview failed (OK in minimal mode):", e);
-      }
-    }
-
-    function openCheckout(plan) {
-      if (!paddleInitialized) return;
-      const email = "{{ user_email }}";
-      Paddle.Checkout.open({
-        items: [{ priceId: CONFIG.prices[plan][currentBillingCycle], quantity: 1 }],
-        settings: {
-          theme: "light",
-          displayMode: "overlay",
-          variant: "one-page",
-          successUrl: "https://sigstreamcloud.com/post-purchase"
-        },
-        customer: { email: email },
-        passthrough: JSON.stringify({ email: email })
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", initializePaddle);
-    document.getElementById("countrySelect")?.addEventListener("change", (e) => {
-      currentCountry = e.target.value;
-      updatePrices();
-    });
-    </script>
-
-    <script>
       const hasToken = document.cookie.includes("access_token");
-      const isSubscribedFlag = "{{ user_subscription_status }}" === "ACTIVE" || "{{ user_subscription_status }}" === "trialing";
-
-      if (hasToken && isSubscribedFlag) {
+      const isSubscribed = "{{ user_subscription_status }}" === "ACTIVE" || "{{ user_subscription_status }}" === "trialing";
+      if (hasToken && isSubscribed) {
         sessionStorage.setItem("hasActiveSubscription", "true");
         window.location.replace("/dashboard");
       } else {
@@ -137,8 +36,9 @@
       }
     </script>
 
+    <!-- ✅ Load our extracted Paddle logic -->
+    <script src="/static/js/paddle.js?v=1"></script>
 </head>
-
 <body>
     {% if user_email and user_subscription_status in ["active", "trialing"] %}
     {% if request.cookies.get("access_token") %}
