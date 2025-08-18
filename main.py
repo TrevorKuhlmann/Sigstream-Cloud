@@ -68,6 +68,22 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from models import ApiKey  # 👈 new model you added to models.py
 from pydantic import BaseModel
 
+
+# === Canonical header names for v1 ===
+CANON_KEY_HDR = "x-api-key"
+CANON_DEV_HDR = "x-device-id"
+
+def read_auth_headers(request: Request) -> tuple[str, str]:
+    """
+    Read canonical auth headers. Raise 400 if absent.
+    """
+    api_key = request.headers.get(CANON_KEY_HDR)
+    device_id = request.headers.get(CANON_DEV_HDR)
+    if not api_key or not device_id:
+        raise HTTPException(status_code=400, detail="Missing X-Api-Key or X-Device-Id")
+    return api_key, device_id
+
+
 # ----------------------------- Load Env -----------------------------
 load_dotenv()
 API_KEY             = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
@@ -573,77 +589,64 @@ def validate_device_key(api_key_str: str, machine_id: str, db: Session):
 #         raise
 
 
+# ----------------------------- Data Endpoint (canonical) -----------------------------
 @app.post("/data")
 def receive_data(
-    payload: DeviceDataIn,
+    payload: DeviceDataIn,              # { device_id, data, timestamp? }
+    request: Request,
     db: Session = Depends(get_db),
-    x_api_key: str = Header(None),
-    x_device_id: str = Header(None),
 ):
-    logging.info(f"Received /data call. API key: {x_api_key[:6]}..., Device ID header: {x_device_id}")
-    logging.info(f"Payload: {payload.json()}")
+    # headers are canonical
+    api_key_str, device_id_hdr = read_auth_headers(request)
 
+    # enforce header/body consistency
+    if device_id_hdr != payload.device_id:
+        raise HTTPException(status_code=400, detail="device_id mismatch between header and body")
+
+    # 403 if revoked/invalid or bound to different device
+    api_key = validate_device_key(api_key_str, device_id_hdr, db)
+    user = api_key.user
+
+    ts = payload.timestamp or int(time.time())
+
+    insert_data(payload.device_id, payload.data, ts, db, user)
+    update_heartbeat(payload.device_id, ts, db, user)
+
+    # --- SSE publish (unchanged) ---
     try:
-        api_key = validate_device_key(x_api_key, x_device_id, db)
-        user = api_key.user
-        ts = payload.timestamp or int(time.time())
+        import anyio
+        device_label = db.query(DeviceStatus.label)\
+            .filter(DeviceStatus.user_id == user.id,
+                    DeviceStatus.device_id == payload.device_id)\
+            .scalar()
 
-        logging.info(f"Validated API key. Inserting data: {payload.data}")
-        insert_data(payload.device_id, payload.data, ts, db, user)
+        telemetry_payload = {
+            "device_id": payload.device_id,
+            "label": device_label,
+            "data": payload.data,
+            "timestamp": ts,
+            "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
+        }
+        heartbeat_payload = {
+            "device_id": payload.device_id,
+            "timestamp": ts,
+            "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
+            "status": "online"
+        }
 
-        logging.info("Calling update_heartbeat...")
-        update_heartbeat(payload.device_id, ts, db, user)
+        anyio.from_thread.run(broker.publish, (int(user.id), str(payload.device_id)), telemetry_payload, "telemetry")
+        anyio.from_thread.run(broker.publish, (int(user.id), str(payload.device_id)), heartbeat_payload, "heartbeat")
+    except Exception:
+        logging.exception("SSE publish failed (non-fatal)")
+    # --- end SSE ---
 
-        # --- Publish live SSE events (non-blocking, safe from sync context) ---
-        try:
-            import anyio
-            # optional label for nicer client display
-            device_label = db.query(DeviceStatus.label)\
-                .filter(
-                    DeviceStatus.user_id == user.id,
-                    DeviceStatus.device_id == payload.device_id
-                )\
-                .scalar()
+    return {"status": "success"}
 
-            telemetry_payload = {
-                "device_id": payload.device_id,
-                "label": device_label,
-                "data": payload.data,
-                "timestamp": ts,
-                "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
-            }
-            heartbeat_payload = {
-                "device_id": payload.device_id,
-                "timestamp": ts,
-                "ts_iso": datetime.utcfromtimestamp(ts).isoformat() + "Z",
-                "status": "online"  # data received implies device is online
-            }
-
-            # Dispatch coroutines onto the main event loop
-            anyio.from_thread.run(
-                broker.publish,
-                (int(user.id), str(payload.device_id)),
-                telemetry_payload,
-                "telemetry"
-            )
-            anyio.from_thread.run(
-                broker.publish,
-                (int(user.id), str(payload.device_id)),
-                heartbeat_payload,
-                "heartbeat"
-            )
-        except Exception:
-            logging.exception("SSE publish failed (non-fatal)")
-        # --- END SSE publish ---
-
-        return {"status": "success"}
-    except Exception as e:
-        logging.exception("Error in /data endpoint")
-        raise
 
 
 
 # ----------------------------- Heartbeat Endpoint -----------------------------
+# ----------------------------- Heartbeat Endpoint (canonical) -----------------------------
 class HeartbeatPayload(BaseModel):
     device_id: str
     heartbeat_time: str
@@ -652,41 +655,37 @@ class HeartbeatPayload(BaseModel):
 @app.post("/api/heartbeat")
 def receive_heartbeat(
     payload: HeartbeatPayload,
+    request: Request,
     db: Session = Depends(get_db),
-    x_api_key: str = Header(None),
-    x_machine_id: str = Header(None)
 ):
-    api_key = validate_device_key(x_api_key, x_machine_id, db)
+    # headers are the single source of truth
+    api_key_str, device_id_hdr = read_auth_headers(request)
+
+    # enforce header/body consistency
+    if device_id_hdr != payload.device_id:
+        raise HTTPException(status_code=400, detail="device_id mismatch between header and body")
+
+    # 403 if revoked/invalid or bound to different device
+    api_key = validate_device_key(api_key_str, device_id_hdr, db)
+
     ts = int(datetime.fromisoformat(payload.heartbeat_time).timestamp())
-    update_heartbeat(payload.device_id, ts, db, api_key.user)  # ✅ add user
+    update_heartbeat(payload.device_id, ts, db, api_key.user)
     return {"status": "heartbeat received"}
 
-#----------------------------- Status Check Endpoint -----------------------------
+
+
+# ----------------------------- Status Check Endpoint -----------------------------
 @app.post("/api/status")
-def status(api_key: str = Form(None), machine_id: str = Form(None), db: Session = Depends(get_db)):
-    # also accept JSON body
-    try:
-        payload = None
-        if not api_key or not machine_id:
-            payload = (yield request.json()) if hasattr(request, "json") else None
-        if payload:
-            api_key = payload.get("api_key") or api_key
-            machine_id = payload.get("machine_id") or machine_id
-    except Exception:
-        pass
+def api_status(  # <— rename from `status` to `api_status`
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    api_key_str, device_id = read_auth_headers(request)
 
-    if not api_key or not machine_id:
-        raise HTTPException(status_code=400, detail="missing api_key or machine_id")
+    rec = db.query(ApiKey).filter(ApiKey.key == api_key_str).first()
+    active = bool(rec and rec.status == "active" and rec.device_id == device_id)
+    return {"active": active, "revoked": not active}
 
-    rec = db.query(ApiKey).filter(ApiKey.key == api_key).first()
-    if not rec:
-        # don’t leak existence — treat as revoked
-        return {"active": False, "revoked": True}
-
-    if rec.status != "active" or rec.device_id != machine_id:
-        return {"active": False, "revoked": True}
-
-    return {"active": True, "revoked": False}
 
 #----------------------------- Device Claiming -----------------------------
 
