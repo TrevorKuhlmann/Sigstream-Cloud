@@ -18,6 +18,13 @@ from contextlib import asynccontextmanager
 from sqlalchemy import text
 from jose import jwt, JWTError
 from dotenv import load_dotenv
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from models import ApiKey
+from auth import get_db
+
+
 from fastapi import (
     FastAPI,
     HTTPException,
@@ -654,7 +661,32 @@ def receive_heartbeat(
     update_heartbeat(payload.device_id, ts, db, api_key.user)  # ✅ add user
     return {"status": "heartbeat received"}
 
+#----------------------------- Status Check Endpoint -----------------------------
+@app.post("/api/status")
+def status(api_key: str = Form(None), machine_id: str = Form(None), db: Session = Depends(get_db)):
+    # also accept JSON body
+    try:
+        payload = None
+        if not api_key or not machine_id:
+            payload = (yield request.json()) if hasattr(request, "json") else None
+        if payload:
+            api_key = payload.get("api_key") or api_key
+            machine_id = payload.get("machine_id") or machine_id
+    except Exception:
+        pass
 
+    if not api_key or not machine_id:
+        raise HTTPException(status_code=400, detail="missing api_key or machine_id")
+
+    rec = db.query(ApiKey).filter(ApiKey.key == api_key).first()
+    if not rec:
+        # don’t leak existence — treat as revoked
+        return {"active": False, "revoked": True}
+
+    if rec.status != "active" or rec.device_id != machine_id:
+        return {"active": False, "revoked": True}
+
+    return {"active": True, "revoked": False}
 
 #----------------------------- Device Claiming -----------------------------
 
