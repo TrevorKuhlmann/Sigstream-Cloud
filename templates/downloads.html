@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Download SigStream Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/static/SigstreamLogo.png">
+</head>
+<body class="h-full">
+    <header class="bg-white border-b">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-3">
+                <img src="/static/SigstreamLogo.png" alt="SigStream" class="w-8 h-8">
+                <span class="text-xl font-semibold text-gray-900">SigStream</span>
+            </a>
+            <a href="/" class="text-sm text-indigo-600 hover:text-indigo-700">Back to Home</a>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-10">
+        <!-- HERO -->
+        <section class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Download SigStream Agent</h1>
+            <p class="mt-2 text-gray-600">Windows desktop agent for COM-port telemetry buffering, heartbeats, and secure cloud upload.</p>
+        </section>
+
+        <!-- DOWNLOAD CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Windows direct download -->
+            <div class="bg-white border rounded-2xl shadow-sm p-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                        <span class="text-indigo-600 font-semibold">WIN</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Windows (x64)</h2>
+                        <p class="text-sm text-gray-500">Self-contained installer (no .NET install required)</p>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center gap-3">
+                    {% if download_available %}
+                    <a href="{{ exe_url }}"
+                       class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        Download SigStreamAgent-Setup.exe
+                    </a>
+                    {% else %}
+                    <button disabled
+                            class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-white bg-gray-400 cursor-not-allowed">
+                        Download temporarily unavailable
+                    </button>
+                    {% endif %}
+
+                    <!-- (Optional) Microsoft Store button: wire ms_store_url when live -->
+                    <button disabled
+                            title="Coming soon on Microsoft Store"
+                            class="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-gray-300 text-gray-600 bg-white hover:bg-gray-50">
+                        Get it from Microsoft
+                    </button>
+                </div>
+
+                <dl class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                    <div>
+                        <dt class="text-sm text-gray-500">Version</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ version }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">File size</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ size_str }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Released</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ released_str }}</dd>
+                    </div>
+                    <div class="col-span-1 sm:col-span-2">
+                        <dt class="text-sm text-gray-500">SHA-256</dt>
+                        <dd class="mt-1">
+                            {% if checksum %}
+                            <div class="flex items-center gap-2">
+                                <code id="sha256" class="text-xs break-all bg-gray-50 rounded px-2 py-1 border">{{ checksum }}</code>
+                                <button id="copyHashBtn"
+                                        class="text-xs px-2 py-1 rounded border text-gray-700 bg-white hover:bg-gray-50">
+                                    Copy
+                                </button>
+                            </div>
+                            {% else %}
+                            <span class="text-sm text-gray-400">Not available</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+
+                <div class="mt-4">
+                    <a href="{{ changelog_url }}" class="text-sm text-indigo-600 hover:text-indigo-700">Changelog</a>
+                </div>
+            </div>
+
+            <!-- Why verify / system requirements -->
+            <div class="bg-white border rounded-2xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900">Verify your download</h3>
+                <p class="mt-2 text-sm text-gray-600">
+                    We publish a SHA-256 checksum so you can confirm the installer hasn’t been tampered with.
+                </p>
+                <div class="mt-4">
+                    <p class="text-sm font-medium text-gray-900 mb-1">PowerShell</p>
+                    <pre class="bg-gray-50 rounded-lg p-3 text-xs border"><code>Get-FileHash .\SigStreamAgent-Setup.exe -Algorithm SHA256</code></pre>
+                    <p class="text-sm text-gray-600 mt-2">Compare the result to the SHA-256 shown above. They must match exactly.</p>
+                </div>
+                <div class="mt-4">
+                    <p class="text-sm font-medium text-gray-900 mb-1">Command Prompt</p>
+                    <pre class="bg-gray-50 rounded-lg p-3 text-xs border"><code>certutil -hashfile SigStreamAgent-Setup.exe SHA256</code></pre>
+                </div>
+                <div class="mt-6">
+                    <h4 class="text-sm font-semibold text-gray-900">System requirements</h4>
+                    <ul class="mt-2 text-sm text-gray-600 list-disc list-inside">
+                        <li>Windows 10 or 11 (64-bit)</li>
+                        <li>COM port access to your device(s)</li>
+                        <li>Internet access to <code>sigstreamcloud.com</code> for telemetry</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help -->
+        <section class="mt-10 bg-white border rounded-2xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900">Having trouble?</h3>
+            <p class="mt-2 text-sm text-gray-600">
+                If SmartScreen warns about an unknown publisher: this is expected until we complete code signing and/or Microsoft Store distribution.
+                You can verify the SHA-256, proceed, or install via the Store once available.
+            </p>
+            <p class="mt-2 text-sm text-gray-600">
+                Need help? <a class="text-indigo-600 hover:text-indigo-700" href="mailto:admin@sigstreamcloud.com">admin@sigstreamcloud.com</a>
+            </p>
+        </section>
+    </main>
+
+    <footer class="max-w-6xl mx-auto px-4 py-8 text-sm text-gray-500">
+        © {{ (now|default('')) or '' }} SigStream. All rights reserved.
+    </footer>
+
+    <script>
+    // Copy SHA-256 helper
+    const btn = document.getElementById('copyHashBtn');
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        const hash = document.getElementById('sha256')?.textContent?.trim();
+        if (!hash) return;
+        try {
+          await navigator.clipboard.writeText(hash);
+          btn.textContent = 'Copied';
+          setTimeout(() => btn.textContent = 'Copy', 1200);
+        } catch (e) {
+          btn.textContent = 'Copy failed';
+        }
+      });
+    }
+    </script>
+</body>
+</html>

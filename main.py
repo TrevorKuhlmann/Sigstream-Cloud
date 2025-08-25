@@ -24,6 +24,17 @@ from sqlalchemy.orm import Session
 from models import ApiKey
 from auth import get_db
 
+ # --- DOWNLOADS PAGE + STATIC DOWNLOADS ---
+import os, datetime
+from xml.etree import ElementTree as ET
+from fastapi import Request
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+# If not already defined:
+
+
 
 from fastapi import (
     FastAPI,
@@ -1146,4 +1157,74 @@ def get_installer():
 
 
 
- 
+
+
+# Serve the downloads directory (lets you also serve changelog.html)
+app.mount("/downloads", StaticFiles(directory="downloads"), name="downloads")
+
+@app.get("/downloads", name="downloads_page", response_class=HTMLResponse)
+def downloads_page(request: Request):
+    xml_path = os.path.join("downloads", "update.xml")
+    exe_path = os.path.join("downloads", "SigStreamAgent-Setup.exe")
+
+    version = "1.0.0.0"
+    checksum_value = ""
+    changelog_url = "/downloads/changelog.html"
+    download_available = False
+    size_str = "—"
+    released_str = "—"
+
+    if os.path.exists(xml_path):
+        try:
+            root = ET.parse(xml_path).getroot()
+            version = (root.findtext("version") or version).strip()
+            checksum = (root.findtext("checksum") or "").strip()
+            if checksum.lower().startswith("sha256:"):
+                checksum_value = checksum.split(":", 1)[1]
+            else:
+                checksum_value = checksum
+            chlog = (root.findtext("changelog") or "").strip()
+            if chlog:
+                changelog_url = chlog
+        except Exception:
+            pass
+
+    if os.path.exists(exe_path):
+        download_available = True
+        stat = os.stat(exe_path)
+        size_mb = stat.st_size / (1024 * 1024)
+        size_str = f"{size_mb:.1f} MB"
+        # Render server-local time; if you prefer UTC: datetime.datetime.utcfromtimestamp(...)
+        released_dt = datetime.datetime.fromtimestamp(stat.st_mtime)
+        released_str = released_dt.strftime("%Y-%m-%d %H:%M")
+
+    ctx = {
+        "request": request,
+        "version": version,
+        "checksum": checksum_value,
+        "exe_url": "/downloads/SigStreamAgent-Setup.exe",
+        "download_available": download_available,
+        "size_str": size_str,
+        "released_str": released_str,
+        "changelog_url": changelog_url,
+        "ms_store_url": None,  # fill when live
+    }
+    return templates.TemplateResponse("downloads.html", ctx)
+
+# Strong headers on the two important files (optional, overrides mount defaults)
+@app.get("/downloads/update.xml")
+def get_update_manifest():
+    return FileResponse(
+        "downloads/update.xml",
+        media_type="application/xml",
+        headers={"Cache-Control": "no-store, must-revalidate", "X-Content-Type-Options": "nosniff"},
+    )
+
+@app.get("/downloads/SigStreamAgent-Setup.exe")
+def get_installer():
+    return FileResponse(
+        "downloads/SigStreamAgent-Setup.exe",
+        media_type="application/octet-stream",
+        filename="SigStreamAgent-Setup.exe",
+        headers={"Cache-Control": "public, max-age=3600", "X-Content-Type-Options": "nosniff", "Accept-Ranges": "bytes"},
+    )

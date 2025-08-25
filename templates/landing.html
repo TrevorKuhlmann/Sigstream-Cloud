@@ -273,7 +273,7 @@
                    class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
                     Open Dashboard
                 </a>
-                <a href="/developer-api#agent"
+                <a href="/downloads"
                    class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">
                     Download Agent
                 </a>
@@ -286,45 +286,49 @@
                    class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">
                     Read the API
                 </a>
+                <a href="/downloads"
+                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">
+                    Download Agent
+                </a>
                 {% endif %}
             </div>
-        </div>
 
-        <!-- KPI tiles -->
-        <div class="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
-                <div class="text-slate-600">Online devices</div>
-                <div class="text-2xl font-semibold text-slate-900">10</div>
-            </div>
-            <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
-                <div class="text-slate-600">Events / min (5m)</div>
-                <div class="text-2xl font-semibold text-slate-900">2.1k</div>
-            </div>
-            <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
-                <div class="text-slate-600">Buffered offline</div>
-                <div class="text-2xl font-semibold text-slate-900">134</div>
-            </div>
-        </div>
 
-        <!-- Media (bigger, below KPIs) -->
-        <div class="max-w-6xl mx-auto px-6 mt-8">
-            <div class="relative">
-                <div class="absolute -inset-4 bg-blue-200/30 blur-2xl rounded-3xl"></div>
-                <div class="relative bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden">
-                    <!-- Placeholder image now; swap for short muted autoplay video later -->
-                    <img src="/static/media/dashboard-screengrab.png"
-                         alt="SigStream dashboard showing live telemetry and device list"
-                         class="w-full"
-                         loading="lazy" />
-                    <!-- Example video drop-in later:
-                    <video autoplay muted loop playsinline poster="/static/media/dashboard-screengrab.png" class="w-full">
-                      <source src="/static/media/dashboard-demo.mp4" type="video/mp4">
-                    </video>
-                    -->
+            <!-- KPI tiles -->
+            <div class="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
+                    <div class="text-slate-600">Online devices</div>
+                    <div class="text-2xl font-semibold text-slate-900">10</div>
+                </div>
+                <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
+                    <div class="text-slate-600">Events / min (5m)</div>
+                    <div class="text-2xl font-semibold text-slate-900">2.1k</div>
+                </div>
+                <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
+                    <div class="text-slate-600">Buffered offline</div>
+                    <div class="text-2xl font-semibold text-slate-900">134</div>
                 </div>
             </div>
-        </div>
-    </section>
+
+            <!-- Media (bigger, below KPIs) -->
+            <div class="max-w-6xl mx-auto px-6 mt-8">
+                <div class="relative">
+                    <div class="absolute -inset-4 bg-blue-200/30 blur-2xl rounded-3xl"></div>
+                    <div class="relative bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden">
+                        <!-- Placeholder image now; swap for short muted autoplay video later -->
+                        <img src="/static/media/dashboard-screengrab.png"
+                             alt="SigStream dashboard showing live telemetry and device list"
+                             class="w-full"
+                             loading="lazy" />
+                        <!-- Example video drop-in later:
+                <video autoplay muted loop playsinline poster="/static/media/dashboard-screengrab.png" class="w-full">
+                  <source src="/static/media/dashboard-demo.mp4" type="video/mp4">
+                </video>
+                -->
+                    </div>
+                </div>
+            </div>
+</section>
 
     <!-- How it works -->
     <section id="how" class="py-16">
