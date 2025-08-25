@@ -67,7 +67,12 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 
 from models import ApiKey  # 👈 new model you added to models.py
 from pydantic import BaseModel
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 
+
+app = FastAPI()
 
 # === Canonical header names for v1 ===
 CANON_KEY_HDR = "x-api-key"
@@ -82,6 +87,8 @@ def read_auth_headers(request: Request) -> tuple[str, str]:
     if not api_key or not device_id:
         raise HTTPException(status_code=400, detail="Missing X-Api-Key or X-Device-Id")
     return api_key, device_id
+
+
 
 
 # ----------------------------- Load Env -----------------------------
@@ -1091,6 +1098,8 @@ def revoke_api_key(
     return RedirectResponse("/api-management", status_code=302)
 
 
+
+
 #----------------------------- Cleanup Old Device Data -----------------------------
 
 
@@ -1100,8 +1109,40 @@ def delete_old_device_data(db: Session, days: int = 7):
     db.commit()
     print(f"🧹 Deleted {deleted} rows older than {days} days from device_data.")
 
+     #----------------------------- Static Files & Downloads -----------------------------
+ 
 
 
+
+# 1) Simple static mount for browsing/linking (works for changelog.html too)
+app.mount("/downloads", StaticFiles(directory="downloads"), name="downloads")
+
+# 2) Tight endpoints for correct headers on the two important files
+@app.get("/downloads/update.xml")
+def get_update_manifest():
+    # Serve with no caching so updates are picked up quickly
+    return FileResponse(
+        "downloads/update.xml",
+        media_type="application/xml",
+        headers={
+            "Cache-Control": "no-store, must-revalidate",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+@app.get("/downloads/SigStreamAgent-Setup.exe")
+def get_installer():
+    # Serve the binary with sensible headers
+    return FileResponse(
+        "downloads/SigStreamAgent-Setup.exe",
+        media_type="application/octet-stream",
+        filename="SigStreamAgent-Setup.exe",  # forces download name
+        headers={
+            "Cache-Control": "public, max-age=3600",  # tweak to taste
+            "X-Content-Type-Options": "nosniff",
+            "Accept-Ranges": "bytes",                 # allows resume
+        },
+    )
 
 
 
