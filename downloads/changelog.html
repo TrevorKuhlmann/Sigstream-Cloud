@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SigStream Agent — Changelog</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121923; --muted:#8ea0b5; --text:#e6edf3; --accent:#6ea8fe; --ok:#22c55e; --warn:#f59e0b; }
+  * { box-sizing:border-box }
+  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:var(--text); background:linear-gradient(180deg,#0b0f14, #0f1722); }
+  .wrap { max-width:960px; margin:40px auto; padding:0 16px; }
+  h1 { font-size:clamp(28px,3vw,36px); margin:0 0 8px; }
+  h2 { font-size:20px; margin:24px 0 8px; }
+  p, li { color:#c9d4e1; line-height:1.6 }
+  .muted { color:var(--muted) }
+  .card { background:var(--card); border:1px solid #243447; border-radius:16px; padding:20px; box-shadow:0 6px 24px rgba(0,0,0,.25) }
+  .grid { display:grid; gap:16px; grid-template-columns: 1fr; }
+  @media (min-width:840px) { .grid { grid-template-columns: 1.3fr .9fr } }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#0e1a27; border:1px solid #213245; color:#a8c1ff; font-weight:600; }
+  code, pre { background:#0b1420; color:#d8e7ff; border:1px solid #1f2e41; border-radius:10px; }
+  code { padding:2px 6px }
+  pre { padding:12px; overflow:auto }
+  a { color:var(--accent); text-decoration:none }
+  .hr { height:1px; background:#1e2a3b; margin:18px 0 }
+  .small { font-size:13px }
+  .list-tight li { margin:6px 0 }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>SigStream Agent <span class="pill">v1.0.0 • First public release</span></h1>
+      <p class="muted small">Released 2025-08-27 • Windows (x64)</p>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Highlights</h2>
+        <ul class="list-tight">
+          <li><strong>Reliable COM-port telemetry</strong> with heartbeat and queue flush service.</li>
+          <li><strong>Offline buffer</strong>: caches data when cloud is down; auto-uploads on reconnect.</li>
+          <li><strong>Single-instance</strong> app with system-tray controls (pause, open, exit).</li>
+          <li><strong>Start with Windows</strong> + Launch minimized to tray.</li>
+          <li><strong>Branded dialogs</strong> and <strong>high-contrast UI</strong> registration pill.</li>
+          <li><strong>Modern installer</strong> (x64, self-contained .NET).</li>
+        </ul>
+
+        <div class="hr"></div>
+
+        <h2>Verify the app binary (SHA-256)</h2>
+        <p class="small muted">We publish a hash for the installed executable so you can confirm integrity.</p>
+        <div class="small" id="meta">
+          Version: <strong id="ver">1.0.0</strong> &nbsp;•&nbsp;
+          Executable: <code id="exe">SigstreamTelemetryAgent.exe</code> &nbsp;•&nbsp;
+          SHA-256: <code id="sha">Loading…</code>
+        </div>
+
+        <p class="small">PowerShell:</p>
+        <pre><code id="ps">Get-FileHash "$env:LOCALAPPDATA\Programs\SigStream Agent\SigstreamTelemetryAgent.exe" -Algorithm SHA256</code></pre>
+        <p class="small">Command Prompt:</p>
+        <pre><code id="cmd">certutil -hashfile "%LOCALAPPDATA%\Programs\SigStream Agent\SigstreamTelemetryAgent.exe" SHA256</code></pre>
+
+        <div class="hr"></div>
+
+        <h2>Install / Upgrade</h2>
+        <ol class="list-tight">
+          <li>Download <strong>SigStreamAgent-Setup.exe</strong> and run it.</li>
+          <li>Open the tray menu → <em>Settings</em> to set your cloud base URL and API credentials.</li>
+          <li>To upgrade, run a newer installer; your settings are preserved.</li>
+        </ol>
+
+        <h2>Uninstall</h2>
+        <p>Use <em>Apps &amp; Features</em> or the Start Menu uninstaller. App data stays in <code>%APPDATA%\SigStream</code>.</p>
+      </section>
+
+      <aside class="card">
+        <h2>Known issues</h2>
+        <ul class="list-tight">
+          <li>If no COM device is available, configure the correct port in Settings.</li>
+          <li>Firewall/proxy may block cloud access; allow <code>sigstreamcloud.com</code> over HTTPS.</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+  (async function() {
+    try {
+      let res = await fetch('sigstream-agent-hashes.xml');
+      if (!res.ok) res = await fetch('../downloads/sigstream-agent-hashes.xml');
+      if (!res.ok) return;
+
+      const txt = await res.text();
+      const doc = new DOMParser().parseFromString(txt, 'text/xml');
+      const build = doc.querySelector('build');
+      const app   = doc.querySelector('artifact[type="app"]');
+
+      const ver = (build && build.getAttribute('version')) || '';
+      const sha = (app && app.getAttribute('sha256')) || '';
+      const exe = (app && app.getAttribute('name')) || 'SigstreamTelemetryAgent.exe';
+
+      if (ver) document.getElementById('ver').textContent = ver;
+      if (sha) document.getElementById('sha').textContent = sha;
+      if (exe) document.getElementById('exe').textContent = exe;
+
+      const ps  = 'Get-FileHash "$env:LOCALAPPDATA\Programs\SigStream Agent\' + exe + '" -Algorithm SHA256';
+      const cmd = 'certutil -hashfile "%LOCALAPPDATA%\Programs\SigStream Agent\' + exe + '" SHA256';
+      document.getElementById('ps').textContent  = ps;
+      document.getElementById('cmd').textContent = cmd;
+    } catch (e) {}
+  })();
+  </script>
+</body>
+</html>

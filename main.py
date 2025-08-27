@@ -1124,7 +1124,7 @@ def downloads_page(request: Request):
     xml_path = DOWNLOADS_DIR / "update.xml"
     exe_path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
 
-    version = "1.0.0.0"
+    version = "1.0.0.1"
     checksum_value = ""
     changelog_url = "/downloads/changelog.html"
     download_available = False
@@ -1181,7 +1181,7 @@ def get_installer():
                         headers={"Cache-Control": "public, max-age=3600",
                                  "X-Content-Type-Options": "nosniff",
                                  "Accept-Ranges": "bytes"})
-# ---------- /DOWNLOADS ----------
+
 
 
 
