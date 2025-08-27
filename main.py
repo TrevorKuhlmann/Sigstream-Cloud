@@ -1122,7 +1122,7 @@ app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloa
 @app.get("/downloads", name="downloads_page", response_class=HTMLResponse)
 def downloads_page(request: Request):
     xml_path = DOWNLOADS_DIR / "update.xml"
-    exe_path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
+    exe_path = DOWNLOADS_DIR / "SigStreamAgent-Setup-1.0.20250827-0924+006bf13773e61b8b635af5505926577abd5f481e-20250827-1124.exe"
 
     version = "1.0.0.1"
     checksum_value = ""
@@ -1153,7 +1153,7 @@ def downloads_page(request: Request):
         "request": request,
         "version": version,
         "checksum": checksum_value,
-        "exe_url": "/downloads/SigStreamAgent-Setup.exe",
+        "exe_url": "/downloads/SigStreamAgent-Setup-1.0.20250827-0924+006bf13773e61b8b635af5505926577abd5f481e-20250827-1124.exe",
         "download_available": download_available,
         "size_str": size_str,
         "released_str": released_str,
@@ -1171,13 +1171,13 @@ def get_update_manifest():
                         headers={"Cache-Control": "no-store, must-revalidate",
                                  "X-Content-Type-Options": "nosniff"})
 
-@app.get("/downloads/SigStreamAgent-Setup.exe")
+@app.get("/downloads/SigStreamAgent-Setup-1.0.20250827-0924+006bf13773e61b8b635af5505926577abd5f481e-20250827-1124.exe")
 def get_installer():
-    path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
+    path = DOWNLOADS_DIR / "SigStreamAgent-Setup-1.0.20250827-0924+006bf13773e61b8b635af5505926577abd5f481e-20250827-1124.exe"
     if not path.exists():
         return HTMLResponse("installer not found", status_code=404)
     return FileResponse(str(path), media_type="application/octet-stream",
-                        filename="SigStreamAgent-Setup.exe",
+                        filename="SigStreamAgent-Setup-1.0.20250827-0924+006bf13773e61b8b635af5505926577abd5f481e-20250827-1124.exe",
                         headers={"Cache-Control": "public, max-age=3600",
                                  "X-Content-Type-Options": "nosniff",
                                  "Accept-Ranges": "bytes"})
