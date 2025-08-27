@@ -1,11 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>1.0.0.0</version>
+  <version>1.25.0827.1131</version>
   <url>https://sigstreamcloud.com/downloads/SigStreamAgent-Setup.exe</url>
   <changelog>https://sigstreamcloud.com/downloads/changelog.html</changelog>
   <mandatory>false</mandatory>
-  <checksum>sha256:54D23C5963BEA9ADDC38F83ADD4280B536E99B2917E023745496C0E3554321DD</checksum>
+  <checksum>sha256:556E4F3B9A6A5752DCB6B736A154E4D3B60114C4A2B8E24C897C615569BF896A</checksum>
 </item>
-
-
-
