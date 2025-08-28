@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy import text
 from jose import jwt, JWTError
 from dotenv import load_dotenv
-
+from sqlalchemy import and_, func, text
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import ApiKey
@@ -776,6 +776,10 @@ async def summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
+
+    now_epoch = func.extract('epoch', func.now())
+    five_min_ago = now_epoch - 300  # 5 * 60
     # Labels for the dropdown
     labels = (
         db.query(DeviceStatus.label)
@@ -858,17 +862,19 @@ async def summary(
     )
 
     # Activity metrics
+  # Messages in last 5 minutes (epoch vs epoch)
     msgs_last_5m = (
-        db.query(func.count())
-          .select_from(DeviceData)
-          .filter(
-              DeviceData.user_id == current_user.id,
-              DeviceData.timestamp >= func.now() - text("interval '5 minutes'"),
-          )
-          .scalar()
-        or 0
-    )
+    db.query(func.count())
+      .select_from(DeviceData)
+      .filter(
+          DeviceData.user_id == current_user.id,
+          DeviceData.timestamp >= five_min_ago
+      )
+      .scalar()
+) or 0
 
+
+   # Top talkers (use device label when available)
     name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
 
     top_talkers = (
@@ -879,17 +885,18 @@ async def summary(
               DeviceStatus.device_id == DeviceData.device_id,
               DeviceStatus.user_id == current_user.id
           ),
-          isouter=True  # still counts if label is missing
+          isouter=True
       )
       .filter(
           DeviceData.user_id == current_user.id,
-          DeviceData.timestamp >= func.now() - text("interval '5 minutes'")
+          DeviceData.timestamp >= five_min_ago
       )
       .group_by(name_expr)
       .order_by(text("cnt DESC"))
       .limit(5)
       .all()
 )
+
 
     # Subscription management (unchanged)
     sub_id = db.execute(text("""
