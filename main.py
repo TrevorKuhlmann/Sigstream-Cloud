@@ -24,6 +24,9 @@ from sqlalchemy.orm import Session
 from models import ApiKey
 from auth import get_db
 
+from datetime import datetime
+from sqlalchemy import and_, func, text
+
 
 from fastapi import (
     FastAPI,
@@ -764,10 +767,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
 
 # ----------------------------- Summary with Paddle Management URLs -----------------------------
 
-from datetime import datetime
-from sqlalchemy import func, text
-# make sure these models are imported
-# from .models import DeviceStatus, DeviceData, ApiKey, User
+
 
 @app.get("/summary", response_class=HTMLResponse)
 async def summary(
@@ -776,10 +776,10 @@ async def summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
-
+    # Epoch helpers (keep comparisons epoch vs epoch for index use)
     now_epoch = func.extract('epoch', func.now())
-    five_min_ago = now_epoch - 300  # 5 * 60
+    five_min_ago = now_epoch - 300  # 5 minutes
+
     # Labels for the dropdown
     labels = (
         db.query(DeviceStatus.label)
@@ -792,7 +792,10 @@ async def summary(
     # Base telemetry query
     query = (
         db.query(DeviceData)
-          .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
+          .join(
+              DeviceStatus,
+              DeviceData.device_id == DeviceStatus.device_id
+          )
           .filter(DeviceStatus.user_id == current_user.id)
     )
 
@@ -818,11 +821,17 @@ async def summary(
              .all()
     )
 
-    # Last-seen map (by data timestamps)
+    # Last-seen map (epoch) — make left side explicit
     last_seen_map = dict(
         db.query(DeviceData.device_id, func.max(DeviceData.timestamp))
-          .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
-          .filter(DeviceStatus.user_id == current_user.id)
+          .select_from(DeviceData)
+          .join(
+              DeviceStatus,
+              and_(
+                  DeviceStatus.device_id == DeviceData.device_id,
+                  DeviceStatus.user_id == current_user.id
+              )
+          )
           .group_by(DeviceData.device_id)
           .all()
     )
@@ -855,48 +864,45 @@ async def summary(
           .filter(
               DeviceStatus.user_id == current_user.id,
               # last_seen stored as epoch seconds
-              DeviceStatus.last_seen >= func.extract("epoch", func.now()) - ONLINE_WINDOW_SECS,
+              DeviceStatus.last_seen >= now_epoch - ONLINE_WINDOW_SECS,
           )
           .scalar()
         or 0
     )
 
-    # Activity metrics
-  # Messages in last 5 minutes (epoch vs epoch)
+    # Activity metrics — epoch vs epoch
     msgs_last_5m = (
-    db.query(func.count())
-      .select_from(DeviceData)
-      .filter(
-          DeviceData.user_id == current_user.id,
-          DeviceData.timestamp >= five_min_ago
-      )
-      .scalar()
-) or 0
+        db.query(func.count())
+          .select_from(DeviceData)
+          .filter(
+              DeviceData.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_ago
+          )
+          .scalar()
+        or 0
+    )
 
-
-   # Top talkers (use device label when available)
+    # Top talkers (label if present; explicit left side + OUTER JOIN)
     name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
-
     top_talkers = (
-    db.query(name_expr, func.count().label("cnt"))
-      .join(
-          DeviceStatus,
-          and_(
-              DeviceStatus.device_id == DeviceData.device_id,
-              DeviceStatus.user_id == current_user.id
-          ),
-          isouter=True
-      )
-      .filter(
-          DeviceData.user_id == current_user.id,
-          DeviceData.timestamp >= five_min_ago
-      )
-      .group_by(name_expr)
-      .order_by(text("cnt DESC"))
-      .limit(5)
-      .all()
-)
-
+        db.query(name_expr, func.count().label("cnt"))
+          .select_from(DeviceData)
+          .outerjoin(
+              DeviceStatus,
+              and_(
+                  DeviceStatus.device_id == DeviceData.device_id,
+                  DeviceStatus.user_id == current_user.id
+              )
+          )
+          .filter(
+              DeviceData.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_ago
+          )
+          .group_by(name_expr)
+          .order_by(text("cnt DESC"))
+          .limit(5)
+          .all()
+    )
 
     # Subscription management (unchanged)
     sub_id = db.execute(text("""
@@ -943,6 +949,7 @@ async def summary(
 
         "now_ts": datetime.utcnow(),  # handy in templates
     })
+
 
 
    #----------------------------- Summary Data API -----------------------------
