@@ -1,6 +1,8 @@
 ﻿import os
 import time
 import csv
+from sqlalchemy import and_
+
 import anyio
 from fastapi import status
 import os, httpx
@@ -767,11 +769,15 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
 @app.get("/summary", response_class=HTMLResponse)
 async def summary(
     request: Request,
-    device_label: str = None,  # 🔄 Changed from device_id to device_label
+    device_label: str = None,  # filter by friendly label (optional)
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Get all labels to populate dropdown
+    # ---- epoch helpers (keeps comparisons index-friendly) ----
+    now_epoch = func.extract('epoch', func.now())
+    five_min_ago = now_epoch - 300  # 5 minutes
+
+    # ---- labels for the dropdown ----
     labels = (
         db.query(DeviceStatus.label)
           .filter(DeviceStatus.user_id == current_user.id)
@@ -780,49 +786,111 @@ async def summary(
           .all()
     )
 
-    # Device telemetry fetch
+    # ---- base telemetry query (scoped to user) ----
     query = (
         db.query(DeviceData)
           .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
           .filter(DeviceStatus.user_id == current_user.id)
     )
 
-    device_id_match = None  # ✅ Prevent UnboundLocalError
-
+    # resolve label -> device_id (optional filter)
+    device_id_match = None
     if device_label:
-     device_id_match = (
-        db.query(DeviceStatus.device_id)
-        .filter(DeviceStatus.user_id == current_user.id, DeviceStatus.label == device_label)
-        .scalar()
-    )
+        device_id_match = (
+            db.query(DeviceStatus.device_id)
+              .filter(DeviceStatus.user_id == current_user.id,
+                      DeviceStatus.label == device_label)
+              .scalar()
+        )
     if device_id_match:
         query = query.filter(DeviceData.device_id == device_id_match)
 
-
+    # latest 100 records + label
     records = (
-        query
-        .with_entities(DeviceData, DeviceStatus.label)
-        .order_by(DeviceData.timestamp.desc())
-        .limit(100)
-        .all()
+        query.with_entities(DeviceData, DeviceStatus.label)
+             .order_by(DeviceData.timestamp.desc())
+             .limit(100)
+             .all()
     )
 
+    # last-seen map (by telemetry timestamps)
     last_seen_map = dict(
-    db.query(DeviceData.device_id, func.max(DeviceData.timestamp))
-    .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
-    .filter(DeviceStatus.user_id == current_user.id)
-    .group_by(DeviceData.device_id)
-    .all())
+        db.query(DeviceData.device_id, func.max(DeviceData.timestamp))
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceData.device_id == DeviceStatus.device_id)
+          .filter(DeviceStatus.user_id == current_user.id)
+          .group_by(DeviceData.device_id)
+          .all()
+    )
 
+    # registered devices (your existing definition)
     device_count = (
-    db.query(DeviceStatus.device_id)
-    .filter(DeviceStatus.user_id == current_user.id)
-    .distinct()
-    .count()
-)
+        db.query(DeviceStatus.device_id)
+          .filter(DeviceStatus.user_id == current_user.id)
+          .distinct()
+          .count()
+    )
 
+    # ---- Online tile ----
+    ONLINE_WINDOW_SECS = 120  # 2 minutes
+    total_devices = (
+        db.query(func.count())
+          .select_from(DeviceStatus)
+          .filter(DeviceStatus.user_id == current_user.id)
+          .scalar()
+        or 0
+    )
+    online_devices = (
+        db.query(func.count())
+          .select_from(DeviceStatus)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceStatus.last_seen >= now_epoch - ONLINE_WINDOW_SECS
+          )
+          .scalar()
+        or 0
+    )
 
-    # Subscription management
+    # ---- Messages in last 5 minutes ----
+    msgs_last_5m = (
+        db.query(func.count())
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_ago
+          )
+          .scalar()
+        or 0
+    )
+
+    # ---- Top talkers (5 min) — show label when available ----
+    name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
+    top_talkers = (
+        db.query(name_expr, func.count().label("cnt"))
+          .select_from(DeviceData)
+          .outerjoin(
+              DeviceStatus,
+              and_(
+                  DeviceStatus.device_id == DeviceData.device_id,
+                  DeviceStatus.user_id == current_user.id
+              )
+          )
+          .filter(
+              DeviceData.timestamp >= five_min_ago,
+              # also scope to this user (via status join or a subquery)
+              # since outerjoin used, add an EXISTS filter alternative:
+              DeviceData.device_id.in_(
+                  db.query(DeviceStatus.device_id).filter(DeviceStatus.user_id == current_user.id)
+              )
+          )
+          .group_by(name_expr)
+          .order_by(text("cnt DESC"))
+          .limit(5)
+          .all()
+    )
+
+    # ---- Paddle subscription management (unchanged) ----
     sub_id = db.execute(text("""
         SELECT b.id
         FROM public.customers a
@@ -839,22 +907,28 @@ async def summary(
             )
         payload = resp.json()
         logging.info(f"Paddle subscription payload for {sub_id}: {payload}")
-
         m_urls = payload.get("data", {}).get("management_urls", {})
         cancel_url = m_urls.get("cancel")
         update_pm_url = m_urls.get("update_payment_method")
 
+    # ---- render ----
     return templates.TemplateResponse("summary.html", {
         "request": request,
-        "records": records,
-        "device_label": device_label,
-        "labels": [row.label for row in labels if row.label],
-        "cancel_url": cancel_url,
-        "update_pm_url": update_pm_url,
         "user": current_user,
-        "device_count": device_count,  # 👈 new!
-        "last_seen_map": last_seen_map
 
+        "records": records,
+        "labels": [row.label for row in labels if row.label],
+        "device_label": device_label,
+
+        "device_count": device_count,
+        "last_seen_map": last_seen_map,
+
+        # new tiles
+        "total_devices": total_devices,
+        "online_devices": online_devices,
+        "online_window_secs": ONLINE_WINDOW_SECS,
+        "msgs_last_5m": msgs_last_5m,
+        "top_talkers": top_talkers,
     })
 
    #----------------------------- Summary Data API -----------------------------
