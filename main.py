@@ -815,10 +815,14 @@ async def summary(
     .all())
 
     device_count = (
-    db.query(DeviceStatus.device_id)
-    .filter(DeviceStatus.user_id == current_user.id)
-    .distinct()
-    .count()
+    db.query(func.count(func.distinct(ApiKey.device_id)))
+      .filter(
+          ApiKey.user_id == current_user.id,
+          ApiKey.status == "active",
+          ApiKey.revoked_at.is_(None),     # soft-deletes excluded
+          ApiKey.device_id.isnot(None)     # only keys bound to a device
+      )
+      .scalar() or 0
 )
 
 
