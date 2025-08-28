@@ -128,9 +128,9 @@
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200 md:col-span-1 lg:col-span-2">
                 <h3 class="text-lg font-semibold text-gray-700">Top Talkers (5 min)</h3>
                 <ul class="mt-3 space-y-2">
-                    {% for did, cnt in top_talkers %}
+                    {% for name, cnt in top_talkers %}
                     <li class="flex items-center justify-between text-sm">
-                        <span class="font-mono text-gray-700">{{ did[:6] }}…</span>
+                        <span class="truncate max-w-[14rem]" title="{{ name }}">{{ name or 'Unnamed device' }}</span>
                         <span class="text-gray-500">{{ cnt }} msgs</span>
                     </li>
                     {% else %}
@@ -139,69 +139,68 @@
                 </ul>
             </div>
 
-        </div>
 
-        <!-- Filters & Export -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between flex-wrap mb-6 space-y-4 md:space-y-0">
-            <form method="get" class="flex space-x-2">
-                <select name="device_label"
-                        class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Devices</option>
-                    {% for label in labels %}
-                    <option value="{{ label }}" {% if device_label= =label %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+            <!-- Filters & Export -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between flex-wrap mb-6 space-y-4 md:space-y-0">
+                <form method="get" class="flex space-x-2">
+                    <select name="device_label"
+                            class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Devices</option>
+                        {% for label in labels %}
+                        <option value="{{ label }}" {% if device_label= =label %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
 
-                <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 4h18v2l-7 7v5l-4 2v-7L3 6V4z" />
+                        </svg>
+                        <span>Filter</span>
+                    </button>
+                </form>
+
+                <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
+                   class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium">
+                    <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M3 4h18v2l-7 7v5l-4 2v-7L3 6V4z" />
+                              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v6m0 0l-3-3m3 3l3-3M12 4v8" />
                     </svg>
-                    <span>Filter</span>
-                </button>
-            </form>
-
-            <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
-               class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium">
-                <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v6m0 0l-3-3m3 3l3-3M12 4v8" />
-                </svg>
-                <span>Export CSV</span>
-            </a>
-        </div>
-
-        <div class="flex items-center space-x-2 mb-2 text-sm text-green-600">
-            <div class="relative flex h-3 w-3">
-                <div class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></div>
-                <div class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></div>
+                    <span>Export CSV</span>
+                </a>
             </div>
-            <span>Refreshing Telemetry every 5 Seconds</span>
-        </div>
 
-        <!-- Table -->
-        <div class="overflow-x-auto shadow-sm">
-            <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <thead class="bg-gray-100 sticky top-0 z-10">
-                    <tr>
-                        <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Device</th>
-                        <th class="px-4 py-2 text-left text-sm font-medium">Data</th>
-                        <th class="px-4 py-2 text-right text-sm font-medium">Timestamp</th>
-                    </tr>
-                </thead>
-                <tbody id="data-table-body" class="divide-y divide-gray-200">
-                </tbody>
-            </table>
-
-            {% if records|length == 0 %}
-            <div class="mt-4 p-4 bg-yellow-200 text-gray-900 rounded">
-                No telemetry data available yet.
+            <div class="flex items-center space-x-2 mb-2 text-sm text-green-600">
+                <div class="relative flex h-3 w-3">
+                    <div class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></div>
+                    <div class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></div>
+                </div>
+                <span>Refreshing Telemetry every 5 Seconds</span>
             </div>
-            {% endif %}
+
+            <!-- Table -->
+            <div class="overflow-x-auto shadow-sm">
+                <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <thead class="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-sm font-medium">ID</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium">Device</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium">Data</th>
+                            <th class="px-4 py-2 text-right text-sm font-medium">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body" class="divide-y divide-gray-200">
+                    </tbody>
+                </table>
+
+                {% if records|length == 0 %}
+                <div class="mt-4 p-4 bg-yellow-200 text-gray-900 rounded">
+                    No telemetry data available yet.
+                </div>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
     <script>
         const formatTimestamp = (ts) => {

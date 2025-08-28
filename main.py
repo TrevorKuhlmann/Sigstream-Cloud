@@ -869,17 +869,27 @@ async def summary(
         or 0
     )
 
+    name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
+
     top_talkers = (
-        db.query(DeviceData.device_id, func.count().label("cnt"))
-          .filter(
-              DeviceData.user_id == current_user.id,
-              DeviceData.timestamp >= func.now() - text("interval '5 minutes'"),
-          )
-          .group_by(DeviceData.device_id)
-          .order_by(text("cnt DESC"))
-          .limit(5)
-          .all()
-    )
+    db.query(name_expr, func.count().label("cnt"))
+      .join(
+          DeviceStatus,
+          and_(
+              DeviceStatus.device_id == DeviceData.device_id,
+              DeviceStatus.user_id == current_user.id
+          ),
+          isouter=True  # still counts if label is missing
+      )
+      .filter(
+          DeviceData.user_id == current_user.id,
+          DeviceData.timestamp >= func.now() - text("interval '5 minutes'")
+      )
+      .group_by(name_expr)
+      .order_by(text("cnt DESC"))
+      .limit(5)
+      .all()
+)
 
     # Subscription management (unchanged)
     sub_id = db.execute(text("""
