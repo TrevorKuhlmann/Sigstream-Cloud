@@ -15,19 +15,8 @@
             <span class="text-xl font-bold">SigStream</span>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <!--<a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 22V12h6v10" />
-        </svg>
-        Dashboard
-    </a>-->
-
             <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 bg-gray-100 font-semibold">
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <!-- 2x2 tiles -->
                     <rect x="3" y="3" width="8" height="8" rx="2" stroke-width="2"></rect>
                     <rect x="13" y="3" width="8" height="8" rx="2" stroke-width="2"></rect>
                     <rect x="3" y="13" width="8" height="8" rx="2" stroke-width="2"></rect>
@@ -36,13 +25,9 @@
                 Dashboard
             </a>
 
-
             <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <!-- Key icon -->
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <!-- ring -->
                     <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
-                    <!-- shaft + teeth -->
                     <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     <path d="M16 9v6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     <path d="M19 10v4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
@@ -50,46 +35,16 @@
                 API Management
             </a>
 
-
-            <!--{% if cancel_url or update_pm_url %}
-    <div class="relative group">
-        <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
-            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Account
-        </button>
-        <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">-->
-            <!--{% if update_pm_url %}
-    <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-        Update Payment Method
-    </a>
-    {% endif %}
-    {% if cancel_url %}
-    <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-        Cancel Subscription
-    </a>
-    {% endif %}-->
-            <!--</div>
-    </div>
-    {% endif %}-->
-            <!-- Developer API (Sidebar item) -->
             <a href="/developer-api"
                class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 text-gray-700
           {% if request.url.path.startswith('/developer-api') %} bg-gray-100 {% endif %}">
-                <!-- Code icon </> in blue -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <!-- chevron left -->
                     <path d="M9 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
-                    <!-- slash -->
                     <path d="M13 6l-2 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
-                    <!-- chevron right -->
                     <path d="M15 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                 </svg>
                 <span>Developer API</span>
             </a>
-
 
             <a href="/logout" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 text-red-600">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,49 +99,69 @@
                 </svg>
                 <span>Create API Keys</span>
             </a>
-
         </section>
 
+        <!-- KPI Tiles -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
 
-
-        <!-- ✅ Device Count Tile -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <!-- Registered Devices -->
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200 flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-700">Registered Devices</h3>
                     <p class="text-3xl font-bold text-blue-600 mt-1">{{ device_count }}</p>
+                    <div class="mt-2 text-sm text-gray-600">
+                        <span class="text-green-600 font-semibold">{{ online_devices }}</span> online /
+                        <span class="font-semibold">{{ total_devices }}</span> total
+                        <span class="ml-1 text-xs text-gray-400">(last {{ online_window_secs }}s)</span>
+                    </div>
                 </div>
-                <!--<svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 2H7a2 2 0 00-2 2v2m0 12v2a2 2 0 002 2h2m6 0h2a2 2 0 002-2v-2m0-12V4a2 2 0 00-2-2h-2M7 12h10M12 7v10" />
-                </svg>-->
             </div>
+
+            <!-- Messages last 5m -->
+            <div class="p-6 bg-white rounded-lg shadow border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-700">Msgs (last 5 min)</h3>
+                <p class="text-3xl font-bold text-blue-600 mt-1">{{ "{:,}".format(msgs_last_5m) }}</p>
+                <p class="text-xs text-gray-500 mt-2">Across all devices</p>
+            </div>
+
+            <!-- Top talkers -->
+            <div class="p-6 bg-white rounded-lg shadow border border-gray-200 md:col-span-1 lg:col-span-2">
+                <h3 class="text-lg font-semibold text-gray-700">Top Talkers (5 min)</h3>
+                <ul class="mt-3 space-y-2">
+                    {% for did, cnt in top_talkers %}
+                    <li class="flex items-center justify-between text-sm">
+                        <span class="font-mono text-gray-700">{{ did[:6] }}…</span>
+                        <span class="text-gray-500">{{ cnt }} msgs</span>
+                    </li>
+                    {% else %}
+                    <li class="text-sm text-gray-500">No activity in the last 5 minutes.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
         </div>
 
-
-
+        <!-- Filters & Export -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between flex-wrap mb-6 space-y-4 md:space-y-0">
             <form method="get" class="flex space-x-2">
                 <select name="device_label"
                         class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Devices</option>
                     {% for label in labels %}
-                    <option value="{{ label }}" {% if device_label==label %}selected{% endif %}>{{ label }}</option>
-
+                    <option value="{{ label }}" {% if device_label= =label %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
 
                 <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
-                    <!-- Funnel (filter) icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 4h18v2l-7 7v5l-4 2v-7L3 6V4z" />
                     </svg>
                     <span>Filter</span>
                 </button>
-
             </form>
+
             <a href="/export{% if filter_id %}?device_id={{ filter_id }}{% endif %}"
                class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium">
                 <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,7 +180,7 @@
             <span>Refreshing Telemetry every 5 Seconds</span>
         </div>
 
-
+        <!-- Table -->
         <div class="overflow-x-auto shadow-sm">
             <table class="min-w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <thead class="bg-gray-100 sticky top-0 z-10">
@@ -217,10 +192,7 @@
                     </tr>
                 </thead>
                 <tbody id="data-table-body" class="divide-y divide-gray-200">
-                    <!-- Data rows will be injected by JS -->
                 </tbody>
-
-
             </table>
 
             {% if records|length == 0 %}
@@ -231,14 +203,13 @@
         </div>
     </div>
 
-
     <script>
         const formatTimestamp = (ts) => {
             const dt = new Date(ts * 1000);
             return dt.toLocaleString();
         };
 
-        // NEW: relative time + color class
+        // relative time + color
         const relativeAgo = (epochSeconds) => {
             const now = Math.floor(Date.now() / 1000);
             const diff = Math.max(0, now - epochSeconds);
@@ -247,19 +218,16 @@
 
             const minutes = Math.floor(diff / 60);
             if (minutes < 60) {
-                // 0–9 min = green, 10–59 = yellow
                 const cls = minutes < 10 ? "text-green-600 font-medium" : "text-yellow-600 font-medium";
                 return { text: `${minutes} min ago`, cls };
             }
 
             const hours = Math.floor(minutes / 60);
             if (hours < 24) {
-                // 1–23 hours = orange
                 return { text: `${hours} hour${hours === 1 ? "" : "s"} ago`, cls: "text-orange-500 font-medium" };
             }
 
             const days = Math.floor(hours / 24);
-            // ≥ 1 day = red
             return { text: `${days} day${days === 1 ? "" : "s"} ago`, cls: "text-red-600 font-medium" };
         };
 
@@ -277,35 +245,33 @@
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50";
                 tr.innerHTML = `
-            <td class="px-4 py-2 text-sm">${row.id}</td>
-            <td class="px-4 py-2 text-sm">
-              <div class="flex flex-col">
-                <div class="flex items-center space-x-2">
-                  <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
-                  </svg>
-                  <span class="relative group cursor-pointer">
-                    ${row.label || row.device_id}
-                    <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-90 opacity-0 group-hover:opacity-100 transition bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap">
-                      ID: ${row.device_id}
+                <td class="px-4 py-2 text-sm">${row.id}</td>
+                <td class="px-4 py-2 text-sm">
+                  <div class="flex flex-col">
+                    <div class="flex items-center space-x-2">
+                      <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                      </svg>
+                      <span class="relative group cursor-pointer">
+                        ${row.label || row.device_id}
+                        <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-90 opacity-0 group-hover:opacity-100 transition bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap">
+                          ID: ${row.device_id}
+                        </span>
+                      </span>
+                    </div>
+                    <span class="text-xs text-gray-500">
+                      Last seen: <span data-last-seen="${row.device_id}">...</span>
                     </span>
-                  </span>
-                </div>
-                <span class="text-xs text-gray-500">
-                  Last seen: <span data-last-seen="${row.device_id}">...</span>
-                </span>
-              </div>
-            </td>
-            <td class="px-4 py-2 text-sm">${row.data}</td>
-            <td class="px-4 py-2 text-sm text-right">${formatTimestamp(row.timestamp)}</td>
-          `;
+                  </div>
+                </td>
+                <td class="px-4 py-2 text-sm">${row.data}</td>
+                <td class="px-4 py-2 text-sm text-right">${formatTimestamp(row.timestamp)}</td>
+              `;
                 tbody.appendChild(tr);
             });
 
-            // NEW: apply relative formatting per device
             document.querySelectorAll("[data-last-seen]").forEach(el => {
                 const deviceId = el.dataset.lastSeen;
-                // data is newest-first, so .find is OK
                 const latestTs = data.find(d => d.device_id === deviceId)?.timestamp;
 
                 if (latestTs) {
@@ -319,12 +285,9 @@
             });
         };
 
-        // Initial load + 5s refresh
         loadData();
         setInterval(loadData, 5000);
     </script>
-
-
 
 </body>
 </html>
