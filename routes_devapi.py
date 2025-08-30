@@ -1,88 +1,106 @@
 # routes_devapi.py
-import asyncio
-from datetime import datetime
-from typing import Optional, List, Dict, Any
-
-from fastapi import APIRouter, Depends, Request, Query
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import APIRouter, Request, Depends, Header, Query, HTTPException
 from sqlalchemy.orm import Session
-
+from sqlalchemy import func
+from datetime import datetime
 from auth import get_db
-from models import DeviceData
-from devapi_auth import api_key_auth, APIKeyContext
-from sse_broker import broker
+from models import ApiKey, DeviceData, DeviceStatus
 
-router = APIRouter(prefix="/devapi", tags=["Developer API"])
+router = APIRouter()
 
-def row_to_dict(row: DeviceData, label: Optional[str]) -> Dict[str, Any]:
-    # Your DeviceData fields (from main.py usage): id, device_id, data, timestamp (epoch int)
-    return {
-        "id": row.id,
-        "device_id": row.device_id,
-        "label": label,
-        "data": row.data,
-        "timestamp": row.timestamp,               # epoch seconds
-        "ts_iso": datetime.utcfromtimestamp(row.timestamp).isoformat() + "Z",
-    }
+# --- helpers ---------------------------------------------------------------
 
-@router.get("/telemetry")
-def list_telemetry(
-    ctx: APIKeyContext = Depends(api_key_auth),
-    db: Session = Depends(get_db),
-    since: Optional[datetime] = Query(None, description="ISO8601; return rows >= this timestamp"),
-    limit: int = Query(200, ge=1, le=2000),
-):
-    owner_user_id, device_id, label = ctx
-    q = db.query(DeviceData).filter(
-        DeviceData.user_id == owner_user_id,
-        DeviceData.device_id == device_id
-    )
-    if since:
-        q = q.filter(DeviceData.timestamp >= int(since.timestamp()))
-    rows: List[DeviceData] = q.order_by(DeviceData.timestamp.desc()).limit(limit).all()
-    return JSONResponse([row_to_dict(r, label) for r in rows])
+def _missing():
+    raise HTTPException(status_code=401, detail="Missing API key.")
 
-@router.get("/stream")
-async def stream_telemetry(
+def read_devapi_key(
     request: Request,
-    ctx: APIKeyContext = Depends(api_key_auth),
-    api_key: Optional[str] = Query(None, alias="api_key"),  # enables ?api_key=... for EventSource
+    x_api_key: str | None = Header(default=None),              # normal FastAPI mapping -> x-api-key
+    api_key_q: str | None = Query(default=None, alias="api_key")
+) -> str:
+    """
+    Accept API key via header (any case) OR query string (?api_key=...).
+    This avoids client/proxy header quirks.
+    """
+    key = (
+        x_api_key
+        or request.headers.get("x-api-key")
+        or request.headers.get("X-API-Key")
+        or request.headers.get("X-Api-Key")
+        or api_key_q
+    )
+    if not key:
+        _missing()
+    return key.strip()
+
+def device_scope_for_key(db: Session, keyrow: ApiKey) -> list[str]:
+    """If key is bound -> just that device. Else -> all devices for the user."""
+    if keyrow.device_id:
+        return [keyrow.device_id]
+    return [
+        r.device_id
+        for r in db.query(DeviceStatus.device_id)
+                   .filter(DeviceStatus.user_id == keyrow.user_id)
+                   .all()
+        if r.device_id
+    ]
+
+def parse_since(since: str) -> int:
+    """Return epoch seconds from ISO8601 or already-epoch string."""
+    if since.isdigit():
+        return int(since)
+    # tolerate trailing Z
+    return int(datetime.fromisoformat(since.replace("Z", "")).timestamp())
+
+# --- REST: recent telemetry ------------------------------------------------
+
+@router.get("/devapi/telemetry")
+def devapi_telemetry(
+    request: Request,
+    limit: int = 100,
+    since: str | None = None,
+    db: Session = Depends(get_db),
 ):
-    owner_user_id, device_id, label = ctx
+    api_key = read_devapi_key(request)
 
-    async def gen():
-        q = await broker.subscribe((owner_user_id, device_id))
+    keyrow = (
+        db.query(ApiKey)
+          .filter(ApiKey.key == api_key, ApiKey.status == "active")
+          .first()
+    )
+    if not keyrow:
+        raise HTTPException(status_code=403, detail="Invalid or revoked API key.")
+
+    device_ids = device_scope_for_key(db, keyrow)
+    if not device_ids:
+        return []
+
+    q = db.query(DeviceData).filter(DeviceData.device_id.in_(device_ids))
+
+    if since:
         try:
-            # hello
-            yield (
-                "event: hello\n"
-                f'data: {{"device_id":"{device_id}","label":{("null" if label is None else f"{repr(label)}")}}}\n\n'
-            )
+            cutoff = parse_since(since)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid 'since' value. Use epoch seconds or ISO8601 (e.g. 2025-08-30T12:34:56Z).")
+        q = q.filter(DeviceData.timestamp >= cutoff)
 
-            async def keepalives():
-                try:
-                    while True:
-                        await asyncio.sleep(20)
-                        await broker.keepalive((owner_user_id, device_id))
-                except asyncio.CancelledError:
-                    pass
-            task = asyncio.create_task(keepalives())
+    rows = q.order_by(DeviceData.timestamp.desc()).limit(min(limit, 1000)).all()
 
-            while True:
-                if await request.is_disconnected():
-                    break
-                try:
-                    msg = await asyncio.wait_for(q.get(), timeout=15)
-                    yield msg
-                except asyncio.TimeoutError:
-                    yield ": idle\n\n"
-        finally:
-            await broker.unsubscribe((owner_user_id, device_id), q)
-            task.cancel()
+    # decorate with labels
+    label_map = dict(
+        db.query(DeviceStatus.device_id, DeviceStatus.label)
+          .filter(DeviceStatus.device_id.in_(device_ids))
+          .all()
+    )
 
-    headers = {
-        "Cache-Control": "no-store",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",
-    }
-    return StreamingResponse(gen(), media_type="text/event-stream", headers=headers)
+    return [
+        {
+            "id": r.id,
+            "device_id": r.device_id,
+            "label": label_map.get(r.device_id),
+            "data": r.data,
+            "timestamp": r.timestamp,
+            "ts_iso": datetime.utcfromtimestamp(r.timestamp).isoformat() + "Z",
+        }
+        for r in rows
+    ]
