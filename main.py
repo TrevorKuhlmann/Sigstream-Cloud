@@ -1042,6 +1042,9 @@ async def summary(
         "online_window_secs": ONLINE_WINDOW_SECS,
         "msgs_last_5m": msgs_last_5m,
         "top_talkers": top_talkers,
+
+        "cancel_url": cancel_url,
+        "update_pm_url": update_pm_url,
     })
 
    #----------------------------- Summary Data API -----------------------------
