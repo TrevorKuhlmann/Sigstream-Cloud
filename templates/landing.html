@@ -248,8 +248,14 @@
                 <a href="#features" class="text-sm text-slate-700 hover:text-slate-900">Features</a>
                 <a href="#code" class="text-sm text-slate-700 hover:text-slate-900">Code</a>
                 <a href="#pricing" class="text-sm text-slate-700 hover:text-slate-900">Pricing</a>
+
                 {% if user_email %}
+                <span class="hidden sm:inline text-sm text-slate-700">Welcome, {{ user_email }}</span>
+
+                {% if user_subscription_status in ["active","trialing"] %}
                 <a href="/summary" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Dashboard</a>
+                {% endif %}
+
                 <a href="/logout" class="text-sm text-slate-700 hover:text-slate-900">Logout</a>
                 {% else %}
                 <a href="/login-form" class="text-sm text-slate-700 hover:text-slate-900">Login</a>
@@ -285,7 +291,14 @@
 
             <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
                 {% if user_email %}
+                {% if user_subscription_status in ["active","trialing"] %}
                 <a href="/summary" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Open Dashboard</a>
+                {% else %}
+                <!-- Logged-in but unsubscribed: no dashboard bypass -->
+                <button onclick="openCheckout('starter')" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
+                    Start 14-day trial
+                </button>
+                {% endif %}
                 <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
                 {% else %}
                 <a href="/register-form" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Start Free</a>
