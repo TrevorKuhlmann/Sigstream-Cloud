@@ -890,6 +890,108 @@ async def summary(
 )
 
 
+
+
+    
+
+@app.get("/api/summary-metrics")
+def summary_metrics(
+    device_label: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    now_epoch = int(time.time())
+    ONLINE_WINDOW_SECS = 120
+    online_cutoff = now_epoch - ONLINE_WINDOW_SECS
+    five_min_cutoff = now_epoch - 300
+
+    # Optional filter: label -> device_id (scopes msgs/top_talkers)
+    device_id_match = None
+    if device_label:
+        device_id_match = (
+            db.query(DeviceStatus.device_id)
+              .filter(DeviceStatus.user_id == current_user.id,
+                      DeviceStatus.label == device_label)
+              .scalar()
+        )
+
+    # Registered devices (bound, active)
+    device_count = (
+        db.query(func.count(func.distinct(ApiKey.device_id)))
+          .filter(
+              ApiKey.user_id == current_user.id,
+              ApiKey.status == "active",
+              ApiKey.revoked_at.is_(None),
+              ApiKey.device_id.isnot(None),
+          )
+          .scalar()
+        or 0
+    )
+
+    # Total & online (distinct devices for this user)
+    total_devices = (
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(DeviceStatus.user_id == current_user.id)
+          .scalar()
+        or 0
+    )
+
+    online_q = (
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceStatus.last_seen.isnot(None),
+              DeviceStatus.last_seen >= online_cutoff,
+          )
+    )
+    # if a label is selected, show online just for that device
+    if device_id_match:
+        online_q = online_q.filter(DeviceStatus.device_id == device_id_match)
+    online_devices = online_q.scalar() or 0
+
+    # Messages in last 5 minutes
+    msgs_q = (
+        db.query(func.count())
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_cutoff,
+          )
+    )
+    if device_id_match:
+        msgs_q = msgs_q.filter(DeviceData.device_id == device_id_match)
+    msgs_last_5m = msgs_q.scalar() or 0
+
+    # Top talkers (5 min) — label where available
+    name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
+    tt_q = (
+        db.query(name_expr, func.count().label("cnt"))
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_cutoff,
+          )
+          .group_by(name_expr)
+          .order_by(text("cnt DESC"))
+          .limit(5)
+    )
+    if device_id_match:
+        tt_q = tt_q.filter(DeviceData.device_id == device_id_match)
+    top_talkers = [{"name": n, "cnt": int(c)} for (n, c) in tt_q.all()]
+
+    return {
+        "device_count": device_count,
+        "total_devices": total_devices,
+        "online_devices": online_devices,
+        "online_window_secs": ONLINE_WINDOW_SECS,
+        "msgs_last_5m": msgs_last_5m,
+        "top_talkers": top_talkers,
+        "last_updated": now_epoch,
+    }
+
+
     # ---- Paddle subscription management (unchanged) ----
     sub_id = db.execute(text("""
         SELECT b.id
