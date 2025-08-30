@@ -835,64 +835,60 @@ async def summary(
       .scalar() or 0
 )
 
-    # ---- Online tile ----
-    ONLINE_WINDOW_SECS = 120  # 2 minutes
+ # ---- epoch helpers (pure epoch ints) ----
+    now_epoch_py = int(time.time())
+    ONLINE_WINDOW_SECS = 120
+    online_cutoff = now_epoch_py - ONLINE_WINDOW_SECS
+    five_min_cutoff = now_epoch_py - 300  # 5 minutes
+
+   # ---- Online tile ----
     total_devices = (
-        db.query(func.count())
-          .select_from(DeviceStatus)
-          .filter(DeviceStatus.user_id == current_user.id)
-          .scalar()
-        or 0
-    )
+    db.query(func.count(func.distinct(DeviceStatus.device_id)))
+      .filter(DeviceStatus.user_id == current_user.id)
+      .scalar()
+    or 0
+)
+
     online_devices = (
-        db.query(func.count())
-          .select_from(DeviceStatus)
-          .filter(
-              DeviceStatus.user_id == current_user.id,
-              DeviceStatus.last_seen >= now_epoch - ONLINE_WINDOW_SECS
-          )
-          .scalar()
-        or 0
-    )
+    db.query(func.count(func.distinct(DeviceStatus.device_id)))
+      .filter(
+          DeviceStatus.user_id == current_user.id,
+          DeviceStatus.last_seen.isnot(None),
+          DeviceStatus.last_seen >= online_cutoff,  # integer vs integer
+      )
+      .scalar()
+    or 0
+)
 
-    # ---- Messages in last 5 minutes ----
+# ---- Messages in last 5 minutes ----
     msgs_last_5m = (
-        db.query(func.count())
-          .select_from(DeviceData)
-          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
-          .filter(
-              DeviceStatus.user_id == current_user.id,
-              DeviceData.timestamp >= five_min_ago
-          )
-          .scalar()
-        or 0
-    )
+    db.query(func.count())
+      .select_from(DeviceData)
+      .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+      .filter(
+          DeviceStatus.user_id == current_user.id,
+          DeviceData.timestamp >= five_min_cutoff,  # integer vs integer
+      )
+      .scalar()
+    or 0
+)
 
-    # ---- Top talkers (5 min) — show label when available ----
+# ---- Top talkers (5 min) — show label when available ----
     name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
     top_talkers = (
-        db.query(name_expr, func.count().label("cnt"))
-          .select_from(DeviceData)
-          .outerjoin(
-              DeviceStatus,
-              and_(
-                  DeviceStatus.device_id == DeviceData.device_id,
-                  DeviceStatus.user_id == current_user.id
-              )
-          )
-          .filter(
-              DeviceData.timestamp >= five_min_ago,
-              # also scope to this user (via status join or a subquery)
-              # since outerjoin used, add an EXISTS filter alternative:
-              DeviceData.device_id.in_(
-                  db.query(DeviceStatus.device_id).filter(DeviceStatus.user_id == current_user.id)
-              )
-          )
-          .group_by(name_expr)
-          .order_by(text("cnt DESC"))
-          .limit(5)
-          .all()
-    )
+    db.query(name_expr, func.count().label("cnt"))
+      .select_from(DeviceData)
+      .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+      .filter(
+          DeviceStatus.user_id == current_user.id,
+          DeviceData.timestamp >= five_min_cutoff,
+      )
+      .group_by(name_expr)
+      .order_by(text("cnt DESC"))
+      .limit(5)
+      .all()
+)
+
 
     # ---- Paddle subscription management (unchanged) ----
     sub_id = db.execute(text("""

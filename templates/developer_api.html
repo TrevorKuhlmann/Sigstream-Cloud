@@ -10,72 +10,197 @@
     <div class="max-w-4xl mx-auto px-4 py-8">
         <h1 class="text-2xl font-semibold mb-2">Developer API</h1>
         <p class="text-sm text-gray-600 mb-6">
-            Read your device telemetry via a REST endpoint or subscribe to live updates with Server‑Sent Events (SSE).
-            Authentication is per‑device using your <code class="px-1 py-0.5 bg-gray-200 rounded text-xs">API key</code>.
+            Read your device telemetry via a REST endpoint or subscribe to live updates with Server-Sent Events (SSE).
+            Authentication is per-device using your <code class="px-1 py-0.5 bg-gray-200 rounded text-xs">API key</code>.
         </p>
 
         <div class="space-y-8">
 
+            <!-- Authentication & Access Rules -->
             <section class="bg-white rounded-xl shadow p-5">
-                <h2 class="text-lg font-medium mb-3">Authentication</h2>
-                <ul class="list-disc ml-6 text-sm text-gray-700">
-                    <li><b>REST:</b> send your device’s API key in the <code class="bg-gray-100 px-1 rounded">X-API-Key</code> header.</li>
-                    <li><b>SSE:</b> browsers can’t set headers for <code>EventSource</code>, so pass it as a query param: <code>?api_key=YOUR_KEY</code>.</li>
+                <h2 class="text-lg font-medium mb-3">Authentication & Access</h2>
+                <ul class="list-disc ml-6 text-sm text-gray-700 space-y-2">
+                    <li><b>Send your API key</b> in the header <code class="bg-gray-100 px-1 rounded">X-API-Key</code>.</li>
+                    <li>
+                        <b>SSE in browsers:</b> since <code>EventSource</code> can’t set headers, pass it as a query param:
+                        <code class="bg-gray-100 px-1 rounded">?api_key=YOUR_KEY</code>.
+                    </li>
+                    <li><b>Bound device only:</b> the key must be bound to a device. We’ll stream/query that device automatically.</li>
+                    <li>
+                        <b>Subscription required:</b> the key’s owner must have a subscription in
+                        <span class="font-semibold">active</span> or <span class="font-semibold">trialling</span> status.
+                    </li>
+                    <li><b>Security:</b> keep your API key secret. Do not embed it in public pages or logs.</li>
                 </ul>
             </section>
 
+            <!-- Historical Telemetry (REST) -->
             <section class="bg-white rounded-xl shadow p-5">
                 <h2 class="text-lg font-medium mb-3">Read Historical Telemetry (REST)</h2>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>GET /devapi/telemetry?limit=100&amp;since=2025-08-01T00:00:00Z
-Header: X-API-Key: &lt;YOUR_DEVICE_API_KEY&gt;</code></pre>
+
+                <div class="text-sm text-gray-700 mb-3">
+                    <div class="font-semibold">Endpoint</div>
+                    <code class="bg-gray-100 px-2 py-1 rounded block mt-1">GET /devapi/telemetry</code>
+                </div>
+
+                <div class="text-sm text-gray-700 mb-3">
+                    <div class="font-semibold">Headers</div>
+                    <code class="bg-gray-100 px-2 py-1 rounded block mt-1">X-API-Key: &lt;YOUR_DEVICE_API_KEY&gt;</code>
+                </div>
+
+                <div class="text-sm text-gray-700 mb-3">
+                    <div class="font-semibold">Query params</div>
+                    <ul class="list-disc ml-6 mt-1">
+                        <li><code>since</code> (optional): ISO8601 (e.g. <code>2025-08-30T06:30:19Z</code>) or epoch seconds</li>
+                        <li><code>until</code> (optional): ISO8601 or epoch seconds</li>
+                        <li><code>limit</code> (optional): 1–1000 (default 100)</li>
+                    </ul>
+                </div>
 
                 <p class="text-sm text-gray-700 mt-3">Example (curl):</p>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>curl -H "X-API-Key: YOUR_DEVICE_API_KEY" \
-  "https://sigstreamcloud.com/devapi/telemetry?limit=50"</code></pre>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>KEY="YOUR_DEVICE_API_KEY"
+SINCE="$(date -u -d '-1 hour' +%Y-%m-%dT%H:%M:%SZ)"
+curl -s -H "X-API-Key: $KEY" \
+  "https://sigstreamcloud.com/devapi/telemetry?limit=50&amp;since=$SINCE"</code></pre>
+
+                <p class="text-sm text-gray-700 mt-3">Example (PowerShell):</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>$KEY   = "YOUR_DEVICE_API_KEY"
+$SINCE = (Get-Date).ToUniversalTime().AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ssZ")
+curl.exe -s -H "X-API-Key: $KEY" `
+  "https://sigstreamcloud.com/devapi/telemetry?limit=50&amp;since=$SINCE"</code></pre>
 
                 <p class="text-sm text-gray-700 mt-3">Response shape:</p>
                 <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>[
   {
     "id": 12345,
-    "device_id": "ABC123",
-    "label": "Water Tanker",
-    "data": {"rssi": -70, "value": 42},
-    "timestamp": 1723200000,
-    "ts_iso": "2025-08-09T10:00:00Z"
-  },
-  ...
+    "device_id": "MACHINE-ABC",
+    "label": "Line 3 Sensor",
+    "data": "{\"temp\": 24.8, \"rpm\": 1500}",
+    "timestamp": 1735581402,
+    "ts_iso": "2025-08-30T07:56:42Z"
+  }
 ]</code></pre>
             </section>
 
+            <!-- Live Stream (SSE) -->
             <section class="bg-white rounded-xl shadow p-5">
                 <h2 class="text-lg font-medium mb-3">Live Stream (SSE)</h2>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>GET /devapi/stream?api_key=YOUR_DEVICE_API_KEY</code></pre>
 
-                <p class="text-sm text-gray-700 mt-3">Example (curl):</p>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>curl -N "https://sigstreamcloud.com/devapi/stream?api_key=YOUR_DEVICE_API_KEY"</code></pre>
+                <div class="text-sm text-gray-700 mb-3">
+                    <div class="font-semibold">Endpoint</div>
+                    <code class="bg-gray-100 px-2 py-1 rounded block mt-1">GET /devapi/stream</code>
+                </div>
+
+                <div class="text-sm text-gray-700 mb-3">
+                    <div class="font-semibold">Auth</div>
+                    <ul class="list-disc ml-6 mt-1">
+                        <li><b>curl / tools:</b> header <code class="bg-gray-100 px-1 rounded">X-API-Key</code></li>
+                        <li><b>Browser EventSource:</b> query param <code class="bg-gray-100 px-1 rounded">?api_key=YOUR_KEY</code></li>
+                    </ul>
+                </div>
+
+                <p class="text-sm text-gray-700">Example (curl):</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>KEY="YOUR_DEVICE_API_KEY"
+curl -N -H "X-API-Key: $KEY" https://sigstreamcloud.com/devapi/stream</code></pre>
 
                 <p class="text-sm text-gray-700 mt-3">Browser example:</p>
                 <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>&lt;script&gt;
 const es = new EventSource("/devapi/stream?api_key=YOUR_DEVICE_API_KEY");
+
+// live telemetry
 es.addEventListener("telemetry", (e) =&gt; {
   const row = JSON.parse(e.data);
   console.log("telemetry", row);
 });
+
+// heartbeats
 es.addEventListener("heartbeat", (e) =&gt; {
   const hb = JSON.parse(e.data);
   console.log("heartbeat", hb);
 });
+
 es.onerror = (e) =&gt; console.warn("SSE error:", e);
 &lt;/script&gt;</code></pre>
+
+                <p class="text-sm text-gray-700 mt-3">Events you will see:</p>
+                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm"><code>event: telemetry
+data: {"device_id":"MACHINE-ABC","label":"Line 3 Sensor","data":"{\"rpm\":1510}","timestamp":1735581402,"ts_iso":"2025-08-30T07:56:42Z"}
+
+event: heartbeat
+data: {"device_id":"MACHINE-ABC","status":"online","timestamp":1735581402,"ts_iso":"2025-08-30T07:56:42Z"}</code></pre>
             </section>
 
+            <!-- Status Codes -->
             <section class="bg-white rounded-xl shadow p-5">
                 <h2 class="text-lg font-medium mb-3">Status Codes</h2>
-                <ul class="list-disc ml-6 text-sm text-gray-700">
-                    <li><code>401</code> Missing/invalid API key</li>
-                    <li><code>403</code> API key not bound or bound to another device</li>
-                    <li><code>200</code> Success</li>
+                <ul class="list-disc ml-6 text-sm text-gray-700 space-y-1">
+                    <li><code>401</code> <span class="text-gray-600">Missing API key</span></li>
+                    <li><code>403</code> <span class="text-gray-600">Invalid/revoked API key</span></li>
+                    <li><code>403</code> <span class="text-gray-600">API key is not bound to a device</span></li>
+                    <li><code>403</code> <span class="text-gray-600">Subscription inactive (requires active or trialling)</span></li>
+                    <li><code>200</code> <span class="text-gray-600">Success</span></li>
                 </ul>
+            </section>
+
+            <!-- Postman -->
+            <section class="bg-white rounded-xl shadow p-5">
+                <h2 class="text-lg font-medium mb-3">Postman</h2>
+                <p class="text-sm text-gray-700 mb-2">
+                    Import the collection below, set <code>apiKey</code> in variables, and you’re ready to test both REST and SSE.
+                    (Postman may not render SSE well; <code>curl</code> is recommended for streaming.)
+                </p>
+                <details class="text-sm">
+                    <summary class="cursor-pointer font-medium text-blue-700">Show Postman collection JSON</summary>
+                    <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-xs mt-3"><code>{
+  "info": {
+    "name": "SigStream Developer API",
+    "_postman_id": "9c4c0d2b-1c9e-4f6c-9c60-aaaa11112222",
+    "description": "Historical Telemetry (REST) and Live Stream (SSE) gated by bound X-API-Key with active/trialling subscription.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://sigstreamcloud.com" },
+    { "key": "apiKey",  "value": "" },
+    { "key": "since",   "value": "" },
+    { "key": "until",   "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Historical Telemetry",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" }],
+        "url": {
+          "raw": "{{baseUrl}}/devapi/telemetry?limit=50&since={{since}}&until={{until}}",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "devapi", "telemetry" ],
+          "query": [
+            { "key": "limit", "value": "50" },
+            { "key": "since", "value": "{{since}}", "disabled": false },
+            { "key": "until", "value": "{{until}}", "disabled": true }
+          ]
+        },
+        "description": "Returns latest telemetry for the device bound to the API key."
+      },
+      "response": []
+    },
+    {
+      "name": "Live Stream (SSE)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" }],
+        "url": {
+          "raw": "{{baseUrl}}/devapi/stream",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "devapi", "stream" ]
+        },
+        "description": "SSE stream for the device bound to the API key. Postman may not render live updates; curl is recommended."
+      },
+      "response": []
+    }
+  ]
+}</code></pre>
+                </details>
             </section>
 
         </div>
