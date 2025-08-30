@@ -9,7 +9,7 @@ import anyio
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from starlette.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 from auth import get_db
 from models import ApiKey, DeviceData, DeviceStatus
@@ -57,6 +57,32 @@ def require_active_key(db: Session, api_key: str) -> ApiKey:
         raise HTTPException(status_code=403, detail="Invalid or revoked API key.")
     return row
 
+def require_subscription_ok_for_key(db: Session, api_key: str) -> None:
+    """
+    Determine subscription status via the API key using your join chain.
+    Allows 'active' or 'trialling'/'trialing' (cover both spellings).
+    """
+    sql = text("""
+        SELECT 1
+          FROM public.api_keys ky
+          JOIN public.users us
+            ON us.id = ky.user_id
+          JOIN public.customers cst
+            ON cst.email = us.email
+          JOIN public.subscriptions subs
+            ON subs.customer_id = cst.id
+         WHERE ky.key = :key
+           AND ky.status = 'active'
+           AND subs.status IN ('active','trialling','trialing')
+         LIMIT 1
+    """)
+    ok = db.execute(sql, {"key": api_key}).scalar()
+    if not ok:
+        raise HTTPException(
+            status_code=403,
+            detail="Subscription inactive. Please subscribe to access telemetry."
+        )
+
 def require_bound_device_id(db: Session, keyrow: ApiKey) -> str:
     """
     Enforce: key MUST be bound to a device AND that device must be registered
@@ -73,9 +99,7 @@ def require_bound_device_id(db: Session, keyrow: ApiKey) -> str:
           .scalar()
     )
     if not registered:
-        # Key is bound, but device not registered to this user (shouldn't happen, but be safe)
         raise HTTPException(status_code=404, detail="Device not registered.")
-
     return device_id
 
 def parse_time_to_epoch(s: Optional[str]) -> Optional[int]:
@@ -98,7 +122,7 @@ def parse_time_to_epoch(s: Optional[str]) -> Optional[int]:
         raise HTTPException(status_code=400, detail=f"Invalid timestamp: {s}")
 
 # ───────────────────────────────────────────────────────────────────────────────
-# Historical Telemetry (REST) — bound device only
+# Historical Telemetry (REST) — bound device + subscription check via API key
 # ───────────────────────────────────────────────────────────────────────────────
 
 @router.get("/devapi/telemetry")
@@ -113,11 +137,13 @@ def devapi_telemetry(
 ):
     """
     Return recent telemetry ONLY for the device the API key is bound to.
-    Unbound keys are rejected (403).
+    - Unbound keys → 403
+    - Users without ACTIVE/TRIALLING/TRIALING subscription → 403
     """
     api_key = read_devapi_key(request)
     keyrow  = require_active_key(db, api_key)
-    target  = require_bound_device_id(db, keyrow)  # <- enforce bound-only
+    require_subscription_ok_for_key(db, api_key)
+    target  = require_bound_device_id(db, keyrow)
 
     epoch_since = parse_time_to_epoch(since)
     epoch_until = parse_time_to_epoch(until)
@@ -150,7 +176,7 @@ def devapi_telemetry(
     return JSONResponse([ser(dd, lbl) for (dd, lbl) in rows])
 
 # ───────────────────────────────────────────────────────────────────────────────
-# Live Stream (SSE) — bound device only
+# Live Stream (SSE) — bound device + subscription check via API key
 # ───────────────────────────────────────────────────────────────────────────────
 
 @router.get("/devapi/stream")
@@ -162,11 +188,13 @@ def devapi_stream(
 ):
     """
     SSE stream ONLY for the device this API key is bound to.
-    Unbound keys are rejected (403).
+    - Unbound keys → 403
+    - Users without ACTIVE/TRIALLING/TRIALING subscription → 403
     """
     api_key = read_devapi_key(request)
     keyrow  = require_active_key(db, api_key)
-    target  = require_bound_device_id(db, keyrow)  # <- enforce bound-only
+    require_subscription_ok_for_key(db, api_key)
+    target  = require_bound_device_id(db, keyrow)
 
     topic = (int(keyrow.user_id), str(target))
 
