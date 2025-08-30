@@ -17,6 +17,7 @@
         <nav class="flex-1 px-4 space-y-2">
             <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 bg-gray-100 font-semibold">
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <!-- 2x2 tiles -->
                     <rect x="3" y="3" width="8" height="8" rx="2" stroke-width="2"></rect>
                     <rect x="13" y="3" width="8" height="8" rx="2" stroke-width="2"></rect>
                     <rect x="3" y="13" width="8" height="8" rx="2" stroke-width="2"></rect>
@@ -26,6 +27,7 @@
             </a>
 
             <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
+                <!-- Key icon -->
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
                     <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
@@ -35,9 +37,11 @@
                 API Management
             </a>
 
+            <!-- Developer API (Sidebar item) -->
             <a href="/developer-api"
                class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 text-gray-700
           {% if request.url.path.startswith('/developer-api') %} bg-gray-100 {% endif %}">
+                <!-- Code icon </> in blue -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M9 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                     <path d="M13 6l-2 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
@@ -101,13 +105,13 @@
             </a>
         </section>
 
-        <!-- KPI Tiles (now auto-refresh via /api/summary-metrics) -->
+        <!-- KPI Tiles -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <!-- Registered Devices -->
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200 flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-700">Registered Devices</h3>
-                    <p id="device_count_value" class="text-3xl font-bold text-blue-600 mt-1">{{ device_count }}</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-1">{{ device_count }}</p>
                 </div>
             </div>
 
@@ -115,12 +119,9 @@
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200 flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-700">Online Now</h3>
-                    <p class="text-3xl font-bold text-green-600 mt-1">
-                        <span id="online_devices_value">{{ online_devices }}</span>
-                    </p>
+                    <p class="text-3xl font-bold text-green-600 mt-1">{{ online_devices }}</p>
                     <p class="text-xs text-gray-500 mt-1">
-                        Window: <span id="online_window_secs">{{ online_window_secs }}</span>s &middot;
-                        Total: <span id="total_devices_value">{{ total_devices }}</span>
+                        Window: {{ online_window_secs }}s &middot; Total: {{ total_devices }}
                     </p>
                 </div>
             </div>
@@ -129,25 +130,25 @@
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200 flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-700">Messages (last 5m)</h3>
-                    <p id="msgs_last_5m_value" class="text-3xl font-bold text-purple-600 mt-1">{{ msgs_last_5m }}</p>
+                    <p class="text-3xl font-bold text-purple-600 mt-1">{{ msgs_last_5m }}</p>
                 </div>
             </div>
 
             <!-- Top talkers -->
             <div class="p-6 bg-white rounded-lg shadow border border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">Top talkers (5m)</h3>
-                <ul id="top_talkers_list" class="space-y-1">
-                    {% if top_talkers and top_talkers|length > 0 %}
+                {% if top_talkers and top_talkers|length > 0 %}
+                <ul class="space-y-1">
                     {% for t in top_talkers %}
                     <li class="flex items-center justify-between text-sm">
                         <span class="truncate max-w-[70%]">{{ t[0] }}</span>
                         <span class="font-semibold text-gray-800">{{ t[1] }}</span>
                     </li>
                     {% endfor %}
-                    {% else %}
-                    <li class="text-sm text-gray-500">No recent activity</li>
-                    {% endif %}
                 </ul>
+                {% else %}
+                <p class="text-sm text-gray-500">No recent activity</p>
+                {% endif %}
             </div>
         </div>
 
@@ -295,53 +296,9 @@
             });
         };
 
-        // NEW: tiles auto-refresh
-        async function updateTiles() {
-            const params = new URLSearchParams(window.location.search);
-            const label = params.get("device_label");
-            const url = `/api/summary-metrics${label ? `?device_label=${encodeURIComponent(label)}` : ""}`;
-
-            try {
-                const res = await fetch(url, { headers: { "Accept": "application/json" } });
-                if (res.status === 401) {
-                    // session expired → bounce to login
-                    window.location.href = "/login-form";
-                    return;
-                }
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const m = await res.json();
-
-                const el = (id) => document.getElementById(id);
-                if (el("device_count_value")) el("device_count_value").textContent = m.device_count;
-                if (el("online_devices_value")) el("online_devices_value").textContent = m.online_devices;
-                if (el("online_window_secs")) el("online_window_secs").textContent = m.online_window_secs;
-                if (el("total_devices_value")) el("total_devices_value").textContent = m.total_devices;
-                if (el("msgs_last_5m_value")) el("msgs_last_5m_value").textContent = m.msgs_last_5m;
-
-                if (el("top_talkers_list")) {
-                    const ul = el("top_talkers_list");
-                    ul.innerHTML = "";
-                    (m.top_talkers || []).forEach(row => {
-                        const li = document.createElement("li");
-                        li.className = "flex items-center justify-between text-sm";
-                        li.innerHTML = `<span class="truncate max-w-[70%]">${row.name || "unnamed"}</span>
-                                            <span class="font-semibold text-gray-800">${row.cnt}</span>`;
-                        ul.appendChild(li);
-                    });
-                    if (!m.top_talkers || m.top_talkers.length === 0) {
-                        ul.innerHTML = `<li class="text-sm text-gray-500">No recent activity</li>`;
-                    }
-                }
-            } catch (e) {
-                console.warn("metrics refresh failed:", e);
-            }
-        }
-
-        // Initial loads + 5s refresh
+        // Initial load + 5s refresh
         loadData();
-        updateTiles();
         setInterval(loadData, 5000);
-        setInterval(updateTiles, 5000);
     </script>
 
 </body>
