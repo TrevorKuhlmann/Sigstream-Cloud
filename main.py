@@ -299,35 +299,40 @@ async def magic_signin(
 
 
 # ----------------------------- Landing Metrics (AJAX polled by landing page) -----------------------------
+# ----------------------------- Landing Metrics (public) -----------------------------
+from fastapi.responses import JSONResponse
+
 @app.get("/api/landing-metrics")
 def landing_metrics(
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
-    # Anonymous visitors: return safe defaults
-    if not current_user:
-        return {
-            "authenticated": False,
-            "device_count": 0,
-            "total_devices": 0,
-            "online_devices": 0,
-            "online_window_secs": 120,
-            "msgs_last_5m": 0,
-            "top_talkers": [],
-            "subscription": None,  # unknown when logged out
-            "last_updated": int(time.time()),
-        }
-
     now_epoch = int(time.time())
     ONLINE_WINDOW_SECS = 120
     online_cutoff = now_epoch - ONLINE_WINDOW_SECS
-    five_min_cutoff = now_epoch - 300
+    five_min_cutoff = now_epoch - 300  # 5 minutes
 
-    # Registered devices (active, bound keys)
-    device_count = (
+    # ---- GLOBAL (shown on landing page even if logged out) ----
+    g_total_devices = (
+        db.query(func.count(func.distinct(DeviceStatus.device_id))).scalar() or 0
+    )
+    g_online_devices = (
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(
+              DeviceStatus.last_seen.isnot(None),
+              DeviceStatus.last_seen >= online_cutoff,
+          )
+          .scalar() or 0
+    )
+    g_msgs_last_5m = (
+        db.query(func.count())
+          .select_from(DeviceData)
+          .filter(DeviceData.timestamp >= five_min_cutoff)
+          .scalar() or 0
+    )
+    g_device_count = (
         db.query(func.count(func.distinct(ApiKey.device_id)))
           .filter(
-              ApiKey.user_id == current_user.id,
               ApiKey.status == "active",
               ApiKey.revoked_at.is_(None),
               ApiKey.device_id.isnot(None),
@@ -335,53 +340,61 @@ def landing_metrics(
           .scalar() or 0
     )
 
-    # Total & online devices (distinct for this user)
-    total_devices = (
-        db.query(func.count(func.distinct(DeviceStatus.device_id)))
-          .filter(DeviceStatus.user_id == current_user.id)
-          .scalar() or 0
-    )
-    online_devices = (
-        db.query(func.count(func.distinct(DeviceStatus.device_id)))
-          .filter(
-              DeviceStatus.user_id == current_user.id,
-              DeviceStatus.last_seen.isnot(None),
-              DeviceStatus.last_seen >= online_cutoff,
-          )
-          .scalar() or 0
-    )
-
-    # Messages in last 5 minutes
-    msgs_last_5m = (
-        db.query(func.count())
-          .select_from(DeviceData)
-          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
-          .filter(
-              DeviceStatus.user_id == current_user.id,
-              DeviceData.timestamp >= five_min_cutoff,
-          )
-          .scalar() or 0
-    )
-
-    # Subscription snapshot (uses your DB function)
-    sub_val = db.execute(
-        text("SELECT has_active_subscription(:email)"),
-        {"email": current_user.email},
-    ).scalar()
-    # Normalize to stable labels the UI understands
-    subscription = (sub_val or "").upper() if sub_val else "INACTIVE"
-
-    return {
-        "authenticated": True,
-        "device_count": int(device_count),
-        "total_devices": int(total_devices),
-        "online_devices": int(online_devices),
+    payload = {
+        "authenticated": bool(current_user),
+        # fields your frontend already reads:
+        "total_devices": int(g_total_devices),
+        "online_devices": int(g_online_devices),
         "online_window_secs": ONLINE_WINDOW_SECS,
-        "msgs_last_5m": int(msgs_last_5m),
-        "top_talkers": [],  # keep landing minimal
-        "subscription": subscription,
+        "msgs_last_5m": int(g_msgs_last_5m),
+        "device_count": int(g_device_count),
         "last_updated": now_epoch,
     }
+
+    # ---- OPTIONAL: user-scoped snapshot (not used by tiles yet) ----
+    if current_user:
+        u_total_devices = (
+            db.query(func.count(func.distinct(DeviceStatus.device_id)))
+              .filter(DeviceStatus.user_id == current_user.id)
+              .scalar() or 0
+        )
+        u_online_devices = (
+            db.query(func.count(func.distinct(DeviceStatus.device_id)))
+              .filter(
+                  DeviceStatus.user_id == current_user.id,
+                  DeviceStatus.last_seen.isnot(None),
+                  DeviceStatus.last_seen >= online_cutoff,
+              )
+              .scalar() or 0
+        )
+        u_msgs_last_5m = (
+            db.query(func.count())
+              .select_from(DeviceData)
+              .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+              .filter(
+                  DeviceStatus.user_id == current_user.id,
+                  DeviceData.timestamp >= five_min_cutoff,
+              )
+              .scalar() or 0
+        )
+        u_device_count = (
+            db.query(func.count(func.distinct(ApiKey.device_id)))
+              .filter(
+                  ApiKey.user_id == current_user.id,
+                  ApiKey.status == "active",
+                  ApiKey.revoked_at.is_(None),
+                  ApiKey.device_id.isnot(None),
+              )
+              .scalar() or 0
+        )
+        payload["user"] = {
+            "total_devices": int(u_total_devices),
+            "online_devices": int(u_online_devices),
+            "msgs_last_5m": int(u_msgs_last_5m),
+            "device_count": int(u_device_count),
+        }
+
+    return JSONResponse(payload, headers={"Cache-Control": "no-store"})
 
 
 #----------------------------- Developer API Documentation -----------------------------
