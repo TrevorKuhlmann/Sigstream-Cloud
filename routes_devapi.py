@@ -1,14 +1,15 @@
 # routes_devapi.py
 from __future__ import annotations
 
-import json
+import json, time
 from datetime import datetime, timezone
 from typing import AsyncIterator, Optional
 
+import anyio
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from starlette.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, text
+from sqlalchemy import func
 
 from auth import get_db
 from models import ApiKey, DeviceData, DeviceStatus
@@ -25,7 +26,9 @@ def _unauth(detail="Missing API key."):
 
 def read_devapi_key(request: Request) -> str:
     """
-    Read API key from header (X-API-Key) or ?api_key= query param.
+    Read API key from header or query. Supported:
+      - X-API-Key (any casing)
+      - ?api_key= or ?key=
     """
     h = request.headers
     q = request.query_params
@@ -34,17 +37,20 @@ def read_devapi_key(request: Request) -> str:
         or h.get("X-API-Key")
         or h.get("X-Api-Key")
         or q.get("api_key")
+        or q.get("key")
     )
     if not key:
         _unauth()
-    return key.strip()
+    return str(key).strip()
 
 def require_active_key(db: Session, api_key: str) -> ApiKey:
-    row = db.query(ApiKey).filter(
-        ApiKey.key == api_key,
-        ApiKey.status == "active",
-        ApiKey.revoked_at.is_(None)
-    ).first()
+    row = (
+        db.query(ApiKey)
+          .filter(ApiKey.key == api_key,
+                  ApiKey.status == "active",
+                  ApiKey.revoked_at.is_(None))
+          .first()
+    )
     if not row:
         raise HTTPException(status_code=403, detail="Invalid or revoked API key.")
     return row
@@ -63,10 +69,12 @@ def resolve_device_for_key(db: Session, keyrow: ApiKey, device_id: Optional[str]
     if not device_id:
         return None
 
-    owned = db.query(DeviceStatus).filter(
-        DeviceStatus.user_id == keyrow.user_id,
-        DeviceStatus.device_id == device_id
-    ).first()
+    owned = (
+        db.query(DeviceStatus)
+          .filter(DeviceStatus.user_id == keyrow.user_id,
+                  DeviceStatus.device_id == device_id)
+          .first()
+    )
     if not owned:
         raise HTTPException(status_code=403, detail="device_id not found for this account.")
     return str(device_id)
@@ -79,10 +87,8 @@ def parse_time_to_epoch(s: Optional[str]) -> Optional[int]:
     if not s:
         return None
     s = s.strip()
-    # epoch?
     if s.isdigit():
         return int(s)
-    # ISO 8601
     try:
         if s.endswith("Z"):
             dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
@@ -106,19 +112,14 @@ def devapi_telemetry(
     limit: int = Query(100, ge=1, le=1000)
 ):
     """
-    Return recent telemetry for the device bound to the key, or for ?device_id= when
-    the key is unbound (and the device belongs to the key owner).
-
-    Filters:
-      - ?since= / ?until=  (ISO8601 '...Z' or epoch seconds)
-      - ?limit=1..1000     (default 100)
+    Return recent telemetry for the device bound to the key, or for ?device_id=
+    when the key is unbound (and the device belongs to the key owner).
     """
     api_key = read_devapi_key(request)
     keyrow  = require_active_key(db, api_key)
     target  = resolve_device_for_key(db, keyrow, device_id)
 
     if keyrow.device_id is None and target is None:
-        # unbound key & no device_id provided
         raise HTTPException(status_code=400, detail="device_id is required for unbound keys.")
 
     epoch_since = parse_time_to_epoch(since)
@@ -132,17 +133,12 @@ def devapi_telemetry(
 
     if target:
         q = q.filter(DeviceData.device_id == target)
-
     if epoch_since is not None:
         q = q.filter(DeviceData.timestamp >= epoch_since)
     if epoch_until is not None:
         q = q.filter(DeviceData.timestamp <= epoch_until)
 
-    rows = (
-        q.order_by(DeviceData.timestamp.desc())
-         .limit(limit)
-         .all()
-    )
+    rows = q.order_by(DeviceData.timestamp.desc()).limit(limit).all()
 
     def ser(dd: DeviceData, label: Optional[str]):
         return {
@@ -151,11 +147,11 @@ def devapi_telemetry(
             "label": label,
             "data": dd.data,
             "timestamp": dd.timestamp,
-            "ts_iso": datetime.fromtimestamp(dd.timestamp, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+            "ts_iso": datetime.fromtimestamp(dd.timestamp, tz=timezone.utc)
+                               .isoformat().replace("+00:00", "Z")
         }
 
-    out = [ser(dd, lbl) for (dd, lbl) in rows]
-    return JSONResponse(out)
+    return JSONResponse([ser(dd, lbl) for (dd, lbl) in rows])
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Live Stream (SSE)
@@ -171,10 +167,6 @@ def devapi_stream(
     SSE stream for a single device.
     - If the API key is bound → streams that device automatically.
     - If unbound → ?device_id= is required (must belong to the key's user).
-
-    Events you already publish:
-      broker.publish((user_id, device_id), payload, event="telemetry")
-      broker.publish((user_id, device_id), payload, event="heartbeat")
     """
     api_key = read_devapi_key(request)
     keyrow  = require_active_key(db, api_key)
@@ -186,26 +178,71 @@ def devapi_stream(
     topic = (int(keyrow.user_id), str(target or keyrow.device_id))
 
     async def gen() -> AsyncIterator[bytes]:
-        # Make proxies happier + set auto-retry
+        # Start line + client retry hint
         yield b": connected\nretry: 3000\n\n"
 
-        async with broker.subscribe(topic) as stream:
-            async for msg in stream:
-                # normalize message -> (event_type, payload)
-                if isinstance(msg, tuple) and len(msg) == 2:
-                    event_type, payload = msg
-                elif isinstance(msg, dict):
-                    event_type = msg.get("event", "message")
-                    payload    = msg.get("data", msg)
-                else:
-                    event_type, payload = "message", msg
+        # Prefer queue-style subscribe (q.get). Fallback to async-iterable context manager.
+        q = None
+        try:
+            q = await broker.subscribe(topic)  # queue-like in many implementations
+        except TypeError:
+            q = None
+        except Exception:
+            q = None
 
-                data_str = json.dumps(payload, ensure_ascii=False)
-                yield f"event: {event_type}\n".encode("utf-8")
-                yield f"data: {data_str}\n\n".encode("utf-8")
+        if q is not None and hasattr(q, "get"):
+            try:
+                while True:
+                    # heartbeat every 15s if no data
+                    with anyio.move_on_after(15) as scope:
+                        msg = await q.get()
 
-                if await request.is_disconnected():
-                    break
+                    if await request.is_disconnected():
+                        break
+
+                    if scope.cancel_called:
+                        yield f": ping {int(time.time())}\n\n".encode("utf-8")
+                        continue
+
+                    # normalize message -> (event_type, payload)
+                    event_type = "message"
+                    payload = msg
+                    if isinstance(msg, tuple) and len(msg) == 2:
+                        event_type, payload = msg
+                    elif isinstance(msg, dict):
+                        event_type = msg.get("event") or "message"
+                        payload = msg.get("data", msg)
+
+                    yield f"event: {event_type}\n".encode("utf-8")
+                    yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n".encode("utf-8")
+            finally:
+                try:
+                    await broker.unsubscribe(topic, q)
+                except Exception:
+                    pass
+        else:
+            # Fallback path: context manager / async-iterable style
+            try:
+                async with broker.subscribe(topic) as stream:
+                    async for msg in stream:
+                        if await request.is_disconnected():
+                            break
+                        event_type = "message"
+                        payload = msg
+                        if isinstance(msg, tuple) and len(msg) == 2:
+                            event_type, payload = msg
+                        elif isinstance(msg, dict):
+                            event_type = msg.get("event") or "message"
+                            payload = msg.get("data", msg)
+                        yield f"event: {event_type}\n".encode("utf-8")
+                        yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n".encode("utf-8")
+                        # optional lightweight ping
+                        yield f": ping {int(time.time())}\n\n".encode("utf-8")
+            except Exception:
+                # Last-resort: keep socket open with pings
+                while not await request.is_disconnected():
+                    yield f": ping {int(time.time())}\n\n".encode("utf-8")
+                    await anyio.sleep(15)
 
         yield b": bye\n\n"
 
@@ -214,6 +251,7 @@ def devapi_stream(
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-store",
+            "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
     )
