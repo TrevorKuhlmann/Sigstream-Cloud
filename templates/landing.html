@@ -12,7 +12,6 @@
     <!-- Pass user email to /static/js/paddle.js (keeps payment logic separate & working) -->
     <meta name="sigstream-user-email" content="{{ user_email or '' }}">
 
-    <!-- Gentle auto-redirect if logged-in + subscribed (unchanged) -->
     <script>
     (function () {
       const hasToken = document.cookie.includes("access_token");
@@ -23,7 +22,6 @@
     })();
     </script>
 
-    <!-- Structured data for SEO (unchanged) -->
     <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -49,7 +47,7 @@
             background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246,var(--page-glow-opacity)), transparent 70%), radial-gradient(1200px 600px at 110% -10%, rgba(20,184,166, calc(var(--page-glow-opacity)*0.9)), transparent 70%), radial-gradient(1000px 520px at 50% 120%, rgba(147,51,234, calc(var(--page-glow-opacity)*0.45)), transparent 70%);
             filter: saturate(108%);
             animation: gradientDrift 30s ease-in-out infinite alternate;
-            will-change: background-position
+            will-change: background-position;
         }
 
         .particles {
@@ -57,7 +55,7 @@
             inset: 0;
             z-index: -1;
             pointer-events: none;
-            overflow: hidden
+            overflow: hidden;
         }
 
             .particles span {
@@ -69,7 +67,7 @@
                 filter: blur(1px);
                 opacity: 0.45;
                 animation: floatUp var(--t,18s) linear infinite;
-                transform: translateY(120vh) translateX(0)
+                transform: translateY(120vh) translateX(0);
             }
 
                 .particles span:nth-child(1) {
@@ -77,7 +75,7 @@
                     --t: 22s;
                     width: 7px;
                     height: 7px;
-                    animation-delay: -3s
+                    animation-delay: -3s;
                 }
 
                 .particles span:nth-child(2) {
@@ -85,7 +83,7 @@
                     --t: 19s;
                     width: 6px;
                     height: 6px;
-                    animation-delay: -8s
+                    animation-delay: -8s;
                 }
 
                 .particles span:nth-child(3) {
@@ -93,7 +91,7 @@
                     --t: 24s;
                     width: 9px;
                     height: 9px;
-                    animation-delay: -5s
+                    animation-delay: -5s;
                 }
 
                 .particles span:nth-child(4) {
@@ -101,7 +99,7 @@
                     --t: 20s;
                     width: 6px;
                     height: 6px;
-                    animation-delay: -12s
+                    animation-delay: -12s;
                 }
 
                 .particles span:nth-child(5) {
@@ -109,7 +107,7 @@
                     --t: 23s;
                     width: 8px;
                     height: 8px;
-                    animation-delay: -10s
+                    animation-delay: -10s;
                 }
 
                 .particles span:nth-child(6) {
@@ -117,7 +115,7 @@
                     --t: 21s;
                     width: 7px;
                     height: 7px;
-                    animation-delay: -6s
+                    animation-delay: -6s;
                 }
 
                 .particles span:nth-child(7) {
@@ -125,107 +123,108 @@
                     --t: 26s;
                     width: 10px;
                     height: 10px;
-                    animation-delay: -9s
+                    animation-delay: -9s;
                 }
 
         @keyframes floatUp {
             0% {
                 transform: translateY(110vh) translateX(0);
-                opacity: .15
+                opacity: .15;
             }
 
             25% {
                 transform: translateY(80vh) translateX(10px);
-                opacity: .35
+                opacity: .35;
             }
 
             50% {
                 transform: translateY(50vh) translateX(-8px);
-                opacity: .45
+                opacity: .45;
             }
 
             75% {
                 transform: translateY(20vh) translateX(12px);
-                opacity: .35
+                opacity: .35;
             }
 
             100% {
                 transform: translateY(-15vh) translateX(0);
-                opacity: .05
+                opacity: .05;
             }
         }
 
         @keyframes gradientDrift {
             0% {
-                background-position: -10% -10%, 110% -10%, 50% 120%
+                background-position: -10% -10%, 110% -10%, 50% 120%;
             }
 
             50% {
-                background-position: 0% -15%,100% -5%,52% 115%
+                background-position: 0% -15%, 100% -5%, 52% 115%;
             }
 
             100% {
-                background-position: 10% -8%,95% -12%,48% 125%
+                background-position: 10% -8%, 95% -12%, 48% 125%;
             }
         }
 
         .card {
-            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
         }
 
             .card:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 16px 30px rgba(2,6,23,.08);
-                border-color: rgba(59,130,246,.25)
+                border-color: rgba(59,130,246,.25);
             }
 
         .btn-press {
-            transition: transform .06s ease, box-shadow .15s ease
+            transition: transform .06s ease, box-shadow .15s ease;
         }
 
             .btn-press:active {
                 transform: translateY(1px);
-                box-shadow: none !important
+                box-shadow: none !important;
             }
 
         .icon-tilt {
-            transition: transform .2s ease
+            transition: transform .2s ease;
         }
 
         .card:hover .icon-tilt {
-            transform: translateY(-1px) rotate(-1.5deg)
+            transform: translateY(-1px) rotate(-1.5deg);
+        }
+
+        /* Live badge pulse */
+        .live-badge {
+            box-shadow: 0 0 0 0 rgba(16,185,129,.35);
+            animation: badgePulse 2.6s ease-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16,185,129,.35);
+            }
+
+            70% {
+                box-shadow: 0 0 0 12px rgba(16,185,129,0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16,185,129,0);
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
             .animated-bg, .particles span {
-                animation: none !important
+                animation: none !important;
             }
 
-
-            /* Pulse for the "Live telemetry in seconds" badge */
             .live-badge {
-                box-shadow: 0 0 0 0 rgba(16,185,129,.35);
-                animation: badgePulse 2.6s ease-out infinite;
+                animation: none !important;
             }
-
-            @keyframes badgePulse {
-                0% {
-                    box-shadow: 0 0 0 0 rgba(16,185,129,.35)
-                }
-
-                70% {
-                    box-shadow: 0 0 0 12px rgba(16,185,129,0)
-                }
-
-                100% {
-                    box-shadow: 0 0 0 0 rgba(16,185,129,0)
-                }
-            }
-
         }
     </style>
 
-    <!-- Paddle script (unchanged) -->
     <script src="/static/js/paddle.js?v=2"></script>
 </head>
 
@@ -262,41 +261,42 @@
 
     <!-- Hero -->
     <section class="pt-12 md:pt-16">
-        <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs font-medium live-badge">
-            <span class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            Live telemetry in seconds
+        <!-- Centered hero copy -->
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs font-medium live-badge">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                Live telemetry in seconds
+            </div>
+
+            <h1 class="mt-4 text-4xl md:text-5xl font-bold leading-tight">
+                Real-time device monitoring that’s <span class="text-blue-700">developer-friendly</span>
+            </h1>
+
+            <p class="mt-5 text-lg text-slate-800">
+                Install our lightweight <strong>Windows agent</strong> (reads a <strong>COM port</strong>), streams telemetry with
+                <strong>offline buffering</strong>, and view it live in our <strong>built-in dashboard</strong> — or consume it via simple REST & SSE APIs.
+            </p>
+            <p class="mt-3 text-base text-slate-800">
+                <strong>Affordable & hobbyist-friendly:</strong> 14-day free trial, then just <strong>$15/month</strong> (USD). No lock-in.
+            </p>
+
+            <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+                {% if user_email %}
+                <a href="/summary" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Open Dashboard</a>
+                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
+                {% else %}
+                <a href="/register-form" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Start Free</a>
+                <a href="/developer-api" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Read the API</a>
+                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
+                {% endif %}
+            </div>
         </div>
 
-
-        <h1 class="mt-4 text-4xl md:text-5xl font-bold leading-tight">
-            Real-time device monitoring that’s <span class="text-blue-700">developer-friendly</span>
-        </h1>
-
-        <p class="mt-5 text-lg text-slate-800">
-            Install our lightweight <strong>Windows agent</strong> (reads a <strong>COM port</strong>), streams telemetry with
-            <strong>offline buffering</strong>, and view it live in our <strong>built-in dashboard</strong> — or consume it via simple REST & SSE APIs.
-        </p>
-        <p class="mt-3 text-base text-slate-800">
-            <strong>Affordable & hobbyist-friendly:</strong> 14-day free trial, then just <strong>$15/month</strong> (USD). No lock-in.
-        </p>
-
-        <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
-            {% if user_email %}
-            <a href="/summary" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Open Dashboard</a>
-            <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
-            {% else %}
-            <a href="/register-form" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Start Free</a>
-            <a href="/developer-api" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Read the API</a>
-            <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
-            {% endif %}
-        </div>
-
-        <!-- KPI tiles (now live) -->
+        <!-- KPI tiles (live) -->
         <div class="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <!-- Online devices -->
             <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
                 <div class="text-slate-600">Online devices</div>
                 <div class="text-2xl font-semibold text-slate-900">
@@ -304,28 +304,20 @@
                 </div>
                 <div class="text-xs text-slate-500 mt-1">Last <span id="lm-window">120</span>s</div>
             </div>
-            <!-- Events / min (computed from last 5m) -->
+
             <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
                 <div class="text-slate-600">Events / min (5m)</div>
                 <div class="text-2xl font-semibold text-slate-900" id="lm-epm">—</div>
             </div>
-            <!-- Registered devices -->
+
             <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
                 <div class="text-slate-600">Registered devices</div>
                 <div class="text-2xl font-semibold text-slate-900" id="lm-device-count">—</div>
             </div>
         </div>
-
-        <!-- Media pane removed (kept here commented for easy restore) -->
-        <!--
-    <div class="max-w-6xl mx-auto px-6 mt-8">
-      ... (media pane removed)
-    </div>
-    -->
-        </div>
     </section>
 
-    <!-- How it works (unchanged) -->
+    <!-- How it works -->
     <section id="how" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">How it works</h2>
@@ -364,7 +356,7 @@
         </div>
     </section>
 
-    <!-- Features (unchanged) -->
+    <!-- Features -->
     <section id="features" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">Everything you need — nothing you don’t</h2>
@@ -416,7 +408,7 @@
         </div>
     </section>
 
-    <!-- Code samples (unchanged) -->
+    <!-- Code samples -->
     <section id="code" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">Build in minutes</h2>
@@ -438,7 +430,7 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
         </div>
     </section>
 
-    <!-- Pricing (unchanged) -->
+    <!-- Pricing -->
     <section id="pricing" class="py-20">
         <div class="max-w-4xl mx-auto px-6 text-center">
             <h2 class="text-3xl font-bold">Try it free, then $15/month</h2>
@@ -466,7 +458,6 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
         </div>
     </section>
 
-    <!-- Sticky mobile CTA (unchanged) -->
     {% if not (user_email and user_subscription_status in ["active","trialing"]) %}
     <div class="fixed bottom-0 inset-x-0 md:hidden z-40">
         <div class="mx-4 mb-4 rounded-xl shadow-lg bg-white/90 backdrop-blur border border-slate-200 p-3 flex items-center justify-between">
@@ -483,10 +474,9 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
     </div>
     {% endif %}
 
-    <!-- Footer (unchanged) -->
     <footer class="bg-slate-900/95 text-slate-300">
         <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
-            <div class="flex items-center gap-2">
+            <div class="flex items-centered gap-2">
                 <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
                 <span class="font-semibold text-white">SigStream</span>
             </div>
@@ -518,22 +508,16 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
                 if (!res.ok) throw new Error('metrics fetch failed');
                 const m = await res.json();
 
-                // Online devices: show "online / total"
                 const online = (m.online_devices ?? 0);
                 const total = (m.total_devices ?? 0);
                 document.getElementById('lm-online').textContent = `${online} / ${total}`;
-
-                // Window seconds
                 document.getElementById('lm-window').textContent = m.online_window_secs ?? 120;
 
-                // Events per minute (5m bucket)
                 const epm = Math.round((m.msgs_last_5m ?? 0) / 5);
                 document.getElementById('lm-epm').textContent = epm.toLocaleString();
 
-                // Registered devices
                 document.getElementById('lm-device-count').textContent = (m.device_count ?? 0);
             } catch (e) {
-                // Leave previous values; avoid noisy errors
                 console.warn('Landing metrics error:', e);
             }
         }
