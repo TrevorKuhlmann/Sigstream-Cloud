@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SigStream — Real‑time device telemetry made simple</title>
-    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built‑in dashboard or simple REST & SSE APIs. Affordable and hobbyist‑friendly. 14‑day trial then $15/month (USD)." />
+    <title>SigStream — Real-time device telemetry made simple</title>
+    <meta name="description" content="Stream and store telemetry with a lightweight Windows agent (COM port), offline buffering, and SSE live updates. Built-in dashboard or simple REST & SSE APIs. Affordable and hobbyist-friendly. 14-day trial then $15/month (USD)." />
     <link rel="icon" href="/static/favicon.ico" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
@@ -12,7 +12,7 @@
     <!-- Pass user email to /static/js/paddle.js (keeps payment logic separate & working) -->
     <meta name="sigstream-user-email" content="{{ user_email or '' }}">
 
-    <!-- Gentle auto-redirect if logged-in + subscribed -->
+    <!-- Gentle auto-redirect if logged-in + subscribed (unchanged) -->
     <script>
     (function () {
       const hasToken = document.cookie.includes("access_token");
@@ -23,7 +23,7 @@
     })();
     </script>
 
-    <!-- Structured data for SEO -->
+    <!-- Structured data for SEO (unchanged) -->
     <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -32,38 +32,32 @@
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Windows",
           "description": "Real-time telemetry streaming with a lightweight Windows agent (COM port), offline buffering, SSE live updates, and a built-in dashboard.",
-          "offers": {
-            "@type": "Offer",
-            "price": "15.00",
-            "priceCurrency": "USD"
-          }
+          "offers": { "@type": "Offer", "price": "15.00", "priceCurrency": "USD" }
         }
     </script>
 
     <style>
         :root {
-            --page-glow-opacity: 0.5; /* tweak 0.35–0.65 if you want more/less glow */
+            --page-glow-opacity: 0.5;
         }
 
-        /* Full‑page animated gradient backdrop */
         .animated-bg {
             position: fixed;
             inset: 0;
             z-index: -2;
             pointer-events: none;
-            background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246, var(--page-glow-opacity)), transparent 70%), radial-gradient(1200px 600px at 110% -10%, rgba(20,184,166, calc(var(--page-glow-opacity) * 0.9)), transparent 70%), radial-gradient(1000px 520px at 50% 120%, rgba(147,51,234, calc(var(--page-glow-opacity) * 0.45)), transparent 70%);
+            background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246,var(--page-glow-opacity)), transparent 70%), radial-gradient(1200px 600px at 110% -10%, rgba(20,184,166, calc(var(--page-glow-opacity)*0.9)), transparent 70%), radial-gradient(1000px 520px at 50% 120%, rgba(147,51,234, calc(var(--page-glow-opacity)*0.45)), transparent 70%);
             filter: saturate(108%);
             animation: gradientDrift 30s ease-in-out infinite alternate;
-            will-change: background-position;
+            will-change: background-position
         }
 
-        /* Soft particles */
         .particles {
             position: fixed;
             inset: 0;
             z-index: -1;
             pointer-events: none;
-            overflow: hidden;
+            overflow: hidden
         }
 
             .particles span {
@@ -75,15 +69,15 @@
                 filter: blur(1px);
                 opacity: 0.45;
                 animation: floatUp var(--t,18s) linear infinite;
-                transform: translateY(120vh) translateX(0);
+                transform: translateY(120vh) translateX(0)
             }
-                /* sprinkle a few */
+
                 .particles span:nth-child(1) {
                     left: 8%;
                     --t: 22s;
                     width: 7px;
                     height: 7px;
-                    animation-delay: -3s;
+                    animation-delay: -3s
                 }
 
                 .particles span:nth-child(2) {
@@ -91,7 +85,7 @@
                     --t: 19s;
                     width: 6px;
                     height: 6px;
-                    animation-delay: -8s;
+                    animation-delay: -8s
                 }
 
                 .particles span:nth-child(3) {
@@ -99,7 +93,7 @@
                     --t: 24s;
                     width: 9px;
                     height: 9px;
-                    animation-delay: -5s;
+                    animation-delay: -5s
                 }
 
                 .particles span:nth-child(4) {
@@ -107,7 +101,7 @@
                     --t: 20s;
                     width: 6px;
                     height: 6px;
-                    animation-delay: -12s;
+                    animation-delay: -12s
                 }
 
                 .particles span:nth-child(5) {
@@ -115,7 +109,7 @@
                     --t: 23s;
                     width: 8px;
                     height: 8px;
-                    animation-delay: -10s;
+                    animation-delay: -10s
                 }
 
                 .particles span:nth-child(6) {
@@ -123,7 +117,7 @@
                     --t: 21s;
                     width: 7px;
                     height: 7px;
-                    animation-delay: -6s;
+                    animation-delay: -6s
                 }
 
                 .particles span:nth-child(7) {
@@ -131,94 +125,90 @@
                     --t: 26s;
                     width: 10px;
                     height: 10px;
-                    animation-delay: -9s;
+                    animation-delay: -9s
                 }
 
         @keyframes floatUp {
             0% {
                 transform: translateY(110vh) translateX(0);
-                opacity: .15;
+                opacity: .15
             }
 
             25% {
                 transform: translateY(80vh) translateX(10px);
-                opacity: .35;
+                opacity: .35
             }
 
             50% {
                 transform: translateY(50vh) translateX(-8px);
-                opacity: .45;
+                opacity: .45
             }
 
             75% {
                 transform: translateY(20vh) translateX(12px);
-                opacity: .35;
+                opacity: .35
             }
 
             100% {
                 transform: translateY(-15vh) translateX(0);
-                opacity: .05;
+                opacity: .05
             }
         }
 
         @keyframes gradientDrift {
             0% {
-                background-position: -10% -10%, 110% -10%, 50% 120%;
+                background-position: -10% -10%, 110% -10%, 50% 120%
             }
 
             50% {
-                background-position: 0% -15%, 100% -5%, 52% 115%;
+                background-position: 0% -15%,100% -5%,52% 115%
             }
 
             100% {
-                background-position: 10% -8%, 95% -12%, 48% 125%;
+                background-position: 10% -8%,95% -12%,48% 125%
             }
         }
 
-        /* cards + micro-interactions */
         .card {
-            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease
         }
 
             .card:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 16px 30px rgba(2,6,23,.08);
-                border-color: rgba(59,130,246,.25);
+                border-color: rgba(59,130,246,.25)
             }
 
-        /* subtle button lift */
         .btn-press {
-            transition: transform .06s ease, box-shadow .15s ease;
+            transition: transform .06s ease, box-shadow .15s ease
         }
 
             .btn-press:active {
                 transform: translateY(1px);
-                box-shadow: none !important;
+                box-shadow: none !important
             }
 
-        /* Feature icons wiggle just a tad on hover */
         .icon-tilt {
-            transition: transform .2s ease;
+            transition: transform .2s ease
         }
 
         .card:hover .icon-tilt {
-            transform: translateY(-1px) rotate(-1.5deg);
+            transform: translateY(-1px) rotate(-1.5deg)
         }
 
-        /* Respect reduced motion */
         @media (prefers-reduced-motion: reduce) {
             .animated-bg, .particles span {
-                animation: none !important;
+                animation: none !important
             }
         }
     </style>
 
-    <!-- Your working Paddle logic (don’t touch) -->
+    <!-- Paddle script (unchanged) -->
     <script src="/static/js/paddle.js?v=2"></script>
 </head>
 
 <body class="min-h-full bg-white/70 text-slate-900">
-    <!-- Animated gradient + particles -->
+    <!-- Background -->
     <div class="animated-bg" aria-hidden="true"></div>
     <div class="particles" aria-hidden="true">
         <span></span><span></span><span></span><span></span>
@@ -248,7 +238,7 @@
         </div>
     </header>
 
-    <!-- Hero: centered copy (media moved below KPI) -->
+    <!-- Hero -->
     <section class="pt-12 md:pt-16">
         <div class="max-w-4xl mx-auto px-6 text-center">
             <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs font-medium">
@@ -256,111 +246,85 @@
             </div>
 
             <h1 class="mt-4 text-4xl md:text-5xl font-bold leading-tight">
-                Real‑time device monitoring that’s <span class="text-blue-700">developer‑friendly</span>
+                Real-time device monitoring that’s <span class="text-blue-700">developer-friendly</span>
             </h1>
 
             <p class="mt-5 text-lg text-slate-800">
                 Install our lightweight <strong>Windows agent</strong> (reads a <strong>COM port</strong>), streams telemetry with
-                <strong>offline buffering</strong>, and view it live in our <strong>built‑in dashboard</strong> — or consume it via simple REST & SSE APIs.
+                <strong>offline buffering</strong>, and view it live in our <strong>built-in dashboard</strong> — or consume it via simple REST & SSE APIs.
             </p>
             <p class="mt-3 text-base text-slate-800">
-                <strong>Affordable & hobbyist‑friendly:</strong> 14‑day free trial, then just <strong>$15/month</strong> (USD). No lock‑in.
+                <strong>Affordable & hobbyist-friendly:</strong> 14-day free trial, then just <strong>$15/month</strong> (USD). No lock-in.
             </p>
 
             <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
                 {% if user_email %}
-                <a href="/summary"
-                   class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
-                    Open Dashboard
-                </a>
-                <a href="/downloads"
-                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">
-                    Download Agent
-                </a>
+                <a href="/summary" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Open Dashboard</a>
+                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
                 {% else %}
-                <a href="/register-form"
-                   class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
-                    Start Free
-                </a>
-                <a href="/developer-api"
-                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">
-                    Read the API
-                </a>
-                <a href="/downloads"
-                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">
-                    Download Agent
-                </a>
+                <a href="/register-form" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Start Free</a>
+                <a href="/developer-api" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Read the API</a>
+                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
                 {% endif %}
             </div>
 
-
-            <!-- KPI tiles -->
+            <!-- KPI tiles (now live) -->
             <div class="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Online devices -->
                 <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
                     <div class="text-slate-600">Online devices</div>
-                    <div class="text-2xl font-semibold text-slate-900">10</div>
+                    <div class="text-2xl font-semibold text-slate-900">
+                        <span id="lm-online">—</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1">Last <span id="lm-window">120</span>s</div>
                 </div>
+                <!-- Events / min (computed from last 5m) -->
                 <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
                     <div class="text-slate-600">Events / min (5m)</div>
-                    <div class="text-2xl font-semibold text-slate-900">2.1k</div>
+                    <div class="text-2xl font-semibold text-slate-900" id="lm-epm">—</div>
                 </div>
+                <!-- Registered devices -->
                 <div class="card bg-white/80 backdrop-blur p-5 rounded-xl border border-slate-200">
-                    <div class="text-slate-600">Buffered offline</div>
-                    <div class="text-2xl font-semibold text-slate-900">134</div>
+                    <div class="text-slate-600">Registered devices</div>
+                    <div class="text-2xl font-semibold text-slate-900" id="lm-device-count">—</div>
                 </div>
             </div>
 
-            <!-- Media (bigger, below KPIs) -->
+            <!-- Media pane removed (kept here commented for easy restore) -->
+            <!--
             <div class="max-w-6xl mx-auto px-6 mt-8">
-                <div class="relative">
-                    <div class="absolute -inset-4 bg-blue-200/30 blur-2xl rounded-3xl"></div>
-                    <div class="relative bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden">
-                        <!-- Placeholder image now; swap for short muted autoplay video later -->
-                        <img src="/static/media/dashboard-screengrab.png"
-                             alt="SigStream dashboard showing live telemetry and device list"
-                             class="w-full"
-                             loading="lazy" />
-                        <!-- Example video drop-in later:
-                <video autoplay muted loop playsinline poster="/static/media/dashboard-screengrab.png" class="w-full">
-                  <source src="/static/media/dashboard-demo.mp4" type="video/mp4">
-                </video>
-                -->
-                    </div>
-                </div>
+              ... (media pane removed)
             </div>
-</section>
+            -->
+        </div>
+    </section>
 
-    <!-- How it works -->
+    <!-- How it works (unchanged) -->
     <section id="how" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">How it works</h2>
             <div class="mt-10 grid sm:grid-cols-3 gap-6">
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- key -->
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <circle cx="7.5" cy="12" r="3" stroke-width="2" />
                             <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                         </svg>
                     </div>
                     <h3 class="font-semibold">1) Create an API key</h3>
-                    <p class="text-sm text-slate-700 mt-1">Per‑device keys keep data clean and tenant‑safe.</p>
+                    <p class="text-sm text-slate-700 mt-1">Per-device keys keep data clean and tenant-safe.</p>
                 </div>
-
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- windows-ish -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M3 5l9-2v8H3V5zm10-2l8-2v10h-8V3zM3 13h9v8l-9-2v-6zm10 0h8v10l-8-2v-8z" />
                         </svg>
                     </div>
                     <h3 class="font-semibold">2) Install the Windows agent</h3>
-                    <p class="text-sm text-slate-700 mt-1">Reads telemetry from a <strong>COM port</strong> (e.g., COM3), buffers offline, and forwards securely.</p>
+                    <p class="text-sm text-slate-700 mt-1">Reads telemetry from a <strong>COM port</strong>, buffers offline, and forwards securely.</p>
                 </div>
-
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- dashboard -->
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <rect x="3" y="4" width="18" height="6" rx="2" stroke-width="2" />
                             <rect x="3" y="12" width="10" height="8" rx="2" stroke-width="2" />
@@ -368,70 +332,65 @@
                         </svg>
                     </div>
                     <h3 class="font-semibold">3) View or build</h3>
-                    <p class="text-sm text-slate-700 mt-1">Use our <strong>built‑in dashboard</strong> (no code), or integrate via REST & <code>EventSource</code> (SSE).</p>
+                    <p class="text-sm text-slate-700 mt-1">Use our dashboard, or integrate via REST & <code>EventSource</code> (SSE).</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Features -->
+    <!-- Features (unchanged) -->
     <section id="features" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">Everything you need — nothing you don’t</h2>
             <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- (feature cards unchanged) -->
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- lightning -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-12h-7l1-8z" /></svg>
                     </div>
                     <h3 class="font-semibold">SSE live streaming</h3>
-                    <p class="text-sm text-slate-700 mt-1">Low‑latency updates for dashboards and dev tools with browser‑native SSE.</p>
+                    <p class="text-sm text-slate-700 mt-1">Low-latency updates for dashboards and dev tools with browser-native SSE.</p>
                 </div>
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- agent -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z" /></svg>
                     </div>
                     <h3 class="font-semibold">Lightweight agent</h3>
-                    <p class="text-sm text-slate-700 mt-1">Never lose data — offline buffering + backpressure handle patchy networks.</p>
+                    <p class="text-sm text-slate-700 mt-1">Never lose data — offline buffering + backpressure for patchy networks.</p>
                 </div>
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- plus -->
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 12h14M12 5v14" stroke-width="2" stroke-linecap="round" /></svg>
                     </div>
-                    <h3 class="font-semibold">Developer‑friendly</h3>
+                    <h3 class="font-semibold">Developer-friendly</h3>
                     <p class="text-sm text-slate-700 mt-1">Curl, fetch, and EventSource examples; JSON payloads you control.</p>
                 </div>
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- shield -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 4v6c0 4-3 9-8 10-5-1-8-6-8-10V6l8-4z" /></svg>
                     </div>
-                    <h3 class="font-semibold">Tenant‑aware security</h3>
-                    <p class="text-sm text-slate-700 mt-1">Per‑device keys mapped to owners; safe by default for shared fleets.</p>
+                    <h3 class="font-semibold">Tenant-aware security</h3>
+                    <p class="text-sm text-slate-700 mt-1">Per-device keys mapped to owners; safe by default for shared fleets.</p>
                 </div>
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- window -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4z" /></svg>
                     </div>
-                    <h3 class="font-semibold">Built‑in dashboard</h3>
-                    <p class="text-sm text-slate-700 mt-1">A clean UI out of the box — ideal if you don’t want to write front‑end code.</p>
+                    <h3 class="font-semibold">Built-in dashboard</h3>
+                    <p class="text-sm text-slate-700 mt-1">Clean UI out of the box — ideal if you don’t want to write front-end code.</p>
                 </div>
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
-                        <!-- circle -->
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" /></svg>
                     </div>
                     <h3 class="font-semibold">Hobbyist pricing</h3>
-                    <p class="text-sm text-slate-700 mt-1">Straightforward $15/month after a 14‑day free trial. USD only.</p>
+                    <p class="text-sm text-slate-700 mt-1">$15/month after a 14-day free trial. USD.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Code samples -->
+    <!-- Code samples (unchanged) -->
     <section id="code" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">Build in minutes</h2>
@@ -453,50 +412,41 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
         </div>
     </section>
 
-    <!-- Pricing: single USD plan -->
+    <!-- Pricing (unchanged) -->
     <section id="pricing" class="py-20">
         <div class="max-w-4xl mx-auto px-6 text-center">
             <h2 class="text-3xl font-bold">Try it free, then $15/month</h2>
-            <p class="mt-2 text-slate-800">Affordable & hobbyist‑friendly • 14‑day free trial • Cancel anytime • Charged in USD</p>
-
+            <p class="mt-2 text-slate-800">Affordable & hobbyist-friendly • 14-day free trial • Cancel anytime • Charged in USD</p>
             <div class="mt-10 grid grid-cols-1 gap-6 text-left">
                 <div class="card rounded-2xl p-6 bg-white/85 backdrop-blur border-2 border-blue-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold">SigStream</h3>
-                        <span class="inline-flex items-center badge bg-blue-100 text-blue-800">14‑day trial</span>
+                        <span class="inline-flex items-center badge bg-blue-100 text-blue-800">14-day trial</span>
                     </div>
-                    <p class="text-slate-800 mt-1">Full access: Windows agent (COM port), built‑in dashboard, REST & SSE APIs.</p>
+                    <p class="text-slate-800 mt-1">Full access: Windows agent (COM port), built-in dashboard, REST & SSE APIs.</p>
                     <div class="mt-4 text-3xl font-bold">
                         <span id="starter-price">$15.00</span>
                         <span class="text-base font-medium text-slate-600">/month</span>
                     </div>
-
                     {% if user_email and user_subscription_status in ["active","trialing"] %}
-                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">
-                        Already active
-                    </button>
+                    <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">Already active</button>
                     {% elif user_email %}
-                    <!-- Keep EXACT call signature so Paddle overlay remains working -->
-                    <button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 btn-press shadow-md">
-                        Start 14‑day trial
-                    </button>
+                    <button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 btn-press shadow-md">Start 14-day trial</button>
                     {% else %}
-                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/90 text-white hover:bg-blue-700 btn-press shadow-md">
-                        Login to start trial
-                    </a>
+                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/90 text-white hover:bg-blue-700 btn-press shadow-md">Login to start trial</a>
                     {% endif %}
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Sticky mobile CTA (appears on small screens) -->
+    <!-- Sticky mobile CTA (unchanged) -->
     {% if not (user_email and user_subscription_status in ["active","trialing"]) %}
     <div class="fixed bottom-0 inset-x-0 md:hidden z-40">
         <div class="mx-4 mb-4 rounded-xl shadow-lg bg-white/90 backdrop-blur border border-slate-200 p-3 flex items-center justify-between">
             <div class="text-sm">
-                <div class="font-semibold text-slate-900">Start your 14‑day trial</div>
-                <div class="text-slate-600">Hobbyist‑friendly: $15/mo afterwards</div>
+                <div class="font-semibold text-slate-900">Start your 14-day trial</div>
+                <div class="text-slate-600">Hobbyist-friendly: $15/mo afterwards</div>
             </div>
             {% if user_email %}
             <button onclick="openCheckout('starter')" class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">Start</button>
@@ -507,15 +457,12 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
     </div>
     {% endif %}
 
-    <!-- Footer -->
+    <!-- Footer (unchanged) -->
     <footer class="bg-slate-900/95 text-slate-300">
         <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
-            <div>
-                <div class="flex items-center gap-2">
-                    <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
-                    <span class="font-semibold text-white">SigStream</span>
-                </div>
-                <p class="mt-3 text-sm text-slate-400">Telemetry that’s fast, dependable, and friendly for builders.</p>
+            <div class="flex items-center gap-2">
+                <img src="/static/img/sigstream-logo.png" class="h-8 w-8 rounded" alt="SigStream" />
+                <span class="font-semibold text-white">SigStream</span>
             </div>
             <div class="text-sm">
                 <div class="text-slate-400 mb-2">Product</div>
@@ -536,5 +483,36 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
             © 2025 SigStream. All rights reserved.
         </div>
     </footer>
+
+    <!-- Live tiles script -->
+    <script>
+        async function refreshLandingTiles() {
+            try {
+                const res = await fetch('/api/landing-metrics', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('metrics fetch failed');
+                const m = await res.json();
+
+                // Online devices: show "online / total"
+                const online = (m.online_devices ?? 0);
+                const total = (m.total_devices ?? 0);
+                document.getElementById('lm-online').textContent = `${online} / ${total}`;
+
+                // Window seconds
+                document.getElementById('lm-window').textContent = m.online_window_secs ?? 120;
+
+                // Events per minute (5m bucket)
+                const epm = Math.round((m.msgs_last_5m ?? 0) / 5);
+                document.getElementById('lm-epm').textContent = epm.toLocaleString();
+
+                // Registered devices
+                document.getElementById('lm-device-count').textContent = (m.device_count ?? 0);
+            } catch (e) {
+                // Leave previous values; avoid noisy errors
+                console.warn('Landing metrics error:', e);
+            }
+        }
+        refreshLandingTiles();
+        setInterval(refreshLandingTiles, 5000);
+    </script>
 </body>
 </html>

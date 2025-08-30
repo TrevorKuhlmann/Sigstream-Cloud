@@ -297,6 +297,93 @@ async def magic_signin(
         "message": "Check your email and click the magic link to sign in.",
     })
 
+
+# ----------------------------- Landing Metrics (AJAX polled by landing page) -----------------------------
+@app.get("/api/landing-metrics")
+def landing_metrics(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    # Anonymous visitors: return safe defaults
+    if not current_user:
+        return {
+            "authenticated": False,
+            "device_count": 0,
+            "total_devices": 0,
+            "online_devices": 0,
+            "online_window_secs": 120,
+            "msgs_last_5m": 0,
+            "top_talkers": [],
+            "subscription": None,  # unknown when logged out
+            "last_updated": int(time.time()),
+        }
+
+    now_epoch = int(time.time())
+    ONLINE_WINDOW_SECS = 120
+    online_cutoff = now_epoch - ONLINE_WINDOW_SECS
+    five_min_cutoff = now_epoch - 300
+
+    # Registered devices (active, bound keys)
+    device_count = (
+        db.query(func.count(func.distinct(ApiKey.device_id)))
+          .filter(
+              ApiKey.user_id == current_user.id,
+              ApiKey.status == "active",
+              ApiKey.revoked_at.is_(None),
+              ApiKey.device_id.isnot(None),
+          )
+          .scalar() or 0
+    )
+
+    # Total & online devices (distinct for this user)
+    total_devices = (
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(DeviceStatus.user_id == current_user.id)
+          .scalar() or 0
+    )
+    online_devices = (
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceStatus.last_seen.isnot(None),
+              DeviceStatus.last_seen >= online_cutoff,
+          )
+          .scalar() or 0
+    )
+
+    # Messages in last 5 minutes
+    msgs_last_5m = (
+        db.query(func.count())
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_cutoff,
+          )
+          .scalar() or 0
+    )
+
+    # Subscription snapshot (uses your DB function)
+    sub_val = db.execute(
+        text("SELECT has_active_subscription(:email)"),
+        {"email": current_user.email},
+    ).scalar()
+    # Normalize to stable labels the UI understands
+    subscription = (sub_val or "").upper() if sub_val else "INACTIVE"
+
+    return {
+        "authenticated": True,
+        "device_count": int(device_count),
+        "total_devices": int(total_devices),
+        "online_devices": int(online_devices),
+        "online_window_secs": ONLINE_WINDOW_SECS,
+        "msgs_last_5m": int(msgs_last_5m),
+        "top_talkers": [],  # keep landing minimal
+        "subscription": subscription,
+        "last_updated": now_epoch,
+    }
+
+
 #----------------------------- Developer API Documentation -----------------------------
 @app.get("/developer-api", response_class=HTMLResponse)
 def developer_api_page(request: Request):
