@@ -765,18 +765,13 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
 
 
 # ----------------------------- Summary with Paddle Management URLs -----------------------------
-
 @app.get("/summary", response_class=HTMLResponse)
 async def summary(
     request: Request,
-    device_label: str = None,  # filter by friendly label (optional)
+    device_label: str = None,  # optional filter by friendly label
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # ---- epoch helpers (keeps comparisons index-friendly) ----
-    now_epoch = func.extract('epoch', func.now())
-    five_min_ago = now_epoch - 300  # 5 minutes
-
     # ---- labels for the dropdown ----
     labels = (
         db.query(DeviceStatus.label)
@@ -793,13 +788,15 @@ async def summary(
           .filter(DeviceStatus.user_id == current_user.id)
     )
 
-    # resolve label -> device_id (optional filter)
+    # resolve label -> device_id (optional filter for table)
     device_id_match = None
     if device_label:
         device_id_match = (
             db.query(DeviceStatus.device_id)
-              .filter(DeviceStatus.user_id == current_user.id,
-                      DeviceStatus.label == device_label)
+              .filter(
+                  DeviceStatus.user_id == current_user.id,
+                  DeviceStatus.label == device_label
+              )
               .scalar()
         )
     if device_id_match:
@@ -823,77 +820,112 @@ async def summary(
           .all()
     )
 
-    # registered devices (your existing definition)
-    device_count = (
-    db.query(func.count(func.distinct(ApiKey.device_id)))
-      .filter(
-          ApiKey.user_id == current_user.id,
-          ApiKey.status == "active",
-          ApiKey.revoked_at.is_(None),     # soft-deletes excluded
-          ApiKey.device_id.isnot(None)     # only keys bound to a device
-      )
-      .scalar() or 0
-)
-
- # ---- epoch helpers (pure epoch ints) ----
+    # ---- epoch helpers (pure epoch ints) ----
     now_epoch_py = int(time.time())
     ONLINE_WINDOW_SECS = 120
     online_cutoff = now_epoch_py - ONLINE_WINDOW_SECS
     five_min_cutoff = now_epoch_py - 300  # 5 minutes
 
-   # ---- Online tile ----
+    # Registered devices (keys bound & active)
+    device_count = (
+        db.query(func.count(func.distinct(ApiKey.device_id)))
+          .filter(
+              ApiKey.user_id == current_user.id,
+              ApiKey.status == "active",
+              ApiKey.revoked_at.is_(None),
+              ApiKey.device_id.isnot(None),
+          )
+          .scalar() or 0
+    )
+
+    # ---- Online tile ----
     total_devices = (
-    db.query(func.count(func.distinct(DeviceStatus.device_id)))
-      .filter(DeviceStatus.user_id == current_user.id)
-      .scalar()
-    or 0
-)
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(DeviceStatus.user_id == current_user.id)
+          .scalar() or 0
+    )
 
     online_devices = (
-    db.query(func.count(func.distinct(DeviceStatus.device_id)))
-      .filter(
-          DeviceStatus.user_id == current_user.id,
-          DeviceStatus.last_seen.isnot(None),
-          DeviceStatus.last_seen >= online_cutoff,  # integer vs integer
-      )
-      .scalar()
-    or 0
-)
+        db.query(func.count(func.distinct(DeviceStatus.device_id)))
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceStatus.last_seen.isnot(None),
+              DeviceStatus.last_seen >= online_cutoff,
+          )
+          .scalar() or 0
+    )
 
-# ---- Messages in last 5 minutes ----
+    # ---- Messages in last 5 minutes ----
     msgs_last_5m = (
-    db.query(func.count())
-      .select_from(DeviceData)
-      .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
-      .filter(
-          DeviceStatus.user_id == current_user.id,
-          DeviceData.timestamp >= five_min_cutoff,  # integer vs integer
-      )
-      .scalar()
-    or 0
-)
+        db.query(func.count())
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_cutoff,
+          )
+          .scalar() or 0
+    )
 
-# ---- Top talkers (5 min) — show label when available ----
+    # ---- Top talkers (5 min) — show label when available ----
     name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
     top_talkers = (
-    db.query(name_expr, func.count().label("cnt"))
-      .select_from(DeviceData)
-      .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
-      .filter(
-          DeviceStatus.user_id == current_user.id,
-          DeviceData.timestamp >= five_min_cutoff,
-      )
-      .group_by(name_expr)
-      .order_by(text("cnt DESC"))
-      .limit(5)
-      .all()
-)
+        db.query(name_expr, func.count().label("cnt"))
+          .select_from(DeviceData)
+          .join(DeviceStatus, DeviceStatus.device_id == DeviceData.device_id)
+          .filter(
+              DeviceStatus.user_id == current_user.id,
+              DeviceData.timestamp >= five_min_cutoff,
+          )
+          .group_by(name_expr)
+          .order_by(text("cnt DESC"))
+          .limit(5)
+          .all()
+    )
+
+    # ---- Paddle subscription management (sync httpx; no 'async with') ----
+    sub_id = db.execute(text("""
+        SELECT b.id
+        FROM public.customers a
+        JOIN public.subscriptions b ON a.id = b.customer_id
+        WHERE b.status = 'active' AND a.email = :email
+    """), {"email": current_user.email}).scalar()
+
+    cancel_url = update_pm_url = None
+    if sub_id:
+        with httpx.Client() as client:
+            resp = client.get(
+                f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
+                headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
+            )
+        payload = resp.json()
+        logging.info(f"Paddle subscription payload for {sub_id}: {payload}")
+        m_urls = payload.get("data", {}).get("management_urls", {})
+        cancel_url = m_urls.get("cancel")
+        update_pm_url = m_urls.get("update_payment_method")
+
+    # ---- render ----
+    return templates.TemplateResponse("summary.html", {
+        "request": request,
+        "user": current_user,
+
+        "records": records,
+        "labels": [row.label for row in labels if row.label],
+        "device_label": device_label,
+
+        "device_count": device_count,
+        "last_seen_map": last_seen_map,
+
+        # tiles (initial server render; page JS will refresh via /api/summary-metrics)
+        "total_devices": total_devices,
+        "online_devices": online_devices,
+        "online_window_secs": ONLINE_WINDOW_SECS,
+        "msgs_last_5m": msgs_last_5m,
+        "top_talkers": top_talkers,
+    })
 
 
-
-
-    
-
+# ----------------------------- Summary Metrics (AJAX polled by UI) -----------------------------
 @app.get("/api/summary-metrics")
 def summary_metrics(
     device_label: str | None = None,
@@ -905,13 +937,15 @@ def summary_metrics(
     online_cutoff = now_epoch - ONLINE_WINDOW_SECS
     five_min_cutoff = now_epoch - 300
 
-    # Optional filter: label -> device_id (scopes msgs/top_talkers)
+    # Optional filter: label -> device_id (scopes msgs/top_talkers/online when present)
     device_id_match = None
     if device_label:
         device_id_match = (
             db.query(DeviceStatus.device_id)
-              .filter(DeviceStatus.user_id == current_user.id,
-                      DeviceStatus.label == device_label)
+              .filter(
+                  DeviceStatus.user_id == current_user.id,
+                  DeviceStatus.label == device_label
+              )
               .scalar()
         )
 
@@ -924,18 +958,17 @@ def summary_metrics(
               ApiKey.revoked_at.is_(None),
               ApiKey.device_id.isnot(None),
           )
-          .scalar()
-        or 0
+          .scalar() or 0
     )
 
-    # Total & online (distinct devices for this user)
+    # Total devices for this user (distinct)
     total_devices = (
         db.query(func.count(func.distinct(DeviceStatus.device_id)))
           .filter(DeviceStatus.user_id == current_user.id)
-          .scalar()
-        or 0
+          .scalar() or 0
     )
 
+    # Online devices (distinct)
     online_q = (
         db.query(func.count(func.distinct(DeviceStatus.device_id)))
           .filter(
@@ -944,7 +977,6 @@ def summary_metrics(
               DeviceStatus.last_seen >= online_cutoff,
           )
     )
-    # if a label is selected, show online just for that device
     if device_id_match:
         online_q = online_q.filter(DeviceStatus.device_id == device_id_match)
     online_devices = online_q.scalar() or 0
@@ -963,7 +995,7 @@ def summary_metrics(
         msgs_q = msgs_q.filter(DeviceData.device_id == device_id_match)
     msgs_last_5m = msgs_q.scalar() or 0
 
-    # Top talkers (5 min) — label where available
+    # Top talkers (5m)
     name_expr = func.coalesce(DeviceStatus.label, DeviceData.device_id).label("name")
     tt_q = (
         db.query(name_expr, func.count().label("cnt"))
@@ -984,12 +1016,13 @@ def summary_metrics(
     return {
         "device_count": device_count,
         "total_devices": total_devices,
-        "online_devices": online_devices,
+        "online_devices": int(online_devices),
         "online_window_secs": ONLINE_WINDOW_SECS,
-        "msgs_last_5m": msgs_last_5m,
+        "msgs_last_5m": int(msgs_last_5m),
         "top_talkers": top_talkers,
         "last_updated": now_epoch,
     }
+
 
 
     # ---- Paddle subscription management (unchanged) ----
