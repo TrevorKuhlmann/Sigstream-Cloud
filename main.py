@@ -105,6 +105,15 @@ PADDLE_ENV          = os.getenv("PADDLE_ENV", "sandbox")
 PADDLE_CLIENT_TOKEN = os.getenv("PADDLE_CLIENT_TOKEN")
 PADDLE_API_KEY      = os.getenv("PADDLE_API_KEY")   
 
+
+
+# After: PADDLE_ENV, PADDLE_API_KEY, etc.
+def paddle_api_base() -> str:
+    """Pick Paddle host based on PADDLE_ENV."""
+    env = (PADDLE_ENV or "").lower()
+    return "https://api.paddle.com" if env in ("live", "production", "prod") else "https://sandbox-api.paddle.com"
+
+
 # ----------------------------- OAuth Setup -----------------------------
 GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -990,26 +999,30 @@ async def summary(
 )
 
 
-    # ---- Paddle subscription management (unchanged) ----
+     # ---- Paddle subscription management (env-aware + trialing) ----
     sub_id = db.execute(text("""
         SELECT b.id
         FROM public.customers a
         JOIN public.subscriptions b ON a.id = b.customer_id
-        WHERE b.status = 'active' AND a.email = :email
+        WHERE b.status IN ('active','trialing') AND a.email = :email
     """), {"email": current_user.email}).scalar()
 
     cancel_url = update_pm_url = None
     if sub_id:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
-                headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
-            )
-        payload = resp.json()
-        logging.info(f"Paddle subscription payload for {sub_id}: {payload}")
-        m_urls = payload.get("data", {}).get("management_urls", {})
-        cancel_url = m_urls.get("cancel")
-        update_pm_url = m_urls.get("update_payment_method")
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"{paddle_api_base()}/subscriptions/{sub_id}",
+                    headers={"Authorization": f"Bearer {PADDLE_API_KEY}"}
+                )
+                resp.raise_for_status()
+                payload = resp.json()
+                m_urls = payload.get("data", {}).get("management_urls", {})
+                cancel_url = m_urls.get("cancel")
+                update_pm_url = m_urls.get("update_payment_method")
+        except Exception:
+            logging.exception("Failed to fetch Paddle management URLs")
+
 
     # ---- render ----
     return templates.TemplateResponse("summary.html", {
@@ -1206,7 +1219,7 @@ def api_management(
         SELECT b.id
           FROM public.customers a
           JOIN public.subscriptions b ON a.id = b.customer_id
-         WHERE b.status = 'active' AND a.email = :email
+         WHERE b.status in ('active','trialing') AND a.email = :email
     """), {"email": current_user.email}).scalar()
 
     cancel_url = update_pm_url = None
