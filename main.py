@@ -101,7 +101,7 @@ load_dotenv()
 API_KEY             = os.getenv("SIGSTREAM_API_KEY", "mysecretapikey123")
 SECRET_KEY          = os.getenv("SECRET_KEY", "your_default_secret")
 ALGORITHM           = "HS256"
-PADDLE_ENV          = os.getenv("PADDLE_ENV", "sandbox")
+PADDLE_ENV          = os.getenv("PADDLE_ENV", "live")
 PADDLE_CLIENT_TOKEN = os.getenv("PADDLE_CLIENT_TOKEN")
 PADDLE_API_KEY      = os.getenv("PADDLE_API_KEY")   
 

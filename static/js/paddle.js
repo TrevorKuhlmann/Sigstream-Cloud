@@ -2,15 +2,15 @@
 
 // --- Configuration (same as before, single price for all buttons) ---
 const CONFIG = {
-    clientToken: "test_5852ced8925dae79f0c0bac4614",
+    clientToken: "live_90f4589da3d6d2b6424a7e744af",
     prices: {
         starter: {
-            month: "pri_01k2a34vybk4jm215h0yx9e0ye",
-            year: "pri_01k2a34vybk4jm215h0yx9e0ye"
+            month: "pri_01jw10e9kwzxgs6a7s9xqej03s",
+            year: "pri_01jw10e9kwzxgs6a7s9xqej03s"
         },
         pro: {
-            month: "pri_01k2a34vybk4jm215h0yx9e0ye",
-            year: "pri_01k2a34vybk4jm215h0yx9e0ye"
+            month: "pri_01jw10e9kwzxgs6a7s9xqej03s",
+            year: "pri_01jw10e9kwzxgs6a7s9xqej03s"
         }
     }
 };
