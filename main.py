@@ -1232,7 +1232,7 @@ def api_management(
         async def fetch_urls():
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
-                    f"https://sandbox-api.paddle.com/subscriptions/{sub_id}",
+                    f"https://api.paddle.com/subscriptions/{sub_id}",
                     headers={"Authorization": f"Bearer {os.getenv('PADDLE_API_KEY')}"}
                 )
                 payload = resp.json()
