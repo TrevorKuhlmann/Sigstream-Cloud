@@ -2,7 +2,7 @@
 
 // --- Configuration (same as before, single price for all buttons) ---
 const CONFIG = {
-    clientToken: "live_90f4589da3d6d2b6424a7e744af",
+    clientToken: "live_2c1d6ada49f10944887a9e896e4",
     prices: {
         starter: {
             month: "pri_01jw10e9kwzxgs6a7s9xqej03s",
@@ -82,7 +82,7 @@ async function updatePrices() {
 
 // Paddle boot
 function initializePaddle() {
-    Paddle.Environment.set("sandbox"); // unchanged
+    Paddle.Environment.set("production"); // unchanged
     Paddle.Initialize({
         token: CONFIG.clientToken,
         eventCallback: function (event) {
