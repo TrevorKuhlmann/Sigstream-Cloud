@@ -2,8 +2,8 @@
 from typing import Optional
 
 # Single-product funnel:
-TRIAL_RETENTION_DAYS = 7
-PAID_RETENTION_DAYS  = 30
+TRIAL_RETENTION_DAYS = 1
+PAID_RETENTION_DAYS  = 1
 
 def get_retention_days_for_user(subscription_status: Optional[str]) -> int:
     """
