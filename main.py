@@ -25,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import ApiKey
 from auth import get_db
+from purge import purge_old_device_data
 
 import os
 from fastapi import Header, HTTPException, status
@@ -84,7 +85,7 @@ import datetime as dt
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from purge import purge_old_device_data
-from utils import require_job_secret
+
 
 BASE_DIR = Path(__file__).resolve().parent
 DOWNLOADS_DIR = BASE_DIR / "downloads"
@@ -202,15 +203,16 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
     except Exception:
         return None
 
-    #----------------------------- Job Secret Dependency -----------------------------
-    def require_job_secret(x_admin_job: str | None = Header(default=None)):
-      """
+# ----------------------------- Job Secret Dependency -----------------------------
+def require_job_secret(x_admin_job: str | None = Header(default=None)):
+    """
     Protect /admin/* job endpoints with a shared secret header.
     Render Cron will send:  X-Admin-Job: <secret>
     """
     expected = os.getenv("ADMIN_JOB_SECRET")
     if not expected or x_admin_job != expected:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
 
 
 # ----------------------------- Post-Purchase & Redirect -----------------------------
@@ -254,16 +256,7 @@ async def check_subscription(
     ).scalar()
     return {"active": result == 'ACTIVE'}
 
-#----------------------------- Admin Purge Old Telemetry -----------------------------
 
-@app.get("/admin/purge-old", include_in_schema=False)
-def purge_old_telemetry(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # You can add stricter logic here to restrict who can purge
-    delete_old_device_data(db, days=7)
-    return {"status": "ok", "message": "Old telemetry data purged."}
 
 
 
