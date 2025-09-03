@@ -76,6 +76,13 @@ from fastapi.responses import FileResponse, HTMLResponse
 from xml.etree import ElementTree as ET
 import datetime as dt
 
+
+# main.py (imports near the top)
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from purge import purge_old_device_data
+from utils import require_job_secret
+
 BASE_DIR = Path(__file__).resolve().parent
 DOWNLOADS_DIR = BASE_DIR / "downloads"
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)  # prevent crash if folder not present at deploy
@@ -197,6 +204,13 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
 @app.get("/post-purchase", response_class=HTMLResponse)
 async def post_purchase(request: Request, user: User = Depends(get_current_user)):
     return templates.TemplateResponse("post_purchase.html", {"request": request, "user": user})
+
+
+#----------------------------- Admin Purge Old Data -----------------------------
+@app.post("/admin/purge-old")
+def admin_purge_old(request: Request, db: Session = Depends(get_db), _=Depends(require_job_secret)):
+    deleted = purge_old_device_data(db)
+    return {"deleted": deleted}
 
 
 @app.get("/login-redirect", response_class=RedirectResponse)
@@ -1294,11 +1308,11 @@ def revoke_api_key(
 #----------------------------- Cleanup Old Device Data -----------------------------
 
 
-def delete_old_device_data(db: Session, days: int = 7):
-    cutoff = int((datetime.utcnow() - timedelta(days=days)).timestamp())
-    deleted = db.query(DeviceData).filter(DeviceData.timestamp < cutoff).delete()
-    db.commit()
-    print(f"🧹 Deleted {deleted} rows older than {days} days from device_data.")
+# def delete_old_device_data(db: Session, days: int = 7):
+#     cutoff = int((datetime.utcnow() - timedelta(days=days)).timestamp())
+#     deleted = db.query(DeviceData).filter(DeviceData.timestamp < cutoff).delete()
+#     db.commit()
+#     print(f"🧹 Deleted {deleted} rows older than {days} days from device_data.")
 
 
 

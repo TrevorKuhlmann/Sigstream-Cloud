@@ -11,6 +11,10 @@ from utils import parse_datetime
 from models import Subscription
 import logging
 
+# utils.py (or similar)
+import os
+from fastapi import Request, HTTPException, status
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,6 +42,19 @@ async def dispatch_event(event_type: str, payload: dict, db: Session):
         logger.warning(f"⚠️ No handler for event: {event_type}")
 
 # -------------------- HANDLERS --------------------
+
+
+
+
+def require_job_secret(request: Request):
+    """
+    Protects admin job endpoints. Set ADMIN_JOB_SECRET in env and pass it as header:
+    X-Admin-Job: <secret>
+    """
+    expected = os.getenv("ADMIN_JOB_SECRET")
+    provided = request.headers.get("x-admin-job")
+    if not expected or provided != expected:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
 
