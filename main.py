@@ -26,6 +26,10 @@ from sqlalchemy.orm import Session
 from models import ApiKey
 from auth import get_db
 
+import os
+from fastapi import Header, HTTPException, status
+
+
 
 from fastapi import (
     FastAPI,
@@ -65,7 +69,6 @@ from email_utils import send_magic_link_email, send_confirmation_email
 from crud import insert_data, update_heartbeat
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
-
 
 from models import ApiKey  # 👈 new model you added to models.py
 from pydantic import BaseModel
@@ -198,6 +201,16 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
         return get_current_user(request, db)
     except Exception:
         return None
+
+    #----------------------------- Job Secret Dependency -----------------------------
+    def require_job_secret(x_admin_job: str | None = Header(default=None)):
+      """
+    Protect /admin/* job endpoints with a shared secret header.
+    Render Cron will send:  X-Admin-Job: <secret>
+    """
+    expected = os.getenv("ADMIN_JOB_SECRET")
+    if not expected or x_admin_job != expected:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
 # ----------------------------- Post-Purchase & Redirect -----------------------------
