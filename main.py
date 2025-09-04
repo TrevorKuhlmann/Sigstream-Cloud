@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from models import ApiKey
 from auth import get_db
 from purge import purge_old_device_data
+from limits import max_keys_for_user, active_key_count
 
 import os
 from fastapi import Header, HTTPException, status
@@ -1201,43 +1202,37 @@ app.include_router(paddle_router)
 
 # ----------------------------- API Management Page -----------------------------
 
-
 @app.get("/api-management", response_class=HTMLResponse)
 def api_management(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Join ApiKey with DeviceStatus to get label
-    # api_keys = (
-    #     db.query(ApiKey.device_id, ApiKey.api_key, ApiKey.active, ApiKey.created_at, DeviceStatus.label)
-    #     .join(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
-    #     .filter(ApiKey.user_id == current_user.id)
-    #     .order_by(ApiKey.created_at.desc())
-    #     .all()
-    # )
-
-    #- Fetch API keys with device labels
-
+    # Fetch API keys with device labels (your existing query)
     api_keys = (
-    db.query(
-        ApiKey.device_id,
-        ApiKey.key.label("key"),
-        ApiKey.status,
-        ApiKey.created_at,
-        DeviceStatus.label.label("label"),
-        ApiKey.id.label("id")  # Needed for revocation logic
-     )
-    .outerjoin(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
-    .filter(ApiKey.user_id == current_user.id)
-    .order_by(ApiKey.created_at.desc())
-    .all()
+        db.query(
+            ApiKey.device_id,
+            ApiKey.key.label("key"),
+            ApiKey.status,
+            ApiKey.created_at,
+            DeviceStatus.label.label("label"),
+            ApiKey.id.label("id")
+        )
+        .outerjoin(DeviceStatus, ApiKey.device_id == DeviceStatus.device_id)
+        .filter(ApiKey.user_id == current_user.id)
+        .order_by(ApiKey.created_at.desc())
+        .all()
     )
 
+    # ✅ Read optional error from query string (ADD THIS BLOCK)
+    error = request.query_params.get("error")
+    err_msg = None
+    if error == "limit":
+        q_count = request.query_params.get("count") or "0"
+        q_limit = request.query_params.get("limit") or "0"
+        err_msg = f"Device limit reached: {q_count}/{q_limit}. Upgrade to add more devices."
 
-
-
-    # Paddle subscription check (unchanged)
+    # Paddle subscription check (your existing code)
     sub_id = db.execute(text("""
         SELECT b.id
           FROM public.customers a
@@ -1247,8 +1242,7 @@ def api_management(
 
     cancel_url = update_pm_url = None
     if sub_id:
-        import httpx, os
-        import asyncio
+        import httpx, asyncio, os
         async def fetch_urls():
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
@@ -1260,7 +1254,7 @@ def api_management(
                 return urls.get("cancel"), urls.get("update_payment_method")
         cancel_url, update_pm_url = asyncio.run(fetch_urls())
 
-    # Return with updated context
+    # Render with the error message in context (ADD error=err_msg)
     return templates.TemplateResponse(
         "api-management.html",
         {
@@ -1268,7 +1262,8 @@ def api_management(
             "api_keys": api_keys,
             "cancel_url": cancel_url,
             "update_pm_url": update_pm_url,
-            "user": current_user
+            "user": current_user,
+            "error": err_msg,   # 👈
         }
     )
 
@@ -1280,11 +1275,23 @@ def api_management(
 @app.get("/api-management/create")
 def create_api_key(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    request: Request = None,
 ):
+    # Plan-aware limit
+    limit = max_keys_for_user(db, current_user.email)
+    count = active_key_count(db, current_user.id)
+
+    if count >= limit:
+        # Friendly UX: redirect back with a message (no template duplication)
+        return RedirectResponse(
+            url=f"/api-management?error=limit&count={count}&limit={limit}",
+            status_code=302,
+        )
+
     new_key = ApiKey(
         user_id=current_user.id,
-        key=token_hex(16),  # generates a 32-char hex string
+        key=token_hex(16),
         status="active"
     )
     db.add(new_key)
