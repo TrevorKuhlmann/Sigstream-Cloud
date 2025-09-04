@@ -15,18 +15,8 @@
             <span class="text-xl font-bold">SigStream</span>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <!--<a href="/dashboard" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 22V12h6v10" />
-                </svg>
-                Dashboard
-            </a>-->
             <a href="/summary" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 bg-gray-100 font-semibold">
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <!-- 2x2 tiles -->
                     <rect x="3" y="3" width="8" height="8" rx="2" stroke-width="2"></rect>
                     <rect x="13" y="3" width="8" height="8" rx="2" stroke-width="2"></rect>
                     <rect x="3" y="13" width="8" height="8" rx="2" stroke-width="2"></rect>
@@ -36,40 +26,17 @@
             </a>
 
             <a href="/api-management" class="flex items-center px-4 py-2 rounded hover:bg-gray-100">
-                <!-- Key icon -->
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <!-- ring -->
                     <circle cx="7.5" cy="12" r="3" stroke-width="2"></circle>
-                    <!-- shaft + teeth -->
                     <path d="M10.5 12H21" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     <path d="M16 9v6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     <path d="M19 10v4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
                 API Management
             </a>
-            <!--{% if cancel_url or update_pm_url %}
-            <div class="relative group">
-                <button class="flex items-center w-full px-4 py-2 rounded hover:bg-gray-100">
-                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Account
-                </button>
-                <div class="absolute left-full ml-2 w-64 bg-white text-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {% if update_pm_url %}
-                    <a href="{{ update_pm_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-                        Update Payment Method
-                    </a>
-                    {% endif %}
-                    {% if cancel_url %}
-                    <a href="{{ cancel_url }}" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
-                        Cancel Subscription
-                    </a>
-                    {% endif %}-->
-            </div>
-            </div>
-            {% endif %}
+
+            <!-- Cleanly removed account menu; if you add it later, use a real Jinja block or {% comment %}...{% endcomment %} -->
+
             <a href="/logout" class="flex items-center px-4 py-2 rounded hover:bg-gray-100 text-red-600">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -84,7 +51,6 @@
     <div class="flex-1 overflow-auto p-8">
         <h1 class="text-2xl font-bold mb-6">API Key Management</h1>
 
-        <!-- ✅ Error banner -->
         {% if error %}
         <div class="mb-4 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
             {{ error }}
@@ -117,7 +83,7 @@
                 <tbody class="divide-y divide-gray-200">
                     {% for key in api_keys %}
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 text-sm font-mono">{{ key.key }}</td>
+                        <td class="px-4 py-2 text-sm font-mono break-all">{{ key.key }}</td>
                         <td class="px-4 py-2 text-sm">{{ key.status }}</td>
                         <td class="px-4 py-2 text-sm">{{ key.created_at.strftime('%Y-%m-%d') }}</td>
                         <td class="px-4 py-2 text-sm">{{ key.device_id or '-' }}</td>
@@ -135,7 +101,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-
             </table>
 
             {% if api_keys|length == 0 %}
@@ -161,7 +126,6 @@
         </form>
     </div>
 
-    <!-- Scripts -->
     <script>
         function showToast(keyId) {
             const toast = document.getElementById('toast');
@@ -169,7 +133,6 @@
             form.action = `/api-management/revoke/${keyId}`;
             toast.classList.remove('hidden');
         }
-
         function hideToast() {
             const toast = document.getElementById('toast');
             toast.classList.add('hidden');
