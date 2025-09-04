@@ -1,18 +1,15 @@
 # retention.py
 from typing import Optional
 
-# Single-product funnel:
-TRIAL_RETENTION_DAYS = 1
-PAID_RETENTION_DAYS  = 1
+TRIAL_RETENTION_DAYS = 1     # set to 1 while testing
+PAID_RETENTION_DAYS  = 1    # set to 1 while testing
 
 def get_retention_days_for_user(subscription_status: Optional[str]) -> int:
     """
-    Returns retention days for a given user status.
-    'active' => paid (30d), everything else => trial (7d).
-    You can refine the mapping later if you add more states.
+    'active' (paid) => 30 days
+    'trialing' or anything else/None => 7 days
     """
     status = (subscription_status or "").strip().lower()
-    if status in {"active"}:
+    if status in {"active", "paid"}:
         return PAID_RETENTION_DAYS
-    # treat trialing / none / canceled / past_due as trial window for now
     return TRIAL_RETENTION_DAYS
