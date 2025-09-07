@@ -214,12 +214,66 @@
             }
         }
 
+        /* === Testimonials ticker === */
+        .ticker-wrap {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ticker-fade:before, .ticker-fade:after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 48px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .ticker-fade:before {
+            left: 0;
+            background: linear-gradient(to right, rgba(255,255,255,.95), transparent);
+        }
+
+        .ticker-fade:after {
+            right: 0;
+            background: linear-gradient(to left, rgba(255,255,255,.95), transparent);
+        }
+
+        .ticker-track {
+            display: flex;
+            gap: 16px;
+            will-change: transform;
+        }
+
+        .ticker-anim {
+            animation: ticker 36s linear infinite;
+        }
+
+        .ticker-wrap:hover .ticker-anim {
+            animation-play-state: paused;
+        }
+
+        @keyframes ticker {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .animated-bg, .particles span {
                 animation: none !important;
             }
 
             .live-badge {
+                animation: none !important;
+            }
+
+            .ticker-anim {
                 animation: none !important;
             }
         }
@@ -330,6 +384,43 @@
         </div>
     </section>
 
+    <!-- ===================== MEDIA DEMO ===================== -->
+    <section id="demo" class="py-16">
+        <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-8 items-center">
+            <div>
+                <h2 class="text-3xl font-bold">See live telemetry in action</h2>
+                <p class="mt-3 text-slate-700">
+                    60-second tour: Windows agent reads a COM port, buffers offline, and streams into the SigStream dashboard in real time (SSE).
+                </p>
+                <ul class="mt-4 space-y-2 text-slate-700 text-sm">
+                    <li>• Lightweight agent — no admin rights required</li>
+                    <li>• Offline-first: automatic replays when back online</li>
+                    <li>• REST + SSE: build your own UI in minutes</li>
+                </ul>
+            </div>
+
+            <div class="card rounded-2xl overflow-hidden bg-white/80 backdrop-blur border border-slate-200">
+                <video id="demoVideo"
+                       class="w-full block"
+                       muted
+                       playsinline
+                       preload="metadata"
+                       poster="/static/media/telemetry-poster.jpg">
+                    <source src="/static/media/telemetry-demo.webm" type="video/webm" />
+                    <source src="/static/media/telemetry-demo.mp4" type="video/mp4" />
+                    Sorry, your browser doesn’t support embedded videos.
+                </video>
+                <div class="p-3 flex items-center justify-between text-sm text-slate-600">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Autoplay when visible · muted
+                    </div>
+                    <button id="demoToggle" class="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 btn-press">Pause</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- How it works -->
     <section id="how" class="py-16">
         <div class="max-w-7xl mx-auto px-6">
@@ -374,7 +465,6 @@
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold text-center">Everything you need — nothing you don’t</h2>
             <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- (feature cards unchanged) -->
                 <div class="card p-5 rounded-xl bg-white/80 backdrop-blur border border-slate-200">
                     <div class="h-10 w-10 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center mb-3 icon-tilt">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-12h-7l1-8z" /></svg>
@@ -416,6 +506,57 @@
                     </div>
                     <h3 class="font-semibold">Hobbyist pricing</h3>
                     <p class="text-sm text-slate-700 mt-1">$15/month after a 14-day free trial. USD.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== TESTIMONIALS ===================== -->
+    <section aria-labelledby="testimonials" class="py-12 bg-white/70">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 id="testimonials" class="text-3xl font-bold text-center">What builders say</h2>
+
+            <div class="mt-6 ticker-wrap ticker-fade bg-white/80 backdrop-blur rounded-xl border border-slate-200 p-3">
+                <div class="ticker-track ticker-anim">
+                    <!-- Row A -->
+                    <div class="flex items-stretch gap-4 pr-4">
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“Got serial data streaming to a web UI in under 10 minutes. The SSE feed is perfect.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Alex R., Embedded Dev</figcaption>
+                        </figure>
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“Offline buffering saved a field test. Data backfilled when the truck got signal again.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Priya S., Robotics</figcaption>
+                        </figure>
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“No Kafka, no infra drama. Simple keys per device and a clean dashboard.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Marco D., Indie Hacker</figcaption>
+                        </figure>
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“Exactly what we needed for demos — reliable live charts without custom backend work.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Sam K., Hardware Startup</figcaption>
+                        </figure>
+                    </div>
+
+                    <!-- Row B (duplicate for seamless loop) -->
+                    <div class="flex items-stretch gap-4 pr-4">
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“Got serial data streaming to a web UI in under 10 minutes. The SSE feed is perfect.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Alex R., Embedded Dev</figcaption>
+                        </figure>
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“Offline buffering saved a field test. Data backfilled when the truck got signal again.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Priya S., Robotics</figcaption>
+                        </figure>
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“No Kafka, no infra drama. Simple keys per device and a clean dashboard.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Marco D., Indie Hacker</figcaption>
+                        </figure>
+                        <figure class="shrink-0 w-[320px] card rounded-xl border border-slate-200 p-4 bg-white">
+                            <blockquote class="text-sm text-slate-800">“Exactly what we needed for demos — reliable live charts without custom backend work.”</blockquote>
+                            <figcaption class="mt-2 text-xs text-slate-600">— Sam K., Hardware Startup</figcaption>
+                        </figure>
+                    </div>
                 </div>
             </div>
         </div>
@@ -471,6 +612,37 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
         </div>
     </section>
 
+    <!-- ===================== POLICIES ===================== -->
+    <section id="policies" class="py-14">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="card rounded-2xl bg-white/80 backdrop-blur border border-slate-200 p-6">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <div class="text-sm font-semibold text-slate-900">Data retention</div>
+                        <p class="mt-1 text-sm text-slate-700">
+                            Trial: <strong>7 days per device</strong><br>
+                            Paid: <strong>30 days per device</strong><br>
+                            Nightly purge runs automatically.
+                        </p>
+                    </div>
+                    <div>
+                        <div class="text-sm font-semibold text-slate-900">Devices per account</div>
+                        <p class="mt-1 text-sm text-slate-700">
+                            Up to <strong>{{ device_cap or 1 }}</strong> active device{{ (device_cap or 1) > 1 and 's' or '' }} included.
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">Need more? <a href="mailto:admin@sigstreamcloud.com" class="text-blue-600 hover:underline">Contact us</a>.</p>
+                    </div>
+                    <div>
+                        <div class="text-sm font-semibold text-slate-900">Privacy & control</div>
+                        <p class="mt-1 text-sm text-slate-700">
+                            We store only the telemetry you send. See our <a href="/privacy" class="text-blue-600 hover:underline">Privacy Policy</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     {% if not (user_email and user_subscription_status in ["active","trialing"]) %}
     <div class="fixed bottom-0 inset-x-0 md:hidden z-40">
         <div class="mx-4 mb-4 rounded-xl shadow-lg bg-white/90 backdrop-blur border border-slate-200 p-3 flex items-center justify-between">
@@ -512,6 +684,26 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
             © 2025 SigStream. All rights reserved.
         </div>
     </footer>
+
+    <!-- Demo video behavior -->
+    <script>
+        (function () {
+            const v = document.getElementById('demoVideo');
+            const btn = document.getElementById('demoToggle');
+            if (!v) return;
+
+            // Autoplay/pause when mostly in view
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(e => { if (e.isIntersecting) v.play().catch(() => { }); else v.pause(); });
+            }, { threshold: 0.6 });
+            io.observe(v);
+
+            btn?.addEventListener('click', () => {
+                if (v.paused) { v.play(); btn.textContent = 'Pause'; }
+                else { v.pause(); btn.textContent = 'Play'; }
+            });
+        })();
+    </script>
 
     <!-- Live tiles script -->
     <script>
