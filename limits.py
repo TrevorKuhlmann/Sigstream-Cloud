@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from models import ApiKey, User  # types only
 
 # Tunables (you can move to ENV if you prefer)
-TRIAL_MAX_KEYS = 1
-PAID_MAX_KEYS  = 1
+TRIAL_MAX_KEYS = 3
+PAID_MAX_KEYS  = 30
 
 HAS_ACTIVE_SQL = text("SELECT has_active_subscription(:email)")
 

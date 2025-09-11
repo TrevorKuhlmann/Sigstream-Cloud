@@ -1,8 +1,8 @@
 # retention.py
 from typing import Optional
 
-TRIAL_RETENTION_DAYS = 1     # set to 1 while testing
-PAID_RETENTION_DAYS  = 1    # set to 1 while testing
+TRIAL_RETENTION_DAYS = 7     # set to 1 while testing
+PAID_RETENTION_DAYS  = 30    # set to 1 while testing
 
 def get_retention_days_for_user(subscription_status: Optional[str]) -> int:
     """
