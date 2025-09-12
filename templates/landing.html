@@ -324,8 +324,9 @@
 
                 <a href="/logout" class="text-sm text-slate-700 hover:text-slate-900">Logout</a>
                 {% else %}
-                <a href="/login-form" class="text-sm text-slate-700 hover:text-slate-900">Login</a>
-                <a href="/register-form" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Get Started</a>
+                <a href="/login-form" class="text-sm text-slate-700 hover:text-slate-900" onclick="gtag('event','login',{method:'navbar'})">Login</a>
+                <a href="/register-form" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
+                   onclick="gtag('event','sign_up',{method:'navbar'})">Get Started</a>
                 {% endif %}
             </nav>
         </div>
@@ -361,15 +362,28 @@
                 <a href="/summary" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Open Dashboard</a>
                 {% else %}
                 <!-- Logged-in but unsubscribed: no dashboard bypass -->
-                <button onclick="openCheckout('starter')" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
+                <!--<button onclick="openCheckout('starter')" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
+                    Start 14-day trial
+                </button>-->
+                <button onclick="gtag('event','begin_checkout',{currency:'USD',value:15.00,items:[{item_id:'starter',item_name:'SigStream Starter'}],plan:'starter',placement:'hero'}); openCheckout('starter')"
+                        class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">
                     Start 14-day trial
                 </button>
                 {% endif %}
-                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
+                <!--<a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
                 {% else %}
                 <a href="/register-form" class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Start Free</a>
                 <a href="/developer-api" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Read the API</a>
-                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
+                <a href="/downloads" class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>-->
+                <a href="/downloads" onclick="gtag('event','download_agent_click',{placement:'hero'})"
+                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
+                {% else %}
+                <a href="/register-form" onclick="gtag('event','sign_up',{method:'hero'})"
+                   class="btn-press px-5 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md">Start Free</a>
+                <a href="/developer-api" onclick="gtag('event','docs_click',{placement:'hero'})"
+                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Read the API</a>
+                <a href="/downloads" onclick="gtag('event','download_agent_click',{placement:'hero'})"
+                   class="btn-press px-5 py-3 rounded-lg border border-slate-300 text-slate-900 bg-white/80 hover:bg-white shadow-sm">Download Agent</a>
                 {% endif %}
             </div>
         </div>
@@ -615,9 +629,16 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
                     {% if user_email and user_subscription_status in ["active","trialing"] %}
                     <button disabled class="mt-5 w-full px-4 py-2 rounded-lg bg-slate-200 text-slate-500 cursor-not-allowed">Already active</button>
                     {% elif user_email %}
-                    <button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 btn-press shadow-md">Start 14-day trial</button>
+                    <!--<button onclick="openCheckout('starter')" class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 btn-press shadow-md">Start 14-day trial</button>
                     {% else %}
-                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/90 text-white hover:bg-blue-700 btn-press shadow-md">Login to start trial</a>
+                    <a href="/login-form" class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/90 text-white hover:bg-blue-700 btn-press shadow-md">Login to start trial</a>-->
+                    <button onclick="gtag('event','begin_checkout',{currency:'USD',value:15.00,items:[{item_id:'starter',item_name:'SigStream Starter'}],plan:'starter',placement:'pricing'}); openCheckout('starter')"
+                            class="mt-5 w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 btn-press shadow-md">
+                        Start 14-day trial
+                    </button>
+                    {% else %}
+                    <a href="/login-form" onclick="gtag('event','login',{method:'pricing'})"
+                       class="mt-5 w-full inline-block px-4 py-2 text-center rounded-lg bg-blue-600/90 text-white hover:bg-blue-700 btn-press shadow-md">Login to start trial</a>
                     {% endif %}
                 </div>
             </div>
@@ -663,9 +684,15 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
                 <div class="text-slate-600">Hobbyist-friendly: $15/mo afterwards</div>
             </div>
             {% if user_email %}
-            <button onclick="openCheckout('starter')" class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">Start</button>
+            <!--<button onclick="openCheckout('starter')" class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">Start</button>-->
+            <button onclick="gtag('event','begin_checkout',{currency:'USD',value:15.00,items:[{item_id:'starter',item_name:'SigStream Starter'}],plan:'starter',placement:'sticky-mobile'}); openCheckout('starter')"
+                    class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">
+                Start
+            </button>
             {% else %}
-            <a href="/login-form" class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">Login</a>
+            <a href="/login-form" onclick="gtag('event','login',{method:'sticky-mobile'})"
+               class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">Login</a>
+            <!--<a href="/login-form" class="ml-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm btn-press">Login</a>-->
             {% endif %}
         </div>
     </div>
@@ -682,7 +709,8 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
                 <a href="#how" class="block hover:underline">How it works</a>
                 <a href="#features" class="block hover:underline">Features</a>
                 <a href="#pricing" class="block hover:underline">Pricing</a>
-                <a href="/developer-api" class="block hover:underline">Developer API</a>
+                <!--<a href="/developer-api" class="block hover:underline">Developer API</a>-->
+                <a href="/developer-api" onclick="gtag('event','docs_click',{placement:'footer'})" class="block hover:underline">Developer API</a>
             </div>
             <div class="text-sm">
                 <div class="text-slate-400 mb-2">Legal</div>
@@ -697,22 +725,44 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
         </div>
     </footer>
 
-    <!-- Demo video behavior -->
+    <!-- Demo video behavior + GA events -->
     <script>
         (function () {
             const v = document.getElementById('demoVideo');
             const btn = document.getElementById('demoToggle');
             if (!v) return;
 
+            let autoPlayedOnce = false;
+
             // Autoplay/pause when mostly in view
             const io = new IntersectionObserver(entries => {
-                entries.forEach(e => { if (e.isIntersecting) v.play().catch(() => { }); else v.pause(); });
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        v.play().then(() => {
+                            if (!autoPlayedOnce) {
+                                gtag('event', 'video_play', { video_id: 'telemetry-demo', method: 'autoplay' });
+                                autoPlayedOnce = true;
+                            }
+                        }).catch(() => { });
+                    } else {
+                        if (!v.paused) {
+                            v.pause();
+                            gtag('event', 'video_pause', { video_id: 'telemetry-demo', method: 'autoplay' });
+                        }
+                    }
+                });
             }, { threshold: 0.6 });
             io.observe(v);
 
             btn?.addEventListener('click', () => {
-                if (v.paused) { v.play(); btn.textContent = 'Pause'; }
-                else { v.pause(); btn.textContent = 'Play'; }
+                if (v.paused) {
+                    v.play().then(() => { gtag('event', 'video_play', { video_id: 'telemetry-demo', method: 'manual' }); }).catch(() => { });
+                    btn.textContent = 'Pause';
+                } else {
+                    v.pause();
+                    gtag('event', 'video_pause', { video_id: 'telemetry-demo', method: 'manual' });
+                    btn.textContent = 'Play';
+                }
             });
         })();
     </script>
