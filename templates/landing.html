@@ -9,6 +9,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
+
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QS38H9GK5K"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-QS38H9GK5K');
+    </script>
+
     <!-- Pass user email to /static/js/paddle.js (keeps payment logic separate & working) -->
     <meta name="sigstream-user-email" content="{{ user_email or '' }}">
 
@@ -628,7 +640,7 @@ es.addEventListener("heartbeat", (e) =&gt; console.log("hb", JSON.parse(e.data))
                     <div>
                         <div class="text-sm font-semibold text-slate-900">Devices per account</div>
                         <p class="mt-1 text-sm text-slate-700">
-                            Up to <strong>{{ device_cap or 1 }}</strong> active device{{ (device_cap or 1) > 1 and 's' or '' }} included.
+                            Up to 30 devices included .
                         </p>
                         <p class="mt-1 text-xs text-slate-500">Need more? <a href="mailto:admin@sigstreamcloud.com" class="text-blue-600 hover:underline">Contact us</a>.</p>
                     </div>
