@@ -14,25 +14,69 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-QS38H9GK5K"></script>
     <script>
+        // Always-available stub so inline onclick gtag() calls are safe even before gtag.js finishes loading
         window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
+        window.gtag = window.gtag || function () { dataLayer.push(arguments); };
 
-        gtag('config', 'G-QS38H9GK5K');
+        // 1) Consent Mode v2 defaults — must run BEFORE any config
+        gtag('consent', 'default', {
+            'ad_storage': 'denied',
+            'ad_user_data': 'denied',
+            'ad_personalization': 'denied',
+            'analytics_storage': 'granted'
+        });
+
+        // 2) Init + single config (includes debug toggle to avoid double page_view)
+        gtag('js', new Date());
+        gtag('config', 'G-QS38H9GK5K', {
+            'debug_mode': location.search.includes('debug=1')
+            // If you ever need to disable auto page_view: 'send_page_view': false
+        });
     </script>
 
+    <!-- (optional) Later, on "Accept all" from your banner:
+    <script>
+      gtag('consent', 'update', {
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted',
+        'analytics_storage': 'granted'
+      });
+    </script>
+    -->
     <!-- Pass user email to /static/js/paddle.js (keeps payment logic separate & working) -->
     <meta name="sigstream-user-email" content="{{ user_email or '' }}">
 
+    <!-- Redirect for subscribed users (unchanged) -->
     <script>
-    (function () {
-      const hasToken = document.cookie.includes("access_token");
-      const status = ("{{ user_subscription_status or '' }}").toLowerCase();
-      if (hasToken && (status === "active" || status === "trialing")) {
-        location.replace("/summary");
-      }
-    })();
+  (function () {
+    const hasToken = document.cookie.includes("access_token");
+    const status = ("{{ user_subscription_status or '' }}").toLowerCase();
+    if (hasToken && (status === "active" || status === "trialing")) {
+      location.replace("/summary");
+    }
+  })();
     </script>
+
+    <!-- 3) Non-PII user properties (after config so they attach cleanly) -->
+    <script>
+  (function () {
+    const sub = ("{{ user_subscription_status or '' }}").toLowerCase();
+    if ("{{ user_email or '' }}") {
+      gtag('set', 'user_properties', {
+        subscription_status: sub || 'none',
+        auth_state: 'logged_in'
+      });
+    } else {
+      gtag('set', 'user_properties', {
+        subscription_status: 'none',
+        auth_state: 'anon'
+      });
+    }
+  })();
+    </script>
+
+
 
     <script type="application/ld+json">
         {
