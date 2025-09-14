@@ -73,20 +73,15 @@ def send_confirmation_email(
 
 
 
-    BUG_REPORT_TO = os.getenv("BUG_REPORT_TO", "admin@sigstreamcloud.com")
-
 def send_bug_report_email(
     background_tasks: BackgroundTasks,
     subject: str,
     body: str,
-    to_email: str | None = None,
 ):
-    """
-    Queue a bug-report email via the existing SMTP backend.
-    """
+    # Always send to your bug inbox
     background_tasks.add_task(
         _actually_send_email,
-        to_email or BUG_REPORT_TO,
+        "admin@sigstreamcloud.com",
         subject,
         body,
     )
