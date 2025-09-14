@@ -1417,21 +1417,47 @@ class BugReportIn(BaseModel):
 
 
     # ----------------------------- Bug Report Endpoint -----------------------------
+# main.py
+
+from fastapi import BackgroundTasks, HTTPException, Request
+from email_utils import send_bug_report_email
+
 @app.post("/api/report-bug")
 async def report_bug(
-    payload: BugReportIn,
     request: Request,
     background_tasks: BackgroundTasks,
 ):
-    # minimal validation
-    desc = (payload.Description or "").strip()
-    if len(desc) < 10:
+    # 1) Read JSON (fail fast if invalid)
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            raise ValueError("Body must be a JSON object")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    # 2) Case-insensitive getter (handles email/Email/etc)
+    def geti(name: str, default=None):
+        # try exact, lower, upper, and Pascal
+        pascal = name[:1].upper() + name[1:]
+        for key in (name, name.lower(), name.upper(), pascal):
+            if key in data and data[key] is not None:
+                return data[key]
+        return default
+
+    email       = (geti("email") or "").strip()
+    description = (geti("description") or "").strip()
+    app_version = geti("appVersion")
+    os_version  = geti("osVersion")
+    machine     = geti("machine")
+    logs        = geti("logs") or ""
+    env_json    = geti("envJson")
+
+    if len(description) < 10:
         raise HTTPException(status_code=400, detail="Please provide a longer description.")
 
-    # trim logs so emails don't explode
+    # 3) Trim logs to keep emails sane
     MAX_LOG_CHARS = 20000
-    logs = (payload.Logs or "")
-    if len(logs) > MAX_LOG_CHARS:
+    if isinstance(logs, str) and len(logs) > MAX_LOG_CHARS:
         logs = logs[-MAX_LOG_CHARS:]
 
     client_ip = request.client.host if request.client else "-"
@@ -1439,21 +1465,20 @@ async def report_bug(
     subject = "[SigStream] Bug report"
     body = (
         "New bug report from SigStream Agent\n\n"
-        f"From:     {payload.Email or '-'}\n"
-        f"Machine:  {payload.Machine or '-'}\n"
-        f"OS:       {payload.OsVersion or '-'}\n"
-        f"App:      {payload.AppVersion or '-'}\n"
+        f"From:     {email or '-'}\n"
+        f"Machine:  {machine or '-'}\n"
+        f"OS:       {os_version or '-'}\n"
+        f"App:      {app_version or '-'}\n"
         f"ClientIP: {client_ip}\n\n"
         "Description:\n"
-        f"{desc}\n\n"
+        f"{description}\n\n"
         "---- Environment (JSON) ----\n"
-        f"{(payload.EnvJson or '(none)')}\n\n"
+        f"{(env_json or '(none)')}\n\n"
         "---- Logs (tail) ----\n"
         f"{(logs or '(none)')}\n"
     )
 
-    # queue email via existing backend
+    # 4) Queue email via existing SMTP util
     send_bug_report_email(background_tasks, subject, body)
 
-    # standard success payload for the agent
     return {"ok": True}
