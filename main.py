@@ -28,6 +28,9 @@ from auth import get_db
 from purge import purge_old_device_data
 from limits import max_keys_for_user, active_key_count
 
+
+from pydantic import BaseModel
+from email_utils import send_bug_report_email
 import os
 from fastapi import Header, HTTPException, status
 
@@ -1401,5 +1404,56 @@ def get_installer():
 # ---------- /DOWNLOADS ----------
 
 
+# ---- model that matches the C# payload names exactly ----
+class BugReportIn(BaseModel):
+    Email: str | None = None
+    Description: str
+    AppVersion: str | None = None
+    OsVersion: str | None = None
+    Machine: str | None = None
+    Logs: str | None = None       # raw text tail (optional)
+    EnvJson: str | None = None    # JSON string (optional)
 
- 
+
+
+    # ----------------------------- Bug Report Endpoint -----------------------------
+@app.post("/api/report-bug")
+async def report_bug(
+    payload: BugReportIn,
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
+    # minimal validation
+    desc = (payload.Description or "").strip()
+    if len(desc) < 10:
+        raise HTTPException(status_code=400, detail="Please provide a longer description.")
+
+    # trim logs so emails don't explode
+    MAX_LOG_CHARS = 20000
+    logs = (payload.Logs or "")
+    if len(logs) > MAX_LOG_CHARS:
+        logs = logs[-MAX_LOG_CHARS:]
+
+    client_ip = request.client.host if request.client else "-"
+
+    subject = "[SigStream] Bug report"
+    body = (
+        "New bug report from SigStream Agent\n\n"
+        f"From:     {payload.Email or '-'}\n"
+        f"Machine:  {payload.Machine or '-'}\n"
+        f"OS:       {payload.OsVersion or '-'}\n"
+        f"App:      {payload.AppVersion or '-'}\n"
+        f"ClientIP: {client_ip}\n\n"
+        "Description:\n"
+        f"{desc}\n\n"
+        "---- Environment (JSON) ----\n"
+        f"{(payload.EnvJson or '(none)')}\n\n"
+        "---- Logs (tail) ----\n"
+        f"{(logs or '(none)')}\n"
+    )
+
+    # queue email via existing backend
+    send_bug_report_email(background_tasks, subject, body)
+
+    # standard success payload for the agent
+    return {"ok": True}
