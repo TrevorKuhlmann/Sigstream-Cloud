@@ -99,137 +99,44 @@
     </script>
 
     <style>
+        /* 1) Replace your existing :root with this */
         :root {
-            --page-glow-opacity: 0.5;
+            /* Turn these up/down to taste */
+            --glow-alpha-1: .75; /* blue */
+            --glow-alpha-2: .70; /* cyan/teal */
+            --glow-alpha-3: .65; /* violet */
         }
 
+        /* 2) Replace your entire .animated-bg block with this */
         .animated-bg {
             position: fixed;
             inset: 0;
             z-index: -2;
             pointer-events: none;
-            background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246,var(--page-glow-opacity)), transparent 70%), radial-gradient(1200px 600px at 110% -10%, rgba(20,184,166, calc(var(--page-glow-opacity)*0.9)), transparent 70%), radial-gradient(1000px 520px at 50% 120%, rgba(147,51,234, calc(var(--page-glow-opacity)*0.45)), transparent 70%);
-            filter: saturate(108%);
-            animation: gradientDrift 30s ease-in-out infinite alternate;
+            /* Bold layered glow — blue + cyan + violet on a deep base */
+            background: radial-gradient(1100px 700px at 12% 4%, rgba(37, 99, 235, var(--glow-alpha-1)), transparent 72%), radial-gradient(1200px 760px at 88% 6%, rgba(6, 182, 212, var(--glow-alpha-2)), transparent 74%), radial-gradient(1300px 820px at 50% 115%, rgba(124, 58, 237, var(--glow-alpha-3)), transparent 76%), conic-gradient(from 230deg at 50% 50%, #0b1220 0%, #0f172a 30%, #111827 60%, #0b1220 100%);
+            filter: saturate(145%) contrast(108%);
+            background-size: 140% 140%, 140% 140%, 140% 140%, cover;
+            background-position: 0% 0%, 100% 0%, 50% 120%, center;
+            animation: gradientDrift 26s ease-in-out infinite alternate;
             will-change: background-position;
         }
 
-        .particles {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-            .particles span {
-                position: absolute;
-                width: 8px;
-                height: 8px;
-                border-radius: 9999px;
-                background: rgba(255,255,255,0.65);
-                filter: blur(1px);
-                opacity: 0.45;
-                animation: floatUp var(--t,18s) linear infinite;
-                transform: translateY(120vh) translateX(0);
-            }
-
-                .particles span:nth-child(1) {
-                    left: 8%;
-                    --t: 22s;
-                    width: 7px;
-                    height: 7px;
-                    animation-delay: -3s;
-                }
-
-                .particles span:nth-child(2) {
-                    left: 18%;
-                    --t: 19s;
-                    width: 6px;
-                    height: 6px;
-                    animation-delay: -8s;
-                }
-
-                .particles span:nth-child(3) {
-                    left: 28%;
-                    --t: 24s;
-                    width: 9px;
-                    height: 9px;
-                    animation-delay: -5s;
-                }
-
-                .particles span:nth-child(4) {
-                    left: 42%;
-                    --t: 20s;
-                    width: 6px;
-                    height: 6px;
-                    animation-delay: -12s;
-                }
-
-                .particles span:nth-child(5) {
-                    left: 56%;
-                    --t: 23s;
-                    width: 8px;
-                    height: 8px;
-                    animation-delay: -10s;
-                }
-
-                .particles span:nth-child(6) {
-                    left: 70%;
-                    --t: 21s;
-                    width: 7px;
-                    height: 7px;
-                    animation-delay: -6s;
-                }
-
-                .particles span:nth-child(7) {
-                    left: 82%;
-                    --t: 26s;
-                    width: 10px;
-                    height: 10px;
-                    animation-delay: -9s;
-                }
-
-        @keyframes floatUp {
-            0% {
-                transform: translateY(110vh) translateX(0);
-                opacity: .15;
-            }
-
-            25% {
-                transform: translateY(80vh) translateX(10px);
-                opacity: .35;
-            }
-
-            50% {
-                transform: translateY(50vh) translateX(-8px);
-                opacity: .45;
-            }
-
-            75% {
-                transform: translateY(20vh) translateX(12px);
-                opacity: .35;
-            }
-
-            100% {
-                transform: translateY(-15vh) translateX(0);
-                opacity: .05;
-            }
-        }
-
+        /* 3) Replace your @keyframes gradientDrift with this */
         @keyframes gradientDrift {
             0% {
-                background-position: -10% -10%, 110% -10%, 50% 120%;
+                background-position: 0% 0%, 100% 0%, 50% 120%, center;
             }
 
             50% {
-                background-position: 0% -15%, 100% -5%, 52% 115%;
+                background-position: -6% -4%, 106% -6%, 52% 112%, center;
             }
 
             100% {
-                background-position: 10% -8%, 95% -12%, 48% 125%;
+                background-position: -10% -8%, 110% -10%, 48% 125%, center;
             }
         }
+
 
         .card {
             transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
