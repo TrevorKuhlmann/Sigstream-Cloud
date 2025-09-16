@@ -408,17 +408,30 @@
 
                 <!-- Centered graphic, transparent PNG, no cropping -->
                 <div class="lg:col-span-2 mt-6">
-                    <figure class="flex justify-center">
+                    <!--<figure class="flex justify-center">
                         <img src="/static/media/device-cloud-telemetry.png"
                              alt="Device sends telemetry to the SigStream cloud, then to the dashboard"
                              width="1600" height="1000" loading="lazy"
                              class="block mx-auto w-full max-w-[760px] mix-blend-multiply saturate-110 contrast-105 select-none pointer-events-none" />
-                    </figure>
+                    </figure>-->
                 </div>
 
             </div>
 
-</section>
+    </section>
+
+    <!-- Centered pipeline graphic just above “How it works” -->
+    <section aria-label="Device to cloud graphic" class="pt-4 pb-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <figure class="flex justify-center">
+                <img src="/static/media/device-cloud-telemetry.png"
+                     alt="Device → cloud → dashboard telemetry"
+                     loading="lazy"
+                     class="block mx-auto w-full max-w-[1100px] h-auto object-contain mix-blend-multiply saturate-110 contrast-105 select-none pointer-events-none" />
+            </figure>
+        </div>
+    </section>
+
 
     <!-- How it works -->
     <section id="how" class="py-16">
