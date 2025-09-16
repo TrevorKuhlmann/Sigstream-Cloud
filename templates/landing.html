@@ -99,13 +99,18 @@
     </script>
 
     <style>
-        /* Softer pastel palette like stagetimer */
+        /* Pastel mint → peach like your reference, with a tinted base so edges never go white */
         :root {
             --mint: #c8f1e3; /* left cool mint */
-            --sea: #a0e3d1; /* blend helper */
             --amber: #ffe2a8; /* right warm amber */
-            --peach: #ffd3a6; /* blend helper */
-            --center: rgba(255,255,255,.85); /* soft glow in the middle */
+            --center: rgba(255,255,255,.82); /* soft middle glow */
+            --edgeL: #e7fbf3; /* base tint left  (~mint)  */
+            --edgeR: #ffefc6; /* base tint right (~amber) */
+        }
+
+        /* If the <body> has Tailwind bg-white/.., override so gradient shows fully */
+        body {
+            background-color: transparent !important;
         }
 
         /* Strong, airy hero background */
@@ -114,33 +119,30 @@
             inset: 0;
             z-index: -2;
             pointer-events: none;
-            /* Two big radial fields + a central white glow + a subtle top-to-bottom wash */
-            background: radial-gradient(1200px 800px at 18% 35%, var(--mint) 0%, rgba(255,255,255,0) 72%), radial-gradient(1200px 800px at 82% 45%, var(--amber) 0%, rgba(255,255,255,0) 74%), radial-gradient(900px 600px at 50% 55%, var(--center) 0%, rgba(255,255,255,0) 78%), linear-gradient(180deg, #f8fafc 0%, #fff7ed 100%); /* very light base */
-            /* Make it pop like the reference */
+            /* Two big radial fields + central glow + tinted base wash (no pure white) */
+            background: radial-gradient(70vw 70vh at 15% 38%, var(--mint) 0%, rgba(255,255,255,0) 70%), radial-gradient(70vw 70vh at 85% 44%, var(--amber) 0%, rgba(255,255,255,0) 72%), radial-gradient(45vw 45vh at 50% 58%, var(--center) 0%, rgba(255,255,255,0) 78%), linear-gradient(90deg, var(--edgeL) 0%, var(--edgeR) 100%);
+            background-repeat: no-repeat;
             filter: saturate(120%) contrast(105%);
-            /* (optional) gentle motion – comment out if you want it static */
-            background-size: 140% 140%, 140% 140%, 120% 120%, cover;
-            background-position: 0% 0%, 100% 0%, 50% 60%, center;
-            animation: gradientDrift 40s ease-in-out infinite alternate;
+            animation: gradientDrift 36s ease-in-out infinite alternate;
             will-change: background-position;
         }
 
-        /* Tiny drift—keeps it alive without being distracting */
+        /* Gentle drift only — keeps it alive without exposing white edges */
         @keyframes gradientDrift {
             0% {
-                background-position: 0% 0%, 100% 0%, 50% 60%, center;
+                background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
             }
 
             50% {
-                background-position: -4% -2%, 104% -3%, 52% 58%, center;
+                background-position: -2% -1%, 2% -1%, 1% -1%, 0% 0%;
             }
 
             100% {
-                background-position: -7% -5%, 108% -6%, 48% 62%, center;
+                background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
             }
         }
 
-
+        /* Cards & micro-interactions (unchanged) */
         .card {
             transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
         }
@@ -239,7 +241,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .animated-bg, .particles span {
+            .animated-bg {
                 animation: none !important;
             }
 
@@ -252,6 +254,7 @@
             }
         }
     </style>
+
 
     <script src="/static/js/paddle.js?v=2"></script>
 </head>
