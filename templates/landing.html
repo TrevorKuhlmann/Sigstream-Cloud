@@ -99,137 +99,47 @@
     </script>
 
     <style>
+        /* Softer pastel palette like stagetimer */
         :root {
-            --page-glow-opacity: 0.5;
+            --mint: #c8f1e3; /* left cool mint */
+            --sea: #a0e3d1; /* blend helper */
+            --amber: #ffe2a8; /* right warm amber */
+            --peach: #ffd3a6; /* blend helper */
+            --center: rgba(255,255,255,.85); /* soft glow in the middle */
         }
 
+        /* Strong, airy hero background */
         .animated-bg {
             position: fixed;
             inset: 0;
             z-index: -2;
             pointer-events: none;
-            background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246,var(--page-glow-opacity)), transparent 70%), radial-gradient(1200px 600px at 110% -10%, rgba(20,184,166, calc(var(--page-glow-opacity)*0.9)), transparent 70%), radial-gradient(1000px 520px at 50% 120%, rgba(147,51,234, calc(var(--page-glow-opacity)*0.45)), transparent 70%);
-            filter: saturate(108%);
-            animation: gradientDrift 30s ease-in-out infinite alternate;
+            /* Two big radial fields + a central white glow + a subtle top-to-bottom wash */
+            background: radial-gradient(1200px 800px at 18% 35%, var(--mint) 0%, rgba(255,255,255,0) 72%), radial-gradient(1200px 800px at 82% 45%, var(--amber) 0%, rgba(255,255,255,0) 74%), radial-gradient(900px 600px at 50% 55%, var(--center) 0%, rgba(255,255,255,0) 78%), linear-gradient(180deg, #f8fafc 0%, #fff7ed 100%); /* very light base */
+            /* Make it pop like the reference */
+            filter: saturate(120%) contrast(105%);
+            /* (optional) gentle motion – comment out if you want it static */
+            background-size: 140% 140%, 140% 140%, 120% 120%, cover;
+            background-position: 0% 0%, 100% 0%, 50% 60%, center;
+            animation: gradientDrift 40s ease-in-out infinite alternate;
             will-change: background-position;
         }
 
-        .particles {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-            .particles span {
-                position: absolute;
-                width: 8px;
-                height: 8px;
-                border-radius: 9999px;
-                background: rgba(255,255,255,0.65);
-                filter: blur(1px);
-                opacity: 0.45;
-                animation: floatUp var(--t,18s) linear infinite;
-                transform: translateY(120vh) translateX(0);
-            }
-
-                .particles span:nth-child(1) {
-                    left: 8%;
-                    --t: 22s;
-                    width: 7px;
-                    height: 7px;
-                    animation-delay: -3s;
-                }
-
-                .particles span:nth-child(2) {
-                    left: 18%;
-                    --t: 19s;
-                    width: 6px;
-                    height: 6px;
-                    animation-delay: -8s;
-                }
-
-                .particles span:nth-child(3) {
-                    left: 28%;
-                    --t: 24s;
-                    width: 9px;
-                    height: 9px;
-                    animation-delay: -5s;
-                }
-
-                .particles span:nth-child(4) {
-                    left: 42%;
-                    --t: 20s;
-                    width: 6px;
-                    height: 6px;
-                    animation-delay: -12s;
-                }
-
-                .particles span:nth-child(5) {
-                    left: 56%;
-                    --t: 23s;
-                    width: 8px;
-                    height: 8px;
-                    animation-delay: -10s;
-                }
-
-                .particles span:nth-child(6) {
-                    left: 70%;
-                    --t: 21s;
-                    width: 7px;
-                    height: 7px;
-                    animation-delay: -6s;
-                }
-
-                .particles span:nth-child(7) {
-                    left: 82%;
-                    --t: 26s;
-                    width: 10px;
-                    height: 10px;
-                    animation-delay: -9s;
-                }
-
-        @keyframes floatUp {
-            0% {
-                transform: translateY(110vh) translateX(0);
-                opacity: .15;
-            }
-
-            25% {
-                transform: translateY(80vh) translateX(10px);
-                opacity: .35;
-            }
-
-            50% {
-                transform: translateY(50vh) translateX(-8px);
-                opacity: .45;
-            }
-
-            75% {
-                transform: translateY(20vh) translateX(12px);
-                opacity: .35;
-            }
-
-            100% {
-                transform: translateY(-15vh) translateX(0);
-                opacity: .05;
-            }
-        }
-
+        /* Tiny drift—keeps it alive without being distracting */
         @keyframes gradientDrift {
             0% {
-                background-position: -10% -10%, 110% -10%, 50% 120%;
+                background-position: 0% 0%, 100% 0%, 50% 60%, center;
             }
 
             50% {
-                background-position: 0% -15%, 100% -5%, 52% 115%;
+                background-position: -4% -2%, 104% -3%, 52% 58%, center;
             }
 
             100% {
-                background-position: 10% -8%, 95% -12%, 48% 125%;
+                background-position: -7% -5%, 108% -6%, 48% 62%, center;
             }
         }
+
 
         .card {
             transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
