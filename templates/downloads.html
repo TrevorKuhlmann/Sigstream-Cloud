@@ -1,21 +1,26 @@
+\
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-gray-50">
 <head>
+    <!-- Google Ads tag -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17550987732"></script>
     <script>
- window.dataLayer = window.dataLayer || [];
- function gtag(){dataLayer.push(arguments);}
- gtag('js', new Date());
-
- gtag('config', 'AW-17550987732');
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'AW-17550987732');
     </script>
+
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Download SigStream Agent</title>
+    <meta name="description" content="Download the SigStream Windows Agent (x64). Lightweight COM-port reader with offline buffering and secure cloud upload.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="/static/SigstreamLogo.png">
 </head>
+
 <body class="h-full">
+    <!-- Header -->
     <header class="bg-white border-b">
         <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <a href="/" class="flex items-center gap-3">
@@ -27,13 +32,13 @@
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-10">
-        <!-- HERO -->
+        <!-- Hero -->
         <section class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Download SigStream Agent</h1>
             <p class="mt-2 text-gray-600">Windows desktop agent for COM-port telemetry buffering, heartbeats, and secure cloud upload.</p>
         </section>
 
-        <!-- DOWNLOAD CARDS -->sdwdww
+        <!-- DOWNLOAD CARDS -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Windows direct download -->
             <div class="bg-white border rounded-2xl shadow-sm p-6">
@@ -50,6 +55,7 @@
                 <div class="mt-5 flex items-center gap-3">
                     {% if download_available %}
                     <a href="{{ exe_url }}"
+                       onclick="gtag('event','download_agent_click',{placement:'downloads'});"
                        class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         Download SigStreamAgent-Setup.exe
                     </a>
@@ -60,13 +66,13 @@
                     </button>
                     {% endif %}
 
-                    <!-- (Optional) Microsoft Store button: wire ms_store_url when live -->
-                    <!--<button disabled
-                            title="Coming soon on Microsoft Store"
-                            class="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-gray-300 text-gray-600 bg-white hover:bg-gray-50">
-                        Get it from Microsoft
-                    </button>
-                </div>-->
+                    <!-- (Optional) Microsoft Store button: wire ms_store_url when live
+                    <a href="{{ ms_store_url }}"
+                       class="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-gray-300 text-gray-600 bg-white hover:bg-gray-50">
+                      Get it from Microsoft
+                    </a>
+                    -->
+                </div> <!-- keep this closing div OUTSIDE the comment -->
 
                 <dl class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                     <div>
@@ -104,42 +110,69 @@
                 </div>
             </div>
 
-            <!-- Why verify / system requirements -->
+            <!-- Verify / requirements -->
             <div class="bg-white border rounded-2xl shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-900">Verify your download</h3>
                 <p class="mt-2 text-sm text-gray-600">
-                    We publish a SHA-256 checksum so you can confirm the installer hasn’t been tampered with.
+                    We publish a SHA-256 so you can confirm the installer hasn’t been tampered with.
                 </p>
                 <div class="mt-4">
                     <p class="text-sm font-medium text-gray-900 mb-1">PowerShell</p>
                     <pre class="bg-gray-50 rounded-lg p-3 text-xs border"><code>Get-FileHash .\SigStreamAgent-Setup.exe -Algorithm SHA256</code></pre>
-                    <p class="text-sm text-gray-600 mt-2">Compare the result to the SHA-256 shown above. They must match exactly.</p>
+                    <p class="text-sm text-gray-600 mt-2">Compare the result to the SHA-256 shown above.</p>
                 </div>
                 <div class="mt-4">
                     <p class="text-sm font-medium text-gray-900 mb-1">Command Prompt</p>
                     <pre class="bg-gray-50 rounded-lg p-3 text-xs border"><code>certutil -hashfile SigStreamAgent-Setup.exe SHA256</code></pre>
                 </div>
+
                 <div class="mt-6">
                     <h4 class="text-sm font-semibold text-gray-900">System requirements</h4>
                     <ul class="mt-2 text-sm text-gray-600 list-disc list-inside">
                         <li>Windows 10 or 11 (64-bit)</li>
                         <li>COM port access to your device(s)</li>
-                        <li>Internet access to <code>sigstreamcloud.com</code> for telemetry</li>
+                        <li>Internet access to <code>sigstreamcloud.com</code></li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Helpmsss -->
-        <section class="mt-10 bg-white border rounded-2xl shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900">Having trouble?</h3>
-            <p class="mt-2 text-sm text-gray-600">
-                If SmartScreen warns about an unknown publisher: this is expected until we complete code signing and/or Microsoft Store distribution.
-                You can verify the SHA-256, proceed, or install via the Store once available.
-            </p>
-            <p class="mt-2 text-sm text-gray-600">
-                Need help? <a class="text-indigo-600 hover:text-indigo-700" href="mailto:admin@sigstreamcloud.com">admin@sigstreamcloud.com</a>
-            </p>
+        <!-- Notices & help -->
+        <section class="mt-10 space-y-6">
+            <!-- Unsigned / SmartScreen -->
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-amber-900">Heads-up: no code-signing certificate yet</h3>
+                <p class="mt-2 text-sm text-amber-900/90">
+                    We’re awaiting our DigiCert code-signing certificate. Until then, Windows SmartScreen may warn that the app is from an unknown publisher.
+                    You can proceed safely by verifying the SHA-256 above, then follow these steps:
+                </p>
+                <ol class="mt-3 space-y-2 text-sm text-amber-900/90 list-decimal list-inside">
+                    <li>Double-click the installer. If you see <em>“Windows protected your PC”</em>, click <strong>More info</strong>.</li>
+                    <li>Confirm the app name is <strong>SigStreamAgent-Setup.exe</strong> and publisher shows <em>Unknown</em>.</li>
+                    <li>Click <strong>Run anyway</strong>.</li>
+                    <li>If Windows blocks the file after download, right-click → <strong>Properties</strong> → tick <strong>Unblock</strong> → <strong>OK</strong>, then run again.</li>
+                </ol>
+            </div>
+
+            <!-- Browser tips -->
+            <div class="bg-white border rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900">Download tips</h3>
+                <ul class="mt-2 text-sm text-gray-700 space-y-2">
+                    <li>
+                        <strong>Edge “Unconfirmed … .crdownload”</strong>: this appears while the download is still in progress or flagged.
+                        Open Edge’s Downloads panel and choose <em>Keep</em> → <em>Keep anyway</em>. It will rename to the final
+                        <code>.exe</code> once complete.
+                    </li>
+                    <li>
+                        For the smoothest experience use the **Download** button above (Chrome or Edge both work). If a browser still saves
+                        with a generic name, right-click the link → <em>Save link as…</em> and ensure the filename ends with
+                        <code>SigStreamAgent-Setup.exe</code>.
+                    </li>
+                </ul>
+                <p class="mt-3 text-sm text-gray-600">
+                    Need help? <a class="text-indigo-600 hover:text-indigo-700" href="mailto:admin@sigstreamcloud.com">admin@sigstreamcloud.com</a>
+                </p>
+            </div>
         </section>
     </main>
 
@@ -148,7 +181,7 @@
     </footer>
 
     <script>
-    // Copy SHA-256 helpers
+    // Copy SHA-256 helper
     const btn = document.getElementById('copyHashBtn');
     if (btn) {
       btn.addEventListener('click', async () => {
@@ -158,10 +191,18 @@
           await navigator.clipboard.writeText(hash);
           btn.textContent = 'Copied';
           setTimeout(() => btn.textContent = 'Copy', 1200);
-        } catch (e) {
+        } catch {
           btn.textContent = 'Copy failed';
         }
       });
+    }
+
+    // Tiny hint for Edge users
+    if (navigator.userAgent.includes('Edg/')) {
+      const tip = document.createElement('p');
+      tip.className = 'mt-2 text-xs text-gray-500';
+      tip.textContent = 'Using Edge? If the file shows “Unconfirmed … .crdownload”, open Downloads → Keep → Keep anyway.';
+      document.querySelector('section.space-y-6 .bg-white.border')?.appendChild(tip);
     }
     </script>
 </body>

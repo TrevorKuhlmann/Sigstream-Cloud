@@ -1334,9 +1334,43 @@ def revoke_api_key(
 
     # ---------- DOWNLOADS (robust) ----------
 
+    # ---------- DOWNLOADS (robust) ----------
+from email.utils import formatdate
 
-# 1) Mount for static access (e.g., /downloads/changelog.html)
-app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloads")
+def _download_headers(path: Path, cache: str) -> dict:
+    st = path.stat()
+    return {
+        "Cache-Control": cache,
+        "X-Content-Type-Options": "nosniff",
+        "Accept-Ranges": "bytes",
+        "Last-Modified": formatdate(st.st_mtime, usegmt=True),
+        "ETag": f'W/"{st.st_mtime_ns:x}-{st.st_size:x}"',
+    }
+
+# 1) Explicit file routes FIRST so they take precedence.
+@app.get("/downloads/update.xml")
+def get_update_manifest():
+    path = DOWNLOADS_DIR / "update.xml"
+    if not path.exists():
+        return HTMLResponse("update.xml not found", status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="application/xml; charset=utf-8",
+        headers=_download_headers(path, cache="no-store, must-revalidate"),
+    )
+
+@app.get("/downloads/SigStreamAgent-Setup.exe")
+def get_installer():
+    path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
+    if not path.exists():
+        return HTMLResponse("installer not found", status_code=404)
+    # filename= ensures Content-Disposition: attachment; filename="SigStreamAgent-Setup.exe"
+    return FileResponse(
+        str(path),
+        media_type="application/octet-stream",
+        filename="SigStreamAgent-Setup.exe",
+        headers=_download_headers(path, cache="public, max-age=3600"),
+    )
 
 # 2) Human downloads page
 @app.get("/downloads", name="downloads_page", response_class=HTMLResponse)
@@ -1346,7 +1380,8 @@ def downloads_page(request: Request):
 
     version = "1.0.0.0"
     checksum_value = ""
-    changelog_url = "/downloads/changelog.html"
+    # serve auxiliary files (e.g., changelog.html) from the assets mount below
+    changelog_url = "/downloads/assets/changelog.html"
     download_available = False
     size_str = "—"
     released_str = "—"
@@ -1357,9 +1392,11 @@ def downloads_page(request: Request):
             version = (root.findtext("version") or version).strip()
             checksum = (root.findtext("checksum") or "").strip()
             checksum_value = checksum.split(":", 1)[1] if checksum.lower().startswith("sha256:") else checksum
+
             chlog = (root.findtext("changelog") or "").strip()
             if chlog:
-                changelog_url = chlog
+                # If the manifest gives a relative path, serve it from assets mount
+                changelog_url = chlog if chlog.startswith(("http://", "https://", "/")) else f"/downloads/assets/{chlog}"
         except Exception:
             pass
 
@@ -1381,26 +1418,77 @@ def downloads_page(request: Request):
         "ms_store_url": None,
     })
 
-# 3) Strong headers for the two important files
-@app.get("/downloads/update.xml")
-def get_update_manifest():
-    path = DOWNLOADS_DIR / "update.xml"
-    if not path.exists():
-        return HTMLResponse("update.xml not found", status_code=404)
-    return FileResponse(str(path), media_type="application/xml",
-                        headers={"Cache-Control": "no-store, must-revalidate",
-                                 "X-Content-Type-Options": "nosniff"})
+# 3) Mount static ONLY for ancillary assets (no path collision with file routes)
+app.mount("/downloads/assets", StaticFiles(directory=str(DOWNLOADS_DIR)), name="download_assets")
+# ---------- /DOWNLOADS ----------
 
-@app.get("/downloads/SigStreamAgent-Setup.exe")
-def get_installer():
-    path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
-    if not path.exists():
-        return HTMLResponse("installer not found", status_code=404)
-    return FileResponse(str(path), media_type="application/octet-stream",
-                        filename="SigStreamAgent-Setup.exe",
-                        headers={"Cache-Control": "public, max-age=3600",
-                                 "X-Content-Type-Options": "nosniff",
-                                 "Accept-Ranges": "bytes"})
+
+# 1) Mount for static access (e.g., /downloads/changelog.html)
+app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloads")
+
+# # 2) Human downloads page
+# @app.get("/downloads", name="downloads_page", response_class=HTMLResponse)
+# def downloads_page(request: Request):
+#     xml_path = DOWNLOADS_DIR / "update.xml"
+#     exe_path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
+
+#     version = "1.0.0.0"
+#     checksum_value = ""
+#     changelog_url = "/downloads/changelog.html"
+#     download_available = False
+#     size_str = "—"
+#     released_str = "—"
+
+#     if xml_path.exists():
+#         try:
+#             root = ET.parse(str(xml_path)).getroot()
+#             version = (root.findtext("version") or version).strip()
+#             checksum = (root.findtext("checksum") or "").strip()
+#             checksum_value = checksum.split(":", 1)[1] if checksum.lower().startswith("sha256:") else checksum
+#             chlog = (root.findtext("changelog") or "").strip()
+#             if chlog:
+#                 changelog_url = chlog
+#         except Exception:
+#             pass
+
+#     if exe_path.exists():
+#         download_available = True
+#         stat = exe_path.stat()
+#         size_str = f"{stat.st_size / (1024*1024):.1f} MB"
+#         released_str = dt.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
+
+#     return templates.TemplateResponse("downloads.html", {
+#         "request": request,
+#         "version": version,
+#         "checksum": checksum_value,
+#         "exe_url": "/downloads/SigStreamAgent-Setup.exe",
+#         "download_available": download_available,
+#         "size_str": size_str,
+#         "released_str": released_str,
+#         "changelog_url": changelog_url,
+#         "ms_store_url": None,
+#     })
+
+# # 3) Strong headers for the two important files
+# @app.get("/downloads/update.xml")
+# def get_update_manifest():
+#     path = DOWNLOADS_DIR / "update.xml"
+#     if not path.exists():
+#         return HTMLResponse("update.xml not found", status_code=404)
+#     return FileResponse(str(path), media_type="application/xml",
+#                         headers={"Cache-Control": "no-store, must-revalidate",
+#                                  "X-Content-Type-Options": "nosniff"})
+
+# @app.get("/downloads/SigStreamAgent-Setup.exe")
+# def get_installer():
+#     path = DOWNLOADS_DIR / "SigStreamAgent-Setup.exe"
+#     if not path.exists():
+#         return HTMLResponse("installer not found", status_code=404)
+#     return FileResponse(str(path), media_type="application/octet-stream",
+#                         filename="SigStreamAgent-Setup.exe",
+#                         headers={"Cache-Control": "public, max-age=3600",
+#                                  "X-Content-Type-Options": "nosniff",
+#                                  "Accept-Ranges": "bytes"})
 # ---------- /DOWNLOADS ----------
 
 
